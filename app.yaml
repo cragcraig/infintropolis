@@ -1,0 +1,23 @@
+application: infintropolis
+version: 1
+runtime: python
+api_version: 1
+
+handlers:
+# Images and fonts.
+- url: /img/(.*\.(png|giff|jpg|woff|ttf))
+  static_files: static/img/\1
+  upload: static/img/(.*\.(png|giff|jpg|woff|ttf))
+
+# Static pages.
+- url: /static
+  static_dir: static/web
+
+# Index file.
+- url: /
+  static_files: static/web/map.htm
+  upload: static/web/map.htm
+
+# Map scripts.
+- url: /map/.*
+  script: map.py
