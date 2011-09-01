@@ -7,13 +7,17 @@ from infbase import Vect, Tile
 
 # Block size.
 SIZE = 50
+# Probabilities for map generator.
+PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
+                   [0, 0, 65, 75, 85, 95, 100],
+                   [0, 20, 0, 0, 0, 0, 100]]
 
 
 class BlockModel(db.Model):
     """A database model to hold a 50x50 block of tiles."""
     x = db.IntegerProperty(required=True)
     y = db.IntegerProperty(required=True)
-    tile = db.ListProperty(int)
+    tiletype = db.ListProperty(int)
     roll = db.ListProperty(int)
 
 
@@ -63,31 +67,18 @@ class MapBlock:
 
     def get(self, coord):
         t = coord.x + SIZE * coord.y
-        return Tile(self._block.tile[t], self._block.roll[t])
+        return Tile(self._block.tiletype[t], self._block.roll[t])
+
+    def set(self, coord, tile):
+        t = coord.x + SIZE * coord.y
+        self._block.tiletype[t] = tile.tiletype
+        self._block.roll[t] = tile.roll
 
     def generate(self):
         self._block
 
     def exists(self):
         return self._block is not None
-
-    def _randRoll(self):
-        return random.choice([2, 3, 3, 4, 4, 5, 5, 6, 6,
-                            8, 8, 9, 9, 10, 10, 11, 11, 12])
-
-    def _randResource(self):
-        t = random.randint(2,7)
-        if t is 7:
-            t = random.randint(1,20)
-            if t is 1:
-                t = 8
-            elif t <= 4:
-                t = 9
-            elif t <= 12:
-                t = 7
-            else:
-                t = random.randint(2,6)
-        return t
 
     def _getNeighbor(self, coord, d):
         out = coord.copy()
@@ -121,16 +112,16 @@ class MapBlock:
                 t = surrounding_blocks.north.get(Vect(n.x, n.y + SIZE))
             elif n.y >= SIZE and n.x < SIZE and n.x >= 0:
                 t = surrounding_blocks.south.get(Vect(n.x, n.y - SIZE))
-            else
+            else:
                 t = Tile()
-
             if t.isLand():
                 sum += 1
         return sum
 
     def _generateTile(self, coord, surrounding_blocks, probabilities):
         sum = self._sumLand(coord, surrounding_blocks)
+        t = Tile(0,0)
         # Land tile.
-        if random.randint(1,100) < probabilities[sum]:
-            tiletype = self._randResource()
-
+        if random.randint(1, 100) < PROBABILITY_MAP[sum]:
+            t.randomize()
+        self.set(coord, t)

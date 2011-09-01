@@ -1073,3 +1073,5 @@ function getEdge()
 	return v;
 }
 
+/* AJAX */
+
