@@ -1,7 +1,7 @@
 import random
 
 from google.appengine.ext import db
-from google.appengine.api import users
+from google.appengine.api import memcache
 
 from infbase import Vect, Tile, TileType
 
@@ -17,8 +17,8 @@ class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
     x = db.IntegerProperty(required=True)
     y = db.IntegerProperty(required=True)
-    tiletype = db.ListProperty(int)
-    roll = db.ListProperty(int)
+    tiletype = db.ListProperty(int, indexed=False)
+    roll = db.ListProperty(int, indexed=False)
 
 
 class SurroundingBlocks:
@@ -58,19 +58,30 @@ class MapBlock:
                 # TODO(craig): Atomic check + set to avoid race conditions.
                 self.save()
 
-    def load(self):
+    def load(self, use_cached=True):
         """Load or reload Block from cache/database."""
-        # TODO(craig): Check memcache before performing DB query.
-        gql = "SELECT * FROM BlockModel WHERE x = :x AND y = :y LIMIT 1"
-        query = db.GqlQuery(gql, x=self._pos.x, y=self._pos.x)
-        result = list(query.fetch(limit=1))
-        if len(result):
-            self._block = result[0]
+        # memcache
+        if use_cached:
+            self._block = memcache.get(self.getId())
+        # database
+        if not self._block:
+            gql = "SELECT * FROM BlockModel WHERE x = :x AND y = :y LIMIT 1"
+            query = db.GqlQuery(gql, x=self._pos.x, y=self._pos.x)
+            result = list(query.fetch(limit=1))
+            if len(result):
+                self._block = result[0]
+                self.cache()
 
     def save(self):
-        """Store changes back to cache and database."""
-        # TODO(craig): Store changes in memcache.
-        #db.put(self._block)
+        """Store MapBlock state to database."""
+        if (self.exists()):
+            self.cache()
+            db.put(self._block)
+
+    def cache(self):
+        """Store MapBlock state to cache."""
+        if (self.exists()):
+            memcache.set(self.getId(), self._block, time=60*15)
 
     def get(self, coord):
         """Get the tile at a specified coordinate."""
@@ -80,7 +91,12 @@ class MapBlock:
         return Tile(self._block.tiletype[t], self._block.roll[t])
 
     def fastGetTileType(self, x, y):
+        """Get the tiletype of the tile at (x, y) without any checks."""
         return self._block.tiletype[x + SIZE * y]
+
+    def fastGetRoll(self, x, y):
+        """Get the roll value of the tile at (x, y) without any checks."""
+        return self._block.roll[x + SIZE * y]
 
     def set(self, coord, tile):
         """Set the tile at a specified coordinate."""
@@ -111,11 +127,17 @@ class MapBlock:
         return self._block is not None
 
     def getString(self):
-        return ''.join([repr(self._block.tiletype[i]) + ':' +
-                        repr(self._block.roll[i]) + ','
+        """Construct a comma deliminated string MapBlock representation."""
+        return ''.join([repr(int(self._block.tiletype[i])) + ':' +
+                        repr(int(self._block.roll[i])) + ','
                         for i in xrange(SIZE * SIZE)])
 
+    def getId(self):
+        """Construct a unique consistant identifier string for the MapBlock."""
+        return 'map_' + repr(int(self._pos.x)) + ',' + repr(int(self._pos.y))
+
     def _clear(self):
+        """Clear the MapBlock to all water tiles."""
         self._block.tiletype = (SIZE * SIZE) * [TileType.water]
         self._block.roll = (SIZE * SIZE) * [0]
 

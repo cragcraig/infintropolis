@@ -150,20 +150,19 @@ function requestMap(i, gen)
 	/* file */
 	if (typeof(gen) == 'undefined' || !gen) {
 		tileMap[i].gen = false;
-		tileLoader[i].open("GET", "map/get?x="+x+"&y="+y, true);
 	} else {
 		/* script */
 		tileMap[i].gen = true;
-		tileLoader[i].open("GET", "map/get?x="+x+"&y="+y, true);
 	}
 	/* XHR */
+	tileLoader[i].open("GET", "map/get?x="+x+"&y="+y, true);
 	tileLoader[i].setRequestHeader("Cache-Control", "no-cache");
 	tileLoader[i].setRequestHeader("Pragma", "no-cache");
 	tileLoader[i].send(null);
 	
 	/* timeout */
 	if (tileMap[i].timer != null) clearTimeout(tileMap[i].timer);
-	tileMap[i].timer = setTimeout(loaderGen(loadTileAbort, i), 5000);
+	tileMap[i].timer = setTimeout(loaderGen(loadTileAbort, i), 10*1000);
 }
 
 function goMap(worldX, worldY)
@@ -749,7 +748,7 @@ function resize_full_norender()
 	resize(window.innerWidth, window.innerHeight);
 }
 
-// render
+// Render.
 function render()
 {
 	if (!initd) return;
@@ -783,6 +782,33 @@ function render()
 	}
 
 	renderObjects();
+
+    if (!isAllMapsLoaded())
+        drawLoadingMap();
+}
+
+// Check if pending map requests.
+function isAllMapsLoaded()
+{
+    r = true;
+    for (i = 0; i < 4; i++) {
+        if (!tileMap[i].valid)
+            r = false;
+    }
+    return r;
+}
+
+// Draw "Map Loading" text.
+function drawLoadingMap()
+{
+	ctx.font = "18pt serif";
+	ctx.fillStyle = "#fff";
+	ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+	ctx.textAlign = "center";
+	ctx.textBaseline = "top";
+	ctx.strokeText("[ loading map data ]", canvas.width/2, 10);
+	ctx.fillText("[ loading map data ]", canvas.width/2, 10);
 }
 
 // render highlight tile
@@ -1072,6 +1098,4 @@ function getEdge()
 
 	return v;
 }
-
-/* AJAX */
 
