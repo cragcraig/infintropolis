@@ -141,6 +141,7 @@ class MapBlock:
 
     def _sumLand(self, coord, surrounding_blocks):
         """Sum the number of land tiles around the given tile coord."""
+        # TODO(craig): Use list comprehensions instead for a speedup.
         sum = 0
         t = TileType.water
         n = Vect(0, 0)
