@@ -3,18 +3,20 @@ import random
 
 
 class Vect:
+    """Vector containing an (x,y) coordinate pair."""
     x = None
     y = None
 
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x = int(x)
+        self.y = int(y)
 
     def copy(self):
         return copy.copy(self)
 
 
 class Tile:
+    """An individual resource tile."""
     tiletype = None
     roll = None
 
@@ -26,13 +28,14 @@ class Tile:
         return copy.copy(self)
 
     def isWater(self):
-        return self.tiletype is not None and self.tiletype is 0
+        return self.tiletype is not None and self.tiletype is TileType.water
 
     def isLand(self):
-        return self.tiletype is not None and self.tiletype is not 0
+        return (self.tiletype is not None and
+                self.tiletype is not TileType.water)
 
     def isDesert(self):
-        return self.tiletype is 7
+        return self.tiletype is TileType.desert
 
     def isRollable(self):
         return self.isLand() and not self.isDesert()
@@ -41,7 +44,7 @@ class Tile:
         self._randResource()
         if self.isRollable():
             self._randRoll()
-        else
+        else:
             self.roll = 0
 
     def _randRoll(self):
@@ -63,3 +66,6 @@ class Tile:
         self.tiletype = t
 
 
+class TileType:
+    none, water, field, pasture, forest, hills, mountain, desert, \
+        goldmine, volcano, fish = range(11)
