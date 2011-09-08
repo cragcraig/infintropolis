@@ -1,58 +1,68 @@
 import random
+import hashlib
 import cgi
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
+import request
 from infbase import Vect
 from mapblock import MapBlock
 
-class Getter(webapp.RequestHandler):
-  """Handle data requests."""
+class GetBlock(request.Handler):
+    """Handle MapBlock requests."""
 
-  def get(self):
-    """Returns a requested MapBlock."""
-    self.response.headers['Content-Type'] = 'text/plain'
+    def get(self):
+        """Return requested data."""
+        self.response.headers['Content-Type'] = 'text/plain'
 
-    # check coordinates
-    form = cgi.FieldStorage()
-    if 'x' not in form or 'y' not in form:
-        return
+        # Check user.
+        if not self.validateUser():
+            return
 
-    # retrieve MapBlock
-    block = MapBlock(Vect(form.getfirst('x'), form.getfirst('y')))
-    self.response.out.write(block.getString())
+        # Check coordinates.
+        form = cgi.FieldStorage()
+        if 'x' not in form or 'y' not in form:
+            return
+
+        # Retrieve MapBlock.
+        block = MapBlock(Vect(form.getfirst('x'), form.getfirst('y')))
+        self.response.out.write(block.getString())
 
 
-class Session(webapp.RequestHandler):
+class Session(request.Handler):
     """Handle session requests."""
 
     def get(self):
         form = cgi.FieldStorage()
-        if 'action' not in form:
-            self.redirect('/login.htm')
+        if 'action' in form:
+            action = form.getfirst('action')
+            # Login.
+            if action == 'login' and 'nation' in form and 'pwd' in form:
+                self.login(form.getfirst('nation'), form.getfirst('pwd'))
+                return
+            # Logout.
+            elif action == 'logout':
+                self.logout()
+        # Display login page.
+        self.redirectToLogin()
 
-    def setCookie(self, key, value, timeout=99999):
-        """Add a cookie to the header."""
-        self.response.headers.add_header('Set-Cookie',
-                                         key + '=' + value + '; '
-                                         'max-age=' + repr(int(timeout)) + '; '
-                                         'path=/;')
+    def login(self, nation, password):
+        hasher = hashlib.md5()
+        hasher.update(password)
+        hashedPwd = hasher.hexdigest()
+        self.setCookie('nation', nation)
+        self.setCookie('pwd', hashedPwd)
+        self.redirect('/map')
 
-    def getCookie(self, key):
-        """Read the contents of a cookie."""
-        return self.request.cookies.get(key)
+    def logout(self):
+        self.deleteCookie('nation')
+        self.deleteCookie('pwd')
 
-    def deleteCookie(self, key):
-        """Delete a cookie from the client browser."""
-        self.setCookie(key, '', timeout=-1)
-
-    def redirect(self, url):
-        self.response.headers['Location'] = url
-        
 
 application = webapp.WSGIApplication(
-                                     [('/map/get.*', Getter),
+                                     [('/', Session),
+                                      ('/get/map.*', GetBlock),
                                       ('/session.*', Session)],
                                      debug=True)
 

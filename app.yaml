@@ -13,11 +13,11 @@ handlers:
 - url: /static
   static_dir: static/web
 
-# Index file.
-- url: /
+# Map interface.
+- url: /map
   static_files: static/web/map.htm
   upload: static/web/map.htm
 
-# Map scripts.
-- url: /map/.*
-  script: map.py
+# Scripts.
+- url: /.*
+  script: handler.py

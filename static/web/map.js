@@ -155,7 +155,7 @@ function requestMap(i, gen)
 		tileMap[i].gen = true;
 	}
 	/* XHR */
-	tileLoader[i].open("GET", "map/get?x="+x+"&y="+y, true);
+	tileLoader[i].open("GET", "get/map?x="+x+"&y="+y, true);
 	tileLoader[i].setRequestHeader("Cache-Control", "no-cache");
 	tileLoader[i].setRequestHeader("Pragma", "no-cache");
 	tileLoader[i].send(null);
