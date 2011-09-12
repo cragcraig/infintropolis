@@ -1,6 +1,9 @@
 import copy
 import random
 
+from google.appengine.ext import db
+from google.appengine.api import memcache
+
 
 class Vect:
     """Vector containing an (x,y) coordinate pair."""
@@ -69,3 +72,49 @@ class Tile:
 class TileType:
     none, water, field, pasture, forest, hills, mountain, desert, \
         goldmine, volcano, fish = range(11)
+
+
+class DatabaseObject:
+    """A wrapper for a Database model.
+
+    The getId() and getGQL() methods must be overloaded.
+    """
+    _model = None
+
+    def load(self, use_cached=True):
+        """Load or reload Block from cache/database."""
+        # memcache
+        if use_cached:
+            self._model = memcache.get(self.getId())
+        # database
+        if not self._model:
+            query = db.GqlQuery(self.getGQL())
+            result = list(query.fetch(limit=1))
+            if len(result):
+                self._model = result[0]
+                self.cache()
+
+    def save(self):
+        """Store MapBlock state to database."""
+        if (self.exists()):
+            self.cache()
+            db.put(self._model)
+
+    def cache(self, timeout=15):
+        """Store MapBlock state to cache."""
+        if (self.exists()):
+            memcache.set(self.getId(), self._model, time=60*timeout)
+
+    def exists(self):
+        if (self._model):
+            return True
+        else:
+            return False
+
+    def getId(self):
+        """Returns a unique identifier string for the Model."""
+        raise NotImplementedError, 'getId() is not implemented in this class.'
+
+    def getGQL(self):
+        """Constructs a database query to select the Model."""
+        raise NotImplementedError, 'getGQL() is not implemented in this class.'

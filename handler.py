@@ -17,7 +17,7 @@ class GetBlock(request.Handler):
         self.response.headers['Content-Type'] = 'text/plain'
 
         # Check user.
-        if not self.validateUser():
+        if not self.validateNation():
             return
 
         # Check coordinates.

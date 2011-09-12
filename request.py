@@ -33,5 +33,5 @@ class Handler(webapp.RequestHandler):
     def redirectToLogin(self):
         self.redirect('/static/login.htm')
 
-    def validateUser(self):
+    def validateNation(self):
         return self.getCookie('nation') and self.getCookie('pwd')
