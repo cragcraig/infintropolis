@@ -3,7 +3,8 @@ import random
 from google.appengine.ext import db
 from google.appengine.api import memcache
 
-from infbase import Vect, Tile, TileType
+import inf
+from inf import Vect, Tile, TileType
 
 # Block size.
 SIZE = 50
@@ -39,10 +40,9 @@ class SurroundingBlocks:
         self.east = MapBlock(Vect(pos.x + 1, pos.y), generate_nonexist=False)
 
 
-class MapBlock:
+class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
     _pos = Vect(0,0)
-    _block = None
 
     def __init__(self, pos, load=True, generate_nonexist=True):
         """Load BlockModel from cache/database.
@@ -53,60 +53,35 @@ class MapBlock:
         self._pos = pos.copy() 
         if load:
             self.load()
-            if not self._block and generate_nonexist:
+            if not self._model and generate_nonexist:
                 self.generate(PROBABILITY_MAP)
                 # TODO(craig): Atomic check + set to avoid race conditions.
                 self.save()
 
-    def load(self, use_cached=True):
-        """Load or reload Block from cache/database."""
-        # memcache
-        if use_cached:
-            self._block = memcache.get(self.getId())
-        # database
-        if not self._block:
-            gql = "SELECT * FROM BlockModel WHERE x = :x AND y = :y LIMIT 1"
-            query = db.GqlQuery(gql, x=self._pos.x, y=self._pos.x)
-            result = list(query.fetch(limit=1))
-            if len(result):
-                self._block = result[0]
-                self.cache()
-
-    def save(self):
-        """Store MapBlock state to database."""
-        if (self.exists()):
-            self.cache()
-            db.put(self._block)
-
-    def cache(self):
-        """Store MapBlock state to cache."""
-        if (self.exists()):
-            memcache.set(self.getId(), self._block, time=60*15)
-
     def get(self, coord):
         """Get the tile at a specified coordinate."""
-        if not self._block:
+        if not self._model:
             return Tile()
         t = coord.x + SIZE * coord.y
-        return Tile(self._block.tiletype[t], self._block.roll[t])
+        return Tile(self._model.tiletype[t], self._model.roll[t])
 
     def fastGetTileType(self, x, y):
         """Get the tiletype of the tile at (x, y) without any checks."""
-        return self._block.tiletype[x + SIZE * y]
+        return self._model.tiletype[x + SIZE * y]
 
     def fastGetRoll(self, x, y):
         """Get the roll value of the tile at (x, y) without any checks."""
-        return self._block.roll[x + SIZE * y]
+        return self._model.roll[x + SIZE * y]
 
     def set(self, coord, tile):
         """Set the tile at a specified coordinate."""
         t = coord.x + SIZE * coord.y
-        self._block.tiletype[t] = tile.tiletype
-        self._block.roll[t] = tile.roll
+        self._model.tiletype[t] = tile.tiletype
+        self._model.roll[t] = tile.roll
 
     def generate(self, prob_map):
         """Randomly generate the MapBlock."""
-        self._block = BlockModel(x=self._pos.x, y=self._pos.y)
+        self._model = BlockModel(x=self._pos.x, y=self._pos.y)
         self._clear()
         surrounding = SurroundingBlocks(self._pos)
         for t in xrange(len(prob_map)):
@@ -122,24 +97,24 @@ class MapBlock:
                 for k in xrange(i, j, -1):
                     self._generateTile(Vect(k, j), surrounding, prob_map[t])
 
-    def exists(self):
-        """Check if this MapBlock has been sucessfully loaded/generated yet."""
-        return self._block is not None
-
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
-        return ''.join([repr(int(self._block.tiletype[i])) + ':' +
-                        repr(int(self._block.roll[i])) + ','
+        return ''.join([repr(int(self._model.tiletype[i])) + ':' +
+                        repr(int(self._model.roll[i])) + ','
                         for i in xrange(SIZE * SIZE)])
 
     def getId(self):
         """Construct a unique consistant identifier string for the MapBlock."""
         return 'map_' + repr(int(self._pos.x)) + ',' + repr(int(self._pos.y))
 
+    def getGQL(self):
+        return  "SELECT * FROM BlockModel WHERE x = " + repr(self._pos.x) +\
+                " AND y = " + repr(self._pos.y)
+
     def _clear(self):
         """Clear the MapBlock to all water tiles."""
-        self._block.tiletype = (SIZE * SIZE) * [TileType.water]
-        self._block.roll = (SIZE * SIZE) * [0]
+        self._model.tiletype = (SIZE * SIZE) * [TileType.water]
+        self._model.roll = (SIZE * SIZE) * [0]
 
     @staticmethod
     def _getNeighbor(coord, d, out):

@@ -6,7 +6,7 @@ from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
 
 import request
-from infbase import Vect
+from inf import Vect
 from mapblock import MapBlock
 
 class GetBlock(request.Handler):

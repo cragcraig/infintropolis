@@ -101,15 +101,13 @@ class DatabaseObject:
             db.put(self._model)
 
     def cache(self, timeout=15):
-        """Store MapBlock state to cache."""
+        """Store Model state to cache."""
         if (self.exists()):
             memcache.set(self.getId(), self._model, time=60*timeout)
 
     def exists(self):
-        if (self._model):
-            return True
-        else:
-            return False
+        """Returns True if the Model has been successfully loaded."""
+        return self._model is not None
 
     def getId(self):
         """Returns a unique identifier string for the Model."""
