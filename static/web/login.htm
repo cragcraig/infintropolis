@@ -1,0 +1,56 @@
+<html>
+
+<!-- HEAD -->
+<head>
+<meta http-equiv="X-UA-Compatible" content="chrome=1">
+<title>Infintropolis</title>
+
+<!-- SCRIPTS -->
+<link rel="icon" type="image/png" href="/img/icon.png">
+<link rel="shortcut icon" type="image/png" href="/img/icon.png">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+</head>
+
+<!-- BODY -->
+<body>
+<center>
+
+<!-- HEADER -->
+<h1>Infintropolis</h1>
+<p>Explore an endless map as you build a civilization and battle opponents in the massively multiplayer world of Infintropolis.</p>
+
+<br>
+
+<!-- LOGIN -->
+<h3>Login</h3>
+<form name="login" action="/session" method="post">
+    <input type="hidden" name="action" value="login" />
+    Nation:&nbsp;
+    <input type="text" name="nation" /><br>
+    Password:&nbsp;
+    <input type="password" name="pwd" /><br>
+    <input type="submit" value="Login" />
+</form>
+
+<br>
+<br>
+
+<!-- CREATE -->
+<h3>Create a Nation</h3>
+<form name="login" action="/session" method="post">
+    <input type="hidden" name="action" value="create" />
+    Nation:&nbsp;
+    <input type="text" name="nation" /><br>
+    Password:&nbsp;
+    <input type="password" name="pwd" /><br>
+    Retype Password:&nbsp;
+    <input type="password" name="confirm" /><br>
+    E-Mail:&nbsp;
+    <input type="text" name="email" /><br>
+    <input type="submit" value="Create" />
+</form>
+
+</center>
+</body>
+
+</html>

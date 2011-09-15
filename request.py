@@ -1,15 +1,23 @@
 import cgi
+import string
 
 from google.appengine.ext import webapp
+
+from nation import Nation
 
 
 class Handler(webapp.RequestHandler):
     """Abstract request details.
     
-    Provides methods covering cookies and browser redirects."""
+    Provides methods covering cookies and browser redirects.
+    """
+    _nation = None
+    _encodeMap = string.maketrans(' \'', '+*')
+    _decodeMap = string.maketrans('+*', ' \'')
 
     def setCookie(self, key, value, timeout=99999):
         """Add a cookie to the header."""
+        value = value.encode('ascii').translate(self._encodeMap)
         self.response.headers.add_header('Set-Cookie',
                                          key + '=' + value + '; '
                                          'max-age=' + repr(int(timeout)) + '; '
@@ -17,7 +25,11 @@ class Handler(webapp.RequestHandler):
 
     def getCookie(self, key):
         """Read the contents of a cookie."""
-        return self.request.cookies.get(key)
+        value = self.request.cookies.get(key)
+        if value:
+            return value.encode('ascii').translate(self._decodeMap)
+        else:
+            return value
 
     def deleteCookie(self, key):
         """Delete a cookie from the client browser."""
@@ -33,5 +45,16 @@ class Handler(webapp.RequestHandler):
     def redirectToLogin(self):
         self.redirect('/static/login.htm')
 
-    def validateNation(self):
-        return self.getCookie('nation') and self.getCookie('pwd')
+    def redirectToMap(self):
+        self.redirect('/map')
+
+    def loadNation(self):
+        n = Nation(self.getCookie('nation'), self.getCookie('pwd'))
+        if n.exists():
+            self._nation = n
+            return True
+        else:
+            return False
+
+    def getNation(self):
+        return self._nation

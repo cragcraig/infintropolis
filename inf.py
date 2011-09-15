@@ -18,6 +18,43 @@ class Vect:
         return copy.copy(self)
 
 
+class Buildable:
+    """Represents an buildable game object.
+
+    Edge
+    d = {t, c, b}
+     t  /\ 
+    c  |  |
+     b  \/
+
+    Vertex
+    d = {t, b}
+     t ./\ 
+       |  |
+     b '\/
+    """
+   
+    x = None
+    y = None
+    d = None
+    level = None
+
+    def __init__(self, x, y, d, level):
+        self.x = long(x)
+        self.y = long(y)
+        self.d = int(d)
+        self.level = int(level)
+
+    def copy(self):
+        return copy.copy(self)
+
+
+class BuildType:
+    """Enum for building types."""
+    top, center, bottom = range(2)
+    settlement, city, road, ship = range(4)
+
+
 class Tile:
     """An individual resource tile."""
     tiletype = None
@@ -70,6 +107,7 @@ class Tile:
 
 
 class TileType:
+    """Enumeration for tile types."""
     none, water, field, pasture, forest, hills, mountain, desert, \
         goldmine, volcano, fish = range(11)
 
