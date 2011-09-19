@@ -20,7 +20,7 @@ class BlockModel(db.Model):
     roll = db.ListProperty(int, indexed=False)
 
 
-class SurroundingBlocks:
+class SurroundingMapBlocks:
     """Nearbly map tile blocks.
     
     Used when generating a map. Will not generate map blocks if they do not
@@ -81,7 +81,7 @@ class MapBlock(inf.DatabaseObject):
         """Randomly generate the MapBlock."""
         self._model = BlockModel(x=self._pos.x, y=self._pos.y)
         self._clear()
-        surrounding = SurroundingBlocks(self._pos)
+        surrounding = SurroundingMapBlocks(self._pos)
         for t in xrange(len(prob_map)):
             i = inf.BLOCK_SIZE
             for j in xrange(inf.BLOCK_SIZE):

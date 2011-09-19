@@ -32,6 +32,12 @@ class Vect:
     def getList(self):
         return [self.x, self.y, self.d]
 
+    def getBlockVect(self):
+        return Vect(self.x / BLOCK_SIZE, self.y / BLOCK_SIZE)
+
+    def getRelativeVect(self):
+        return Vect(self.x % BLOCK_SIZE, self.y % BLOCK_SIZE, self.d)
+
 
 class Buildable:
     """Represents an buildable game object.
@@ -54,9 +60,6 @@ class Buildable:
     def __init__(self, pos, level):
         self.pos = pos.copy()
         self.level = int(level)
-
-    def getBlockVect(self):
-        return Vect(x / BLOCK_SIZE, y / BLOCK_SIZE)
 
     def copy(self):
         return copy.copy(self)

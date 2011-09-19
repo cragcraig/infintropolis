@@ -12,7 +12,12 @@ class CapitolModel(db.Model):
     west = db.IntegerProperty(required=True)
     south = db.IntegerProperty(required=True)
     east = db.IntegerProperty(required=True)
-    resources = db.ListProperty(int, indexed=False)
+    lumber = db.IntegerProperty(required=True)
+    wool = db.IntegerProperty(required=True)
+    brick = db.IntegerProperty(required=True)
+    grain = db.IntegerProperty(required=True)
+    ore = db.IntegerProperty(required=True)
+    gold = db.IntegerProperty(required=True)
     buildables = db.ListProperty(int, indexed=False)
 
 
@@ -40,8 +45,8 @@ class Capitol(inf.DatabaseObject):
         pos = origBuildable.getBlockVect() 
         self._model = CapitolModel(nation=self._nation, number=self._number,
                                    north=pos.y, west=pos.x, south=pos.y,
-                                   east=pos.x, resources=[0,0,0,0,0],
-                                   buildables=[])
+                                   east=pos.x, lumber=0, wool=0, brick=0,
+                                   grain=0, ore=0, gold=0, buildables=[])
         self.addBuildable(origBuildable)
         self.save()
 
@@ -56,7 +61,8 @@ class Capitol(inf.DatabaseObject):
                 break
 
     def getId(self):
-        return 'capitol_' + repr(int(self._pos.x)) + "_" + repr(int(self._pos.y))
+        return 'capitol_' + repr(int(self._pos.x)) + "_" +\
+               repr(int(self._pos.y))
 
     def getGQL(self):
         return "SELECT * FROM CapitolModel " +\
