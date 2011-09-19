@@ -5,17 +5,32 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 
+# Block size.
+BLOCK_SIZE = 50
+
+
 class Vect:
-    """Vector containing an (x,y) coordinate pair."""
+    """Vector containing an (x,y[,d]) coordinate."""
     x = None
     y = None
+    d = None
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, d=None):
         self.x = int(x)
         self.y = int(y)
+        self.d = int(d)
+
+    def __eq__(self, other):
+        return x == other.x and y == other.y and d == other.d
+
+    def __ne__(self, other):
+        return x != other.x or y != other.y or d != other.d
 
     def copy(self):
         return copy.copy(self)
+
+    def getList(self):
+        return [self.x, self.y, self.d]
 
 
 class Buildable:
@@ -33,25 +48,26 @@ class Buildable:
        |  |
      b '\/
     """
-   
-    x = None
-    y = None
-    d = None
+    pos = None
     level = None
 
-    def __init__(self, x, y, d, level):
-        self.x = long(x)
-        self.y = long(y)
-        self.d = int(d)
+    def __init__(self, pos, level):
+        self.pos = pos.copy()
         self.level = int(level)
+
+    def getBlockVect(self):
+        return Vect(x / BLOCK_SIZE, y / BLOCK_SIZE)
 
     def copy(self):
         return copy.copy(self)
 
+    def getList(self):
+        return self.pos.getList().append(self.level)
+
 
 class BuildType:
     """Enum for building types."""
-    top, center, bottom = range(2)
+    top, center, bottom = range(3)
     settlement, city, road, ship = range(4)
 
 
@@ -118,24 +134,29 @@ class DatabaseObject:
     The getId() and getGQL() methods must be overloaded.
     """
     _model = None
+    _useCached = False
 
-    def load(self, use_cached=True):
+    def load(self, use_cached=False):
         """Load or reload Block from cache/database."""
-        # memcache
-        if use_cached:
+        # Memcache.
+        self._useCached = use_cached
+        if self._useCached:
             self._model = memcache.get(self.getId())
-        # database
+        # Database.
         if not self._model:
             query = db.GqlQuery(self.getGQL())
             result = list(query.fetch(limit=1))
+            # Exists in database.
             if len(result):
                 self._model = result[0]
-                self.cache()
+                if self._useCached:
+                    self.cache()
 
     def save(self):
         """Store MapBlock state to database."""
         if (self.exists()):
-            self.cache()
+            if self._useCached:
+                self.cache()
             db.put(self._model)
 
     def cache(self, timeout=15):

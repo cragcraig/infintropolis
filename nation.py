@@ -10,7 +10,7 @@ class NationModel(db.Model):
     email = db.StringProperty(required=False)
     title = db.StringProperty(required=False)
     points = db.IntegerProperty(required=True)
-    capitols = db.ListProperty(int, indexed=False)
+    capitols = db.IntegerProperty(required=True)
 
 
 class Nation(inf.DatabaseObject):
@@ -29,7 +29,7 @@ class Nation(inf.DatabaseObject):
         if create:
             self.create(email)
         else:
-            self.load(use_cached=False)
+            self.load()
             if self.exists() and self._pwd != self._model.pwd:
                 self._model = None
 
@@ -40,8 +40,14 @@ class Nation(inf.DatabaseObject):
         result = list(query.fetch(limit=1))
         if not len(result):
             self._model = NationModel(name=self._name, pwd=self._pwd, email=email,
-                                      title='', points=0, capitols=[])
+                                      title='', points=0, capitols=0)
             self.save()
+
+    def addCapitol(self):
+        self._model.capitols += 1
+
+    def getNumCapitols(self):
+        return int(self._model.capitols)
 
     def getId(self):
         return 'nation_' + self._name

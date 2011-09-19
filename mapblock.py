@@ -6,8 +6,6 @@ from google.appengine.api import memcache
 import inf
 from inf import Vect, Tile, TileType
 
-# Block size.
-SIZE = 50
 # Probabilities for map generator.
 PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
                    [0, 0, 65, 75, 85, 95, 100],
@@ -52,7 +50,7 @@ class MapBlock(inf.DatabaseObject):
         """
         self._pos = pos.copy() 
         if load:
-            self.load()
+            self.load(use_cached=True)
             if not self._model and generate_nonexist:
                 self.generate(PROBABILITY_MAP)
                 # TODO(craig): Atomic check + set to avoid race conditions.
@@ -62,20 +60,20 @@ class MapBlock(inf.DatabaseObject):
         """Get the tile at a specified coordinate."""
         if not self._model:
             return Tile()
-        t = coord.x + SIZE * coord.y
+        t = coord.x + inf.BLOCK_SIZE * coord.y
         return Tile(self._model.tiletype[t], self._model.roll[t])
 
     def fastGetTileType(self, x, y):
         """Get the tiletype of the tile at (x, y) without any checks."""
-        return self._model.tiletype[x + SIZE * y]
+        return self._model.tiletype[x + inf.BLOCK_SIZE * y]
 
     def fastGetRoll(self, x, y):
         """Get the roll value of the tile at (x, y) without any checks."""
-        return self._model.roll[x + SIZE * y]
+        return self._model.roll[x + inf.BLOCK_SIZE * y]
 
     def set(self, coord, tile):
         """Set the tile at a specified coordinate."""
-        t = coord.x + SIZE * coord.y
+        t = coord.x + inf.BLOCK_SIZE * coord.y
         self._model.tiletype[t] = tile.tiletype
         self._model.roll[t] = tile.roll
 
@@ -85,8 +83,8 @@ class MapBlock(inf.DatabaseObject):
         self._clear()
         surrounding = SurroundingBlocks(self._pos)
         for t in xrange(len(prob_map)):
-            i = SIZE
-            for j in xrange(SIZE):
+            i = inf.BLOCK_SIZE
+            for j in xrange(inf.BLOCK_SIZE):
                 i -= 1
                 for k in xrange(j, i):
                     self._generateTile(Vect(j, k), surrounding, prob_map[t])
@@ -101,7 +99,7 @@ class MapBlock(inf.DatabaseObject):
         """Construct a comma deliminated string MapBlock representation."""
         return ''.join([repr(int(self._model.tiletype[i])) + ':' +
                         repr(int(self._model.roll[i])) + ','
-                        for i in xrange(SIZE * SIZE)])
+                        for i in xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE)])
 
     def getId(self):
         """Construct a unique consistant identifier string for the MapBlock."""
@@ -113,8 +111,9 @@ class MapBlock(inf.DatabaseObject):
 
     def _clear(self):
         """Clear the MapBlock to all water tiles."""
-        self._model.tiletype = (SIZE * SIZE) * [TileType.water]
-        self._model.roll = (SIZE * SIZE) * [0]
+        self._model.tiletype = ((inf.BLOCK_SIZE * inf.BLOCK_SIZE) *
+                                 [TileType.water])
+        self._model.roll = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
 
     @staticmethod
     def _getNeighbor(coord, d, out):
@@ -144,20 +143,25 @@ class MapBlock(inf.DatabaseObject):
         n = Vect(0, 0)
         for i in xrange(6):
             self._getNeighbor(coord, i, n)
-            if n.x < SIZE and n.x >= 0 and n.y < SIZE and n.y >= 0:
+            if (n.x < inf.BLOCK_SIZE and n.x >= 0 and n.y < inf.BLOCK_SIZE and
+                n.y >= 0):
                 t = self.fastGetTileType(n.x, n.y)
-            elif (n.x < 0 and n.y < SIZE and n.y >= 0 and
+            elif (n.x < 0 and n.y < inf.BLOCK_SIZE and n.y >= 0 and
                   surrounding_blocks.west.exists()):
-                t = surrounding_blocks.west.fastGetTileType(n.x + SIZE, n.y)
-            elif (n.x >= SIZE and n.y < SIZE and n.y >= 0 and
-                  surrounding_blocks.east.exists()):
-                t = surrounding_blocks.east.fastGetTileType(n.x - SIZE, n.y)
-            elif (n.y < 0 and n.x < SIZE and n.x >= 0 and
+                t = surrounding_blocks.west.fastGetTileType(
+                    n.x + inf.BLOCK_SIZE, n.y)
+            elif (n.x >= inf.BLOCK_SIZE and n.y < inf.BLOCK_SIZE and
+                  n.y >= 0 and surrounding_blocks.east.exists()):
+                t = surrounding_blocks.east.fastGetTileType(
+                    n.x - inf.BLOCK_SIZE, n.y)
+            elif (n.y < 0 and n.x < inf.BLOCK_SIZE and n.x >= 0 and
                   surrounding_blocks.north.exists()):
-                t = surrounding_blocks.north.fastGetTileType(n.x, n.y + SIZE)
-            elif (n.y >= SIZE and n.x < SIZE and n.x >= 0 and
-                  surrounding_blocks.south.exists()):
-                t = surrounding_blocks.south.fastGetTileType(n.x, n.y - SIZE)
+                t = surrounding_blocks.north.fastGetTileType(
+                    n.x, n.y + inf.BLOCK_SIZE)
+            elif (n.y >= inf.BLOCK_SIZE and n.x < inf.BLOCK_SIZE and
+                  n.x >= 0 and surrounding_blocks.south.exists()):
+                t = surrounding_blocks.south.fastGetTileType(
+                    n.x, n.y - inf.BLOCK_SIZE)
             else:
                 t = TileType.water
             if t is not TileType.water:

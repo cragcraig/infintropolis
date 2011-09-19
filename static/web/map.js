@@ -715,7 +715,7 @@ function init()
 	canvas.onmouseout = updateMouseOut;
 
 	// set map position
-	goMap(0,0);
+	goMap(0, 0);
 
 	// keypress
 	document.onkeydown = keyPressCallback;
