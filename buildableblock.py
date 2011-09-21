@@ -18,26 +18,27 @@ class BuildableBlock(inf.DatabaseObject):
     """A block of map tiles."""
     _pos = Vect(0,0)
 
-    def __init__(self, pos):
+    def __init__(self, pos, create=False):
         """Load BuildableModel from database.
 
-        By default a BuildableModel will be generated and stored to the database
-        if one does not exist.
+        By default a new BuildableModel will not be generated.
         """
         self._pos = pos.copy() 
-        self.load()
+        if create:
+            self.create()
+        else:
+            self.load()
 
-    def set(self, coord, tile):
-        """Set the tile at a specified coordinate."""
-        t = coord.x + inf.BLOCK_SIZE * coord.y
-        self._model.tiletype[t] = tile.tiletype
-        self._model.roll[t] = tile.roll
+    def create(self):
+        # TODO(craig): Should be an ancestor query to ensure consistancy.
+        # TODO(craig): Atomic check&set to avoid race conditions.
+        self._model = CapitolModel(x=self._pos.x, y=self._pos.y, buildables=[])
+        self.save()
 
     def getId(self):
         """Construct a unique consistant identifier string for the Block."""
-        return 'buildableblock_' + repr(int(self._pos.x)) + ',' +\
-               repr(int(self._pos.y))
+        return 'buildableblock_' + str(self._pos.x) + ',' + str(self._pos.y)
 
     def getGQL(self):
-        return  "SELECT * FROM BuildableModel WHERE x = " + repr(self._pos.x) +\
-                " AND y = " + repr(self._pos.y)
+        return  "SELECT * FROM BuildableModel WHERE x = " + str(self._pos.x) +\
+                " AND y = " + str(self._pos.y)

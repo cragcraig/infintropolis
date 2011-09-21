@@ -61,10 +61,10 @@ class Capitol(inf.DatabaseObject):
                 break
 
     def getId(self):
-        return 'capitol_' + repr(int(self._pos.x)) + "_" +\
-               repr(int(self._pos.y))
+        return 'capitol_' + str(self._pos.x) + "_" +\
+               str(self._pos.y)
 
     def getGQL(self):
         return "SELECT * FROM CapitolModel " +\
                "WHERE nation = '" + self._nation + "' " +\
-               "AND number = " + repr(int(self._number))
+               "AND number = " + str(self._number)

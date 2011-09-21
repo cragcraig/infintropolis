@@ -43,10 +43,10 @@ class Nation(inf.DatabaseObject):
                                       title='', points=0, capitols=0)
             self.save()
 
-    def addCapitol(self):
+    def incrementCapitols(self):
         self._model.capitols += 1
 
-    def getNumCapitols(self):
+    def getCapitolCount(self):
         return int(self._model.capitols)
 
     def getId(self):

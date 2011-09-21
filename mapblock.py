@@ -3,6 +3,7 @@ import random
 from google.appengine.ext import db
 from google.appengine.api import memcache
 
+import buildableblock
 import inf
 from inf import Vect, Tile, TileType
 
@@ -41,6 +42,7 @@ class SurroundingMapBlocks:
 class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
     _pos = Vect(0,0)
+    _buildableBlock = None
 
     def __init__(self, pos, load=True, generate_nonexist=True):
         """Load BlockModel from cache/database.
@@ -55,6 +57,8 @@ class MapBlock(inf.DatabaseObject):
                 self.generate(PROBABILITY_MAP)
                 # TODO(craig): Atomic check + set to avoid race conditions.
                 self.save()
+                self._buildableBlock = BuildableBlock(self._pos.x, self._pos.y,
+                                                      create=True)
 
     def get(self, coord):
         """Get the tile at a specified coordinate."""
@@ -97,17 +101,22 @@ class MapBlock(inf.DatabaseObject):
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
-        return ''.join([repr(int(self._model.tiletype[i])) + ':' +
-                        repr(int(self._model.roll[i])) + ','
+        return ''.join([str(int(self._model.tiletype[i])) + ':' +
+                        str(int(self._model.roll[i])) + ','
                         for i in xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE)])
 
     def getId(self):
         """Construct a unique consistant identifier string for the MapBlock."""
-        return 'map_' + repr(int(self._pos.x)) + ',' + repr(int(self._pos.y))
+        return 'map_' + str(self._pos.x) + ',' + str(self._pos.y)
 
     def getGQL(self):
-        return  "SELECT * FROM BlockModel WHERE x = " + repr(self._pos.x) +\
-                " AND y = " + repr(self._pos.y)
+        return  "SELECT * FROM BlockModel WHERE x = " + str(self._pos.x) +\
+                " AND y = " + str(self._pos.y)
+
+    def getBuildableBlock(self):
+        if not self._buildableBlock:
+            self._buildableBlock = BuildableBlock(self._pos.x, self._pos.y)
+        return self._buildableBlock
 
     def _clear(self):
         """Clear the MapBlock to all water tiles."""

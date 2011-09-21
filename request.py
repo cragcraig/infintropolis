@@ -20,7 +20,7 @@ class Handler(webapp.RequestHandler):
         value = value.encode('ascii').translate(self._encodeMap)
         self.response.headers.add_header('Set-Cookie',
                                          key + '=' + value + '; '
-                                         'max-age=' + repr(int(timeout)) + '; '
+                                         'max-age=' + str(timeout) + '; '
                                          'path=/;')
 
     def getCookie(self, key):

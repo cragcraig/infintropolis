@@ -15,7 +15,7 @@ class Vect:
     y = None
     d = None
 
-    def __init__(self, x, y, d=None):
+    def __init__(self, x, y, d=0):
         self.x = int(x)
         self.y = int(y)
         self.d = int(d)
@@ -33,7 +33,7 @@ class Vect:
         return [self.x, self.y, self.d]
 
     def getBlockVect(self):
-        return Vect(self.x / BLOCK_SIZE, self.y / BLOCK_SIZE)
+        return Vect(self.x // BLOCK_SIZE, self.y // BLOCK_SIZE)
 
     def getRelativeVect(self):
         return Vect(self.x % BLOCK_SIZE, self.y % BLOCK_SIZE, self.d)
