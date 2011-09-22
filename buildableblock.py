@@ -35,6 +35,16 @@ class BuildableBlock(inf.DatabaseObject):
         self._model = CapitolModel(x=self._pos.x, y=self._pos.y, buildables=[])
         self.save()
 
+    def addBuildable(self, buildable):
+        self._model.buildables.extend(buildable.getList())
+
+    def delBuildable(self, pos):
+        p = pos.getList()
+        for i in xrange(0, len(self._model.buildables), 4):
+            if self._model.buildables[i:i+3] == p:
+                del self._model.buildables[i:i+4]
+                break
+
     def getId(self):
         """Construct a unique consistant identifier string for the Block."""
         return 'buildableblock_' + str(self._pos.x) + ',' + str(self._pos.y)

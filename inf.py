@@ -56,10 +56,13 @@ class Buildable:
     """
     pos = None
     level = None
+    block = None
 
-    def __init__(self, pos, level):
+    def __init__(self, pos, level, blockPos=None):
         self.pos = pos.copy()
         self.level = int(level)
+        if block:
+            self.block = block.copy()
 
     def copy(self):
         return copy.copy(self)
@@ -70,7 +73,7 @@ class Buildable:
 
 class BuildType:
     """Enum for building types."""
-    top, center, bottom = range(3)
+    topEdge, centerEdge, bottomEdge, topVertex, bottomVertex = range(5)
     settlement, city, road, ship = range(4)
 
 

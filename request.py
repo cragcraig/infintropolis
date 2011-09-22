@@ -35,6 +35,12 @@ class Handler(webapp.RequestHandler):
         """Delete a cookie from the client browser."""
         self.setCookie(key, '', timeout=-1)
 
+    def inForm(self, form, *args):
+        for i in args:
+            if i not in form:
+                return False
+        return True
+
     def redirect(self, url):
         """Redirect client browser."""
         self.response.set_status(303)

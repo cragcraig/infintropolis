@@ -1,6 +1,7 @@
 from google.appengine.ext import db
 
 import inf
+from capitol import Capitol
 
 
 class NationModel(db.Model):
@@ -33,18 +34,22 @@ class Nation(inf.DatabaseObject):
             if self.exists() and self._pwd != self._model.pwd:
                 self._model = None
 
-    def create(self, email=''):
+    def create(self, email):
         # TODO(craig): Should be an ancestor query to ensure consistancy.
         # TODO(craig): Atomic check&set to avoid race conditions.
         query = db.GqlQuery(self.getGQL())
         result = list(query.fetch(limit=1))
         if not len(result):
-            self._model = NationModel(name=self._name, pwd=self._pwd, email=email,
-                                      title='', points=0, capitols=0)
+            self._model = NationModel(name=self._name, pwd=self._pwd,
+                                      email=email, title='', points=0,
+                                      capitols=0)
             self.save()
 
-    def incrementCapitols(self):
+    def createNewCapitol(self, origBuildable):
+        c = Capitol(self._name, self._model.capitols, origBuildable,
+                    create=True)
         self._model.capitols += 1
+        return c
 
     def getCapitolCount(self):
         return int(self._model.capitols)

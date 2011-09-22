@@ -42,16 +42,27 @@ class Capitol(inf.DatabaseObject):
     def create(self, origBuildable):
         # TODO(craig): Should be an ancestor query to ensure consistancy.
         # TODO(craig): Atomic check&set to avoid race conditions.
-        pos = origBuildable.getBlockVect() 
         self._model = CapitolModel(nation=self._nation, number=self._number,
-                                   north=pos.y, west=pos.x, south=pos.y,
-                                   east=pos.x, lumber=0, wool=0, brick=0,
-                                   grain=0, ore=0, gold=0, buildables=[])
+                                   north=origBuildable.block.y,
+                                   west=origBuildable.block.x,
+                                   south=origBuildable.block.y,
+                                   east=origBuildable.block.x,
+                                   lumber=0, wool=0, brick=0, grain=0, ore=0,
+                                   gold=0, buildables=[])
         self.addBuildable(origBuildable)
         self.save()
 
     def addBuildable(self, buildable):
         self._model.buildables.extend(buildable.getList())
+        # Update capitol bounds.
+        if buildable.block.x > self._model.east:
+            self._model.east = buildable.block.x
+        if buildable.block.x < self._model.west:
+            self._model.west = buildable.block.x
+        if buildable.block.y > self._model.south:
+            self._model.south = buildable.block.y
+        if buildable.block.y < self._model.north:
+            self._model.north = buildable.block.y
 
     def delBuildable(self, pos):
         p = pos.getList()
