@@ -61,6 +61,13 @@ class SetBlock(request.Handler):
         self.response.out.write(block.getString())
 
 
+application = webapp.WSGIApplication(
+                                     [('/', Session),
+                                      ('/get/map.*', GetBlock),
+                                      ('/session.*', Session)],
+                                     debug=True)
+
+
 def main():
   run_wsgi_app(application)
 
