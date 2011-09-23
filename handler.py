@@ -3,6 +3,7 @@ import cgi
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
+import simplejson as json
 
 import request
 from session import Session
@@ -29,7 +30,9 @@ class GetBlock(request.Handler):
 
         # Retrieve MapBlock.
         block = MapBlock(Vect(form.getfirst('x'), form.getfirst('y')))
-        self.response.out.write(block.getString())
+        r = {'mapblock': block.getString()}
+        j = json.JSONEncoder().encode(r)
+        self.response.out.write(j)
 
 
 class SetBlock(request.Handler):

@@ -3,9 +3,9 @@ import random
 from google.appengine.ext import db
 from google.appengine.api import memcache
 
-import buildableblock
 import inf
 from inf import Vect, Tile, TileType
+from buildableblock import BuildableBlock
 
 # Probabilities for map generator.
 PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],

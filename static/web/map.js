@@ -42,7 +42,7 @@ var civLoader = [];
 /* MapBlock object constructor */
 function MapBlock()
 {
-	var o = {valid: false, gen: false, timer: null, req_count: 0, map: new Array(mapSizes), civs: new Array(mapSizes)};
+	var o = {valid: false, error: false, map: new Array(mapSizes), civs: new Array(mapSizes)};
 	
 	for (var j=0; j < mapSizes; j++) {
 		o.map[j] = new Array(mapSizes);
@@ -56,85 +56,63 @@ function initMap(w, h)
 {
 	for (var i=0; i < 4; i++) {
 		tileMap[i] = new MapBlock();
-
-		/* create XMLHttpRequests */
-		tileLoader[i] = new XMLHttpRequest();
-		tileLoader[i].onreadystatechange = loaderGen(tileCallback, i);
-		civLoader[i] = new XMLHttpRequest();
-		civLoader[i].onreadystatechange = loaderGen(civCallback, i);
 	}
 }
 
 function loaderGen(f, i)
 {
-	return function () {
-		f(i);
+	return function (json) {
+		f(i, json);
 	};
 }
 
-function loadTileAbort(i)
+function blockCallback(i, json)
 {
-	tileLoader[i].abort();
-	/* request map generation */
-	if (!tileMap[i].valid) requestMap(i, !tileMap[i].gen);
-	clearTimeout(tileMap[i].timer);
-	tileMap[i].timer = null;
+    /* json error */
+    var error = false;
+    if (json.error)
+        error = true;
+
+    /* parse data */
+    if (!error && json.mapblock)
+        error = parseMapBlock(i, json.mapblock);
+    if (!error && json.buildableblock)
+        error = parseBuildableBlock(i, json.buildableblock);
+
+    /* set map valid */
+    tileMap[i].valid = !error;
+    tileMap[i].error = error;
+    render();
 }
 
-function tileCallback(i)
+function parseMapBlock(i, str)
 {
-	/* disable timeout */
-	if (tileMap[i].timer != null && tileLoader[i].readyState == 4) {
-		clearTimeout(tileMap[i].timer);
-		tileMap[i].timer = null;
-	}
+    var error = false;
+    /* sanity length check */
+    var t = str.split(',');
+    if (t.length < mapSizes) {
+        error = true;
+        requestMap(i);
+    }
 
-	/* on tile data load */
-	if (tileLoader[i].readyState == 4) {
-		/* doesn't exist or failed */
-		if (tileLoader[i].status != 200) {
-			tileMap[i].valid = false;
-			/* generate map */
-			if (tileMap[i].gen == false) {
-				requestMap(i, true);
-			}
-			return;
-		}
-		
-		/* text error */
-		var error = false;
+    /* fill map */
+    var k = 0;
+    for (var l=0; l < mapSizes; l++) {
+        for (var j=0; j < mapSizes; j++) {
+            var r = t[k++].split(':');
+            tileMap[i].map[l][j] = {type: r[0], roll: r[1]};
+        }
+    }
 
-		/* success */
-		tileMap[i].gen = false;
-		var t = tileLoader[i].responseText.split(',');
-		if (t.length < mapSizes) {
-			error = true;
-			requestMap(i, false);
-		}
-
-		/* fill map */
-		var k = 0;
-		for (var l=0; l < mapSizes; l++) {
-			for (var j=0; j < mapSizes; j++) {
-				var r = t[k++].split(':');
-				tileMap[i].map[l][j] = {type: r[0], roll: r[1]};
-			}
-		}
-
-		/* set valid */
-		tileMap[i].valid = !error;
-		render();
-	}
+    return error;
 }
 
-function civCallback(i)
+function parseBuildableBlock(i, str)
 {
-	/* on civ data load */
-	if (civLoader[i].readyState == 4) {
-	}
+    
 }
 
-function requestMap(i, gen)
+function requestMap(i)
 {
 	if (mapX == Infinity || mapY == Infinity ||
         mapX == NaN || mapY == NaN) return;
@@ -144,25 +122,8 @@ function requestMap(i, gen)
 	var y = mapY + (i == 0 || i == 1 ? 0 : 1);
 	tileMap[i].valid = false;
 
-	/* request count */
-	if (tileMap[i].req_count++ > 4) return;
-
-	/* file */
-	if (typeof(gen) == 'undefined' || !gen) {
-		tileMap[i].gen = false;
-	} else {
-		/* script */
-		tileMap[i].gen = true;
-	}
 	/* XHR */
-	tileLoader[i].open("GET", "get/map?x="+x+"&y="+y, true);
-	tileLoader[i].setRequestHeader("Cache-Control", "no-cache");
-	tileLoader[i].setRequestHeader("Pragma", "no-cache");
-	tileLoader[i].send(null);
-	
-	/* timeout */
-	if (tileMap[i].timer != null) clearTimeout(tileMap[i].timer);
-	tileMap[i].timer = setTimeout(loaderGen(loadTileAbort, i), 10*1000);
+    RequestJSON("/get/map?x="+x+"&y="+y, loaderGen(blockCallback, i))
 }
 
 function goMap(worldX, worldY)
@@ -216,7 +177,7 @@ function goMap(worldX, worldY)
 	for (var i=0; i < 4; i++) {
 		if (!tileMap[i].valid) {
 			/* get map file */
-			requestMap(i, false);
+			requestMap(i);
 		}
 	}
 
@@ -532,7 +493,7 @@ function mouseScroll()
 	oldMouseY = pureMouseY;
 }
 
-// on change
+/* Selection change callbacks. */
 function onTileChange()
 {
 	if (globalState == 1) {
@@ -579,7 +540,7 @@ TileEdges[4] = {x: -TileWidth/2, y: 0};
 TileEdges[5] = {x: (TileVerts[5].x+TileVerts[0].x)/2, y: (TileVerts[5].y+TileVerts[0].y)/2};
 
 // load tiles
-var numTiles = 10;
+var numTilesImgs = 10;
 var tiles = [];
 var highlightedTile;
 var tokens = [];
@@ -668,7 +629,7 @@ function loading()
 	initMap();
 
 	// load tiles
-	for (i=0; i<numTiles; i++) {
+	for (i=0; i<numTilesImgs; i++) {
 		tiles[i] = loadImg('img/' + i + '.png');
 	}
 	highlightedTile = loadImg('img/high.png');
@@ -726,6 +687,7 @@ function init()
 
 	// inited
 	initd = true;
+    render();
 }
 
 // resize
@@ -1099,3 +1061,28 @@ function getEdge()
 	return v;
 }
 
+/* Launches an XMLHttpRequest and parses the returned JSON object. */
+function RequestJSON(url, callback)
+{
+    req = new XMLHttpRequest();
+    req.onreadystatechange = genRequestCallback(req, callback);
+	req.open("GET", url, true);
+	req.setRequestHeader("Cache-Control", "no-cache");
+	req.setRequestHeader("Pragma", "no-cache");
+	req.send(null);
+}
+
+/* Generates a JSON request callback. */
+function genRequestCallback(req, callback)
+{
+    return function () {
+        if (req.readyState == 4) {
+            if (req.status == 200) {
+                callback(JSON.parse(req.responseText));
+            } else {
+                callback({error: true});
+            }
+            delete req;
+        }
+    };
+}

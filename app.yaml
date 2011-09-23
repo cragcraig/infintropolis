@@ -3,6 +3,9 @@ version: 1
 runtime: python
 api_version: 1
 
+builtins:
+- appstats: on
+
 handlers:
 # Images and fonts.
 - url: /img/(.*\.(png|giff|jpg|woff|ttf))
@@ -12,6 +15,10 @@ handlers:
 # Static pages.
 - url: /static
   static_dir: static/web
+
+# Profiler.
+- url: /stats.*
+  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
 
 # Map interface.
 - url: /map
