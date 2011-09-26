@@ -32,6 +32,9 @@ class Vect:
     def getList(self):
         return [self.x, self.y, self.d]
 
+    def getListPos(self):
+        return self.x + BLOCK_SIZE * self.y
+
     def getBlockVect(self):
         return Vect(self.x // BLOCK_SIZE, self.y // BLOCK_SIZE)
 
@@ -90,14 +93,14 @@ class Tile:
         return copy.copy(self)
 
     def isWater(self):
-        return self.tiletype is not None and self.tiletype is TileType.water
+        return self.tiletype is not None and self.tiletype == TileType.water
 
     def isLand(self):
         return (self.tiletype is not None and
-                self.tiletype is not TileType.water)
+                self.tiletype != TileType.water)
 
     def isDesert(self):
-        return self.tiletype is TileType.desert
+        return self.tiletype == TileType.desert
 
     def isRollable(self):
         return self.isLand() and not self.isDesert()
@@ -115,9 +118,9 @@ class Tile:
 
     def _randResource(self):
         t = random.randint(2, 7)
-        if t is 7:
+        if t == 7:
             t = random.randint(1, 20)
-            if t is 1:
+            if t == 1:
                 t = 8
             elif t <= 4:
                 t = 9

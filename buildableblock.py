@@ -18,13 +18,13 @@ class BuildableBlock(inf.DatabaseObject):
     """A block of map tiles."""
     _pos = Vect(0,0)
 
-    def __init__(self, pos, create=False):
+    def __init__(self, pos, create_new=False):
         """Load BuildableModel from database.
 
         By default a new BuildableModel will not be generated.
         """
         self._pos = pos.copy() 
-        if create:
+        if create_new:
             self.create()
         else:
             self.load()
@@ -32,7 +32,8 @@ class BuildableBlock(inf.DatabaseObject):
     def create(self):
         # TODO(craig): Should be an ancestor query to ensure consistancy.
         # TODO(craig): Atomic check&set to avoid race conditions.
-        self._model = CapitolModel(x=self._pos.x, y=self._pos.y, buildables=[])
+        self._model = BuildableModel(x=self._pos.x, y=self._pos.y,
+                                     buildables=[])
         self.save()
 
     def addBuildable(self, buildable):

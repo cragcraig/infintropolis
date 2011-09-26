@@ -17,6 +17,7 @@ class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
     x = db.IntegerProperty(required=True)
     y = db.IntegerProperty(required=True)
+    isFullOfCapitols = db.BooleanProperty(required=True)
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
 
@@ -57,8 +58,8 @@ class MapBlock(inf.DatabaseObject):
                 self.generate(PROBABILITY_MAP)
                 # TODO(craig): Atomic check + set to avoid race conditions.
                 self.save()
-                self._buildableBlock = BuildableBlock(self._pos.x, self._pos.y,
-                                                      create=True)
+                self._buildableBlock = BuildableBlock(self._pos,
+                                                      create_new=True)
 
     def get(self, coord):
         """Get the tile at a specified coordinate."""
@@ -83,21 +84,31 @@ class MapBlock(inf.DatabaseObject):
 
     def generate(self, prob_map):
         """Randomly generate the MapBlock."""
-        self._model = BlockModel(x=self._pos.x, y=self._pos.y)
-        self._clear()
+        self._model = BlockModel(x=self._pos.x, y=self._pos.y,
+                                 isFullOfCapitols=False)
+        # create temporary variables to hold tiles
+        types = ((inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [TileType.water])
+        rolls = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
         surrounding = SurroundingMapBlocks(self._pos)
+        # map algorithm
         for t in xrange(len(prob_map)):
             i = inf.BLOCK_SIZE
             for j in xrange(inf.BLOCK_SIZE):
                 i -= 1
                 for k in xrange(j, i):
-                    self._generateTile(Vect(j, k), surrounding, prob_map[t])
+                    self._generateTile(Vect(j, k), types, rolls, surrounding,
+                                       prob_map[t])
                 for k in xrange(j, i):
-                    self._generateTile(Vect(k, i), surrounding, prob_map[t])
+                    self._generateTile(Vect(k, i), types, rolls, surrounding,
+                                       prob_map[t])
                 for k in xrange(i, j, -1):
-                    self._generateTile(Vect(i, k), surrounding, prob_map[t])
+                    self._generateTile(Vect(i, k), types, rolls, surrounding,
+                                       prob_map[t])
                 for k in xrange(i, j, -1):
-                    self._generateTile(Vect(k, j), surrounding, prob_map[t])
+                    self._generateTile(Vect(k, j), types, rolls, surrounding,
+                                       prob_map[t])
+        self._model.tiletype = types
+        self._model.roll = rolls
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
@@ -129,22 +140,22 @@ class MapBlock(inf.DatabaseObject):
         """Get the first tile in direction d from the given coord."""
         out.x = coord.x
         out.y = coord.y
-        if d is 1:
+        if d == 1:
             out.y -= 1
-        elif d is 4:
+        elif d == 4:
             out.y += 1
         else:
-            if d is 0 or d is 5:
+            if d == 0 or d == 5:
                 out.x += 1
-            elif d is 2 or d is 3:
+            elif d == 2 or d == 3:
                 out.x -= 1
-        if (not coord.x % 2) and (d is 0 or d is 2):
+        if (not coord.x % 2) and (d == 0 or d == 2):
             out.y -= 1
-        elif coord.x % 2 and (d is 3 or d is 5):
+        elif coord.x % 2 and (d == 3 or d == 5):
             out.y += 1
         return out
 
-    def _sumLand(self, coord, surrounding_blocks):
+    def _sumLand(self, coord, blockTypes, surrounding_blocks):
         """Sum the number of land tiles around the given tile coord."""
         # TODO(craig): Use list comprehensions instead for a speedup.
         sum = 0
@@ -154,7 +165,7 @@ class MapBlock(inf.DatabaseObject):
             self._getNeighbor(coord, i, n)
             if (n.x < inf.BLOCK_SIZE and n.x >= 0 and n.y < inf.BLOCK_SIZE and
                 n.y >= 0):
-                t = self.fastGetTileType(n.x, n.y)
+                t = blockTypes[n.getListPos()]
             elif (n.x < 0 and n.y < inf.BLOCK_SIZE and n.y >= 0 and
                   surrounding_blocks.west.exists()):
                 t = surrounding_blocks.west.fastGetTileType(
@@ -173,15 +184,18 @@ class MapBlock(inf.DatabaseObject):
                     n.x, n.y - inf.BLOCK_SIZE)
             else:
                 t = TileType.water
-            if t is not TileType.water:
+            if t != TileType.water:
                 sum += 1
         return sum
 
-    def _generateTile(self, coord, surrounding_blocks, probabilities):
+    def _generateTile(self, coord, blockTypes, blockRolls, surrounding_blocks,
+                      probabilities):
         """Generate a random tile, taking surrounding tiles into account."""
-        sum = self._sumLand(coord, surrounding_blocks)
-        t = self.get(coord)
+        sum = self._sumLand(coord, blockTypes, surrounding_blocks)
+        listPos = coord.getListPos()
+        t = Tile(blockTypes[listPos], blockRolls[listPos])
         # Land tile.
         if random.randint(1, 100) < probabilities[sum]:
             t.randomize()
-        self.set(coord, t)
+        blockTypes[listPos] = t.tiletype
+        blockRolls[listPos] = t.roll
