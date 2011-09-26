@@ -86,29 +86,20 @@ class MapBlock(inf.DatabaseObject):
         """Randomly generate the MapBlock."""
         self._model = BlockModel(x=self._pos.x, y=self._pos.y,
                                  isFullOfCapitols=False)
-        # create temporary variables to hold tiles
-        types = ((inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [TileType.water])
-        rolls = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
+        self._clear()
         surrounding = SurroundingMapBlocks(self._pos)
-        # map algorithm
         for t in xrange(len(prob_map)):
             i = inf.BLOCK_SIZE
             for j in xrange(inf.BLOCK_SIZE):
                 i -= 1
                 for k in xrange(j, i):
-                    self._generateTile(Vect(j, k), types, rolls, surrounding,
-                                       prob_map[t])
+                    self._generateTile(Vect(j, k), surrounding, prob_map[t])
                 for k in xrange(j, i):
-                    self._generateTile(Vect(k, i), types, rolls, surrounding,
-                                       prob_map[t])
+                    self._generateTile(Vect(k, i), surrounding, prob_map[t])
                 for k in xrange(i, j, -1):
-                    self._generateTile(Vect(i, k), types, rolls, surrounding,
-                                       prob_map[t])
+                    self._generateTile(Vect(i, k), surrounding, prob_map[t])
                 for k in xrange(i, j, -1):
-                    self._generateTile(Vect(k, j), types, rolls, surrounding,
-                                       prob_map[t])
-        self._model.tiletype = types
-        self._model.roll = rolls
+                    self._generateTile(Vect(k, j), surrounding, prob_map[t])
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
@@ -155,7 +146,7 @@ class MapBlock(inf.DatabaseObject):
             out.y += 1
         return out
 
-    def _sumLand(self, coord, blockTypes, surrounding_blocks):
+    def _sumLand(self, coord, surrounding_blocks):
         """Sum the number of land tiles around the given tile coord."""
         # TODO(craig): Use list comprehensions instead for a speedup.
         sum = 0
@@ -165,7 +156,7 @@ class MapBlock(inf.DatabaseObject):
             self._getNeighbor(coord, i, n)
             if (n.x < inf.BLOCK_SIZE and n.x >= 0 and n.y < inf.BLOCK_SIZE and
                 n.y >= 0):
-                t = blockTypes[n.getListPos()]
+                t = self.fastGetTileType(n.x, n.y)
             elif (n.x < 0 and n.y < inf.BLOCK_SIZE and n.y >= 0 and
                   surrounding_blocks.west.exists()):
                 t = surrounding_blocks.west.fastGetTileType(
@@ -184,18 +175,15 @@ class MapBlock(inf.DatabaseObject):
                     n.x, n.y - inf.BLOCK_SIZE)
             else:
                 t = TileType.water
-            if t != TileType.water:
+            if t is not TileType.water:
                 sum += 1
         return sum
 
-    def _generateTile(self, coord, blockTypes, blockRolls, surrounding_blocks,
-                      probabilities):
+    def _generateTile(self, coord, surrounding_blocks, probabilities):
         """Generate a random tile, taking surrounding tiles into account."""
-        sum = self._sumLand(coord, blockTypes, surrounding_blocks)
-        listPos = coord.getListPos()
-        t = Tile(blockTypes[listPos], blockRolls[listPos])
+        sum = self._sumLand(coord, surrounding_blocks)
+        t = self.get(coord)
         # Land tile.
         if random.randint(1, 100) < probabilities[sum]:
             t.randomize()
-        blockTypes[listPos] = t.tiletype
-        blockRolls[listPos] = t.roll
+        self.set(coord, t)
