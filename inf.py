@@ -60,10 +60,12 @@ class Buildable:
     pos = None
     level = None
     block = None
+    capitol = None
 
-    def __init__(self, pos, level, blockPos=None):
+    def __init__(self, pos, level, capitol=None, block=None):
         self.pos = pos.copy()
         self.level = int(level)
+        self.capitol = capitol
         if block:
             self.block = block.copy()
 
@@ -71,12 +73,18 @@ class Buildable:
         return copy.copy(self)
 
     def getList(self):
+        return self.getShortList().extend([self.capitol.getNation(),
+                                           self.capitol.getNumber()])
+
+    def getShortList(self):
         return self.pos.getList().append(self.level)
 
 
 class BuildType:
     """Enum for building types."""
     topEdge, centerEdge, bottomEdge, topVertex, bottomVertex = range(5)
+    dToJSON = ['t', 'c', 'b', 't', 'b']
+
     settlement, city, road, ship = range(4)
 
 

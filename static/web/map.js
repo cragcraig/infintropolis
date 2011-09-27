@@ -42,11 +42,10 @@ var civLoader = [];
 /* MapBlock object constructor */
 function MapBlock()
 {
-	var o = {valid: false, error: false, map: new Array(mapSizes), civs: new Array(mapSizes)};
+	var o = {valid: false, error: false, map: new Array(mapSizes), buildables: new Array()};
 	
 	for (var j=0; j < mapSizes; j++) {
 		o.map[j] = new Array(mapSizes);
-		o.civs[j] = new Array(mapSizes);
 	}
 
 	return o;
@@ -107,9 +106,9 @@ function parseMapBlock(i, str)
     return error;
 }
 
-function parseBuildableBlock(i, str)
+function parseBuildableBlock(i, list)
 {
-    
+    tileMap[i].buildables = list;
 }
 
 function requestMap(i)

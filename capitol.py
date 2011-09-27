@@ -4,6 +4,9 @@ import inf
 from inf import Buildable
 
 
+BUILDABLE_LIST_SIZE = 4
+
+
 class CapitolModel(db.Model):
     """A database model representing a Capitol."""
     nation = db.StringProperty(required=True)
@@ -53,7 +56,7 @@ class Capitol(inf.DatabaseObject):
         self.save()
 
     def addBuildable(self, buildable):
-        self._model.buildables.extend(buildable.getList())
+        self._model.buildables.extend(buildable.getShortList())
         # Update capitol bounds.
         if buildable.block.x > self._model.east:
             self._model.east = buildable.block.x
@@ -66,10 +69,16 @@ class Capitol(inf.DatabaseObject):
 
     def delBuildable(self, pos):
         p = pos.getList()
-        for i in xrange(0, len(self._model.buildables), 4):
+        for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):
             if self._model.buildables[i:i+3] == p:
-                del self._model.buildables[i:i+4]
+                del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
                 break
+
+    def getNation(self):
+        return self._name
+
+    def getNumber(self):
+        return self._number
 
     def getId(self):
         return 'capitol_' + str(self._pos.x) + "_" +\
