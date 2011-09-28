@@ -1,10 +1,10 @@
 from google.appengine.ext import db
 
 import inf
-from inf import Buildable
+from buildable import Buildable, BuildType
 
 
-BUILDABLE_LIST_SIZE = 4
+BUILDABLE_LIST_SIZE = 6
 
 
 class CapitolModel(db.Model):
@@ -29,34 +29,36 @@ class Capitol(inf.DatabaseObject):
     _nation = None
     _number = None
 
-    def __init__(self, nation='', number='', origBuildable=None, create=False):
+    def __init__(self, nation, number, origin=None, create=False):
         """Load CapitolModel from cache/database.
 
-        If create is set to True and origBuildable is supplied the capitol will
-        be added to the database.
+        If create is set to True and the origin Vect is supplied the capitol
+        will be added to the database.
         """
-        self._name = nation
+        self._nation = nation
         self._number = number
-        if create and origBuildable:
-            self.create(origBuildable)
+        assert not create or origin
+        if create and origin:
+            self.create(origin)
         elif not create:
             self.load()
 
-    def create(self, origBuildable):
+    def create(self, origin):
+        """Creates a new Capitol model.
+
+        You are responsible for saving the model.
+        """
         # TODO(craig): Should be an ancestor query to ensure consistancy.
         # TODO(craig): Atomic check&set to avoid race conditions.
         self._model = CapitolModel(nation=self._nation, number=self._number,
-                                   north=origBuildable.block.y,
-                                   west=origBuildable.block.x,
-                                   south=origBuildable.block.y,
-                                   east=origBuildable.block.x,
+                                   north=origin.y, west=origin.x,
+                                   south=origin.y, east=origin.x,
                                    lumber=0, wool=0, brick=0, grain=0, ore=0,
                                    gold=0, buildables=[])
-        self.addBuildable(origBuildable)
-        self.save()
 
     def addBuildable(self, buildable):
         self._model.buildables.extend(buildable.getList())
+        self._model.buildables.extend([buildable.block.x, buildable.block.y])
         # Update capitol bounds.
         if buildable.block.x > self._model.east:
             self._model.east = buildable.block.x

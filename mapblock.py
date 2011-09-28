@@ -54,7 +54,7 @@ class MapBlock(inf.DatabaseObject):
         """
         self._pos = pos.copy() 
         if load:
-            self.load(use_cached=True)
+            self.load()
             if not self._model and generate_nonexist:
                 self.generate(PROBABILITY_MAP)
                 # TODO(craig): Atomic check + set to avoid race conditions.
@@ -176,7 +176,7 @@ class MapBlock(inf.DatabaseObject):
                     n.x, n.y - inf.BLOCK_SIZE)
             else:
                 t = TileType.water
-            if t is not TileType.water:
+            if t != TileType.water:
                 sum += 1
         return sum
 

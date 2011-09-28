@@ -4,6 +4,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
+from buildable import BuildType
 from inf import Vect, Tile, TileType
 
 
@@ -44,10 +45,9 @@ class BuildableBlock(inf.DatabaseObject):
         self.save()
 
     def addBuildable(self, buildable):
-        nationIndex = self._getNationIndex(buildable.getCapitol().getNation())
-        number = buildable.getCapitol().getNumber()
+        nationIndex = self._getNationIndex(buildable.nationName)
         self._model.buildables.extend(buildable.getList())
-        self._model.buildables.extend([nationIndex, number])
+        self._model.buildables.extend([nationIndex, buildable.capitolNum])
 
     def delBuildable(self, pos):
         p = pos.getList()
@@ -61,8 +61,8 @@ class BuildableBlock(inf.DatabaseObject):
         """Construct a list of JSON Buildable representations."""
         return ['{x:' + str(int(self._model.buildables[i])) +\
                 ',y:' + str(int(self._model.buildables[i+1])) +\
-                ',d:' + inf.BuildType.dToJSON[self._model.buildables[i+2]] +\
-                ',t:' + str(int(self._model.buildables[i+3])) +\
+                ',d:' + BuildType.dToJSON[self._model.buildables[i+2]] +\
+                ',t:' + BuildType.tToJSON[self._model.buildables[i+3]] +\
                 ',n:' + self._model.nations[self._model.buildables[i+4]] +\
                 ',i:' + str(int(self._model.buildables[i+5])) + '}'\
                 for i in xrange(0, len(self._model.buildables),

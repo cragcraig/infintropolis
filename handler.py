@@ -7,7 +7,8 @@ import simplejson as json
 
 import request
 from session import Session
-from inf import Vect, Buildable, BuildType
+from inf import Vect
+from buildable import Buildable, BuildType
 from mapblock import MapBlock
 from nation import Nation
 from capitol import Capitol

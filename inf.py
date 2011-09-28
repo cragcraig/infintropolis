@@ -42,51 +42,6 @@ class Vect:
         return Vect(self.x % BLOCK_SIZE, self.y % BLOCK_SIZE, self.d)
 
 
-class Buildable:
-    """Represents an buildable game object.
-
-    Edge
-    d = {t, c, b}
-     t  /\ 
-    c  |  |
-     b  \/
-
-    Vertex
-    d = {t, b}
-     t ./\ 
-       |  |
-     b '\/
-    """
-    pos = None
-    level = None
-    block = None
-    capitol = None
-
-    def __init__(self, pos, level, capitol=None, block=None):
-        self.pos = pos.copy()
-        self.level = int(level)
-        self.capitol = capitol
-        if block:
-            self.block = block.copy()
-
-    def copy(self):
-        return copy.copy(self)
-
-    def getCapitol(self):
-        return self.capitol
-
-    def getList(self):
-        return self.pos.getList().append(self.level)
-
-
-class BuildType:
-    """Enum for building types."""
-    topEdge, centerEdge, bottomEdge, topVertex, bottomVertex = range(5)
-    dToJSON = ['t', 'c', 'b', 't', 'b']
-
-    settlement, city, road, ship = range(4)
-
-
 class Tile:
     """An individual resource tile."""
     tiletype = None
@@ -152,7 +107,7 @@ class DatabaseObject:
     _model = None
     _useCached = False
 
-    def load(self, use_cached=False):
+    def load(self, use_cached=True):
         """Load or reload Block from cache/database."""
         # Memcache.
         self._useCached = use_cached
@@ -175,7 +130,7 @@ class DatabaseObject:
                 self.cache()
             db.put(self._model)
 
-    def cache(self, timeout=15):
+    def cache(self, timeout=5):
         """Store Model state to cache."""
         if (self.exists()):
             memcache.set(self.getId(), self._model, time=60*timeout)
