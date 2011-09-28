@@ -15,6 +15,7 @@ class BuildableModel(db.Model):
     x = db.IntegerProperty(required=True)
     y = db.IntegerProperty(required=True)
     buildables = db.ListProperty(int, indexed=False)
+    nations = db.StringListProperty(indexed=False)
 
 
 class BuildableBlock(inf.DatabaseObject):
@@ -39,26 +40,44 @@ class BuildableBlock(inf.DatabaseObject):
         # TODO(craig): Should be an ancestor query to ensure consistancy.
         # TODO(craig): Atomic check&set to avoid race conditions.
         self._model = BuildableModel(x=self._pos.x, y=self._pos.y,
-                                     buildables=[])
+                                     buildables=[], nations=[])
         self.save()
 
     def addBuildable(self, buildable):
+        nationIndex = self._getNationIndex(buildable.getCapitol().getNation())
+        number = buildable.getCapitol().getNumber()
         self._model.buildables.extend(buildable.getList())
+        self._model.buildables.extend([nationIndex, number])
 
     def delBuildable(self, pos):
         p = pos.getList()
+        lp = len(p)
         for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):
-            if self._model.buildables[i:i+3] == p:
+            if self._model.buildables[i:i+lp] == p:
                 del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
                 break
 
-    def getBuildablesJSON(self):
-        """Construct a list of JSON string BuildableBlock representations."""
+    def getJSONList(self):
+        """Construct a list of JSON Buildable representations."""
         return ['{x:' + str(int(self._model.buildables[i])) +\
                 ',y:' + str(int(self._model.buildables[i+1])) +\
-                ',d:' + inf.BuildType.dToJSON[self._model.buildables[i+1]] +\
-                for i in xrange(0, len(self._model.buildables,
+                ',d:' + inf.BuildType.dToJSON[self._model.buildables[i+2]] +\
+                ',t:' + str(int(self._model.buildables[i+3])) +\
+                ',n:' + self._model.nations[self._model.buildables[i+4]] +\
+                ',i:' + str(int(self._model.buildables[i+5])) + '}'\
+                for i in xrange(0, len(self._model.buildables),
                                 BUILDABLE_LIST_SIZE)]
+
+    def _getNationIndex(self, nationName):
+        """Get the index of a nation in the model's nation list.
+
+        Adds the nation if it does not exist. It is up to you to save the
+        updated model to the database.
+        """
+        if nationName not in self._model.nations:
+            self._model.nations.append(nationName)
+        return self._model.nations.index(nationName)
+        
 
     def getId(self):
         """Construct a unique consistant identifier string for the Block."""

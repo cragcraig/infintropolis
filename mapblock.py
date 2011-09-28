@@ -118,7 +118,7 @@ class MapBlock(inf.DatabaseObject):
 
     def getBuildableBlock(self):
         if not self._buildableBlock:
-            self._buildableBlock = BuildableBlock(self._pos.x, self._pos.y)
+            self._buildableBlock = BuildableBlock(self._pos)
         return self._buildableBlock
 
     def _clear(self):

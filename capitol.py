@@ -56,7 +56,7 @@ class Capitol(inf.DatabaseObject):
         self.save()
 
     def addBuildable(self, buildable):
-        self._model.buildables.extend(buildable.getShortList())
+        self._model.buildables.extend(buildable.getList())
         # Update capitol bounds.
         if buildable.block.x > self._model.east:
             self._model.east = buildable.block.x
@@ -69,8 +69,9 @@ class Capitol(inf.DatabaseObject):
 
     def delBuildable(self, pos):
         p = pos.getList()
+        lp = len(p)
         for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):
-            if self._model.buildables[i:i+3] == p:
+            if self._model.buildables[i:i+lp] == p:
                 del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
                 break
 
@@ -81,8 +82,7 @@ class Capitol(inf.DatabaseObject):
         return self._number
 
     def getId(self):
-        return 'capitol_' + str(self._pos.x) + "_" +\
-               str(self._pos.y)
+        return 'capitol_' + self._nation + '_' + self._number
 
     def getGQL(self):
         return "SELECT * FROM CapitolModel " +\

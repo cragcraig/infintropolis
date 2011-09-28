@@ -72,11 +72,10 @@ class Buildable:
     def copy(self):
         return copy.copy(self)
 
-    def getList(self):
-        return self.getShortList().extend([self.capitol.getNation(),
-                                           self.capitol.getNumber()])
+    def getCapitol(self):
+        return self.capitol
 
-    def getShortList(self):
+    def getList(self):
         return self.pos.getList().append(self.level)
 
 

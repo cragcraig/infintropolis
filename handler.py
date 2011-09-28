@@ -31,7 +31,7 @@ class GetBlock(request.Handler):
         # Retrieve MapBlock.
         block = MapBlock(Vect(form.getfirst('x'), form.getfirst('y')))
         r = {'mapblock': block.getString(),
-             'buildableblock': block.getBuildableBlock().}
+             'buildableblock': block.getBuildableBlock().getJSONList()}
         j = json.JSONEncoder().encode(r)
         self.response.out.write(j)
 
