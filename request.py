@@ -1,5 +1,6 @@
 import cgi
 import string
+import simplejson as json
 
 from google.appengine.ext import webapp
 
@@ -36,6 +37,7 @@ class Handler(webapp.RequestHandler):
         self.setCookie(key, '', timeout=-1)
 
     def inForm(self, form, *args):
+        """Returns True if all strings passed exist in form."""
         for i in args:
             if i not in form:
                 return False
@@ -49,18 +51,27 @@ class Handler(webapp.RequestHandler):
                                 (url, url))
 
     def redirectToLogin(self):
+        """Redirect the client browser to the login page."""
         self.redirect('/static/login.htm')
 
     def redirectToMap(self):
+        """Redirect the client browser to the main game page."""
         self.redirect('/map')
 
     def loadNation(self):
+        """Load the nation the client is logged in as."""
         n = Nation(self.getCookie('nation'), self.getCookie('pwd'))
         if n.exists():
             self._nation = n
             return True
         else:
             return False
+
+    def writeJSON(self, obj):
+        """Write a Python object out as a JSON string."""
+        self.response.headers['Content-Type'] = 'text/plain'
+        j = json.JSONEncoder().encode(obj)
+        self.response.out.write(j)
 
     def getNation(self):
         return self._nation

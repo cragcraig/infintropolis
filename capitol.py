@@ -78,13 +78,13 @@ class Capitol(inf.DatabaseObject):
                 break
 
     def getNation(self):
-        return self._name
+        return self._nation
 
     def getNumber(self):
         return self._number
 
     def getColors(self):
-        return [self._model.color1, self._model.color2]
+        return [int(self._model.color1), int(self._model.color2)]
 
     def getId(self):
         return 'capitol_' + self._nation + '_' + self._number

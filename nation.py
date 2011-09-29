@@ -56,8 +56,7 @@ class Nation(inf.DatabaseObject):
                                       capitols=0, color1=color1, color2=color2)
             capitol = self.createNewCapitol(origin)
             # create original settlement
-            build = Buildable(Vect(25, 25), BuildType.settlement, self._name, 0,
-                          origin)
+            build = Buildable(Vect(25, 25), BuildType.settlement)
             mapblock = MapBlock(origin)
             build.build(capitol, mapblock.getBuildableBlock())
             self.save()
@@ -77,6 +76,9 @@ class Nation(inf.DatabaseObject):
     def getCapitolCount(self):
         """Return the current number of capitols under this nation."""
         return int(self._model.capitols)
+
+    def getName(self):
+        return self._name
 
     def getId(self):
         return 'nation_' + self._name

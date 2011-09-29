@@ -49,7 +49,7 @@ class BuildableBlock(inf.DatabaseObject):
         assert len(colors) == 2
         self._model.buildables.extend(buildable.getList())
         self._model.buildables.extend(colors)
-        self._model.buildables.extend([nationIndex, buildable.capitolNum])
+        self._model.buildables.extend([int(nationIndex), int(buildable.capitolNum)])
 
     def delBuildable(self, pos):
         p = pos.getList()
@@ -58,6 +58,9 @@ class BuildableBlock(inf.DatabaseObject):
             if self._model.buildables[i:i+lp] == p:
                 del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
                 break
+
+    def getPos(self):
+        return self._pos
 
     def getJSONList(self):
         """Construct a list of dictionary representations of buildables."""

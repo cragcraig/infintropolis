@@ -8,6 +8,9 @@ from google.appengine.api import memcache
 # Block size.
 BLOCK_SIZE = 50
 
+def validBlockCoord(coord):
+    return 0 <= coord.x < BLOCK_SIZE and 0 <= coord.y < BLOCK_SIZE
+
 
 class Vect:
     """Vector containing an (x,y[,d]) coordinate."""
@@ -126,9 +129,9 @@ class DatabaseObject:
     def save(self):
         """Store MapBlock state to database."""
         if (self.exists()):
+            db.put(self._model)
             if self._useCached:
                 self.cache()
-            db.put(self._model)
 
     def cache(self, timeout=5):
         """Store Model state to cache."""

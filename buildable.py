@@ -22,15 +22,15 @@ class Buildable:
     nationName = None
     capitolNum = None
 
-    def __init__(self, pos, level, nationName, capitolNum, blockVect):
+    def __init__(self, pos, level):
         self.pos = pos.copy()
         self.level = int(level)
-        self.nationName = nationName
-        self.capitolNum = capitolNum
-        self.block = blockVect.copy()
 
     def build(self, capitol, buildableblock):
         """Adds this buildable in all necessary database models."""
+        self.nationName = capitol.getNation()
+        self.capitolNum = capitol.getNumber()
+        self.block = buildableblock.getPos().copy()
         capitol.addBuildable(self)
         buildableblock.addBuildable(self, capitol.getColors())
 

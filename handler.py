@@ -3,13 +3,14 @@ import cgi
 
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
-import simplejson as json
 
 import request
+import inf
 from session import Session
 from inf import Vect
 from buildable import Buildable, BuildType
 from mapblock import MapBlock
+from buildableblock import BuildableBlock
 from nation import Nation
 from capitol import Capitol
 
@@ -18,8 +19,6 @@ class GetBlock(request.Handler):
 
     def get(self):
         """Return requested data."""
-        self.response.headers['Content-Type'] = 'text/plain'
-
         # Check user.
         if not self.loadNation():
             return
@@ -33,42 +32,54 @@ class GetBlock(request.Handler):
         block = MapBlock(Vect(form.getfirst('x'), form.getfirst('y')))
         r = {'mapblock': block.getString(),
              'buildableblock': block.getBuildableBlock().getJSONList()}
-        j = json.JSONEncoder().encode(r)
-        self.response.out.write(j)
+        self.writeJSON(r)
 
 
-class SetBlock(request.Handler):
-    """Handle set requests."""
+class Build(request.Handler):
+    """Handle build requests."""
 
     def get(self):
-        """Return requested data."""
-        self.response.headers['Content-Type'] = 'text/plain'
-
+        """Build building and return updated BuildableBlock."""
         # Check user.
         if not self.loadNation():
             return
 
-        # Check coordinates.
+        # Check arguments.
         form = cgi.FieldStorage()
-        if not self.inForm(form, 'set'):
-            return
-        setType = form.getfirst('set')
-
-        # Do Set.
-        if setType == 'buildable':
-            # TODO(craig): Build new buildable.
-            return
-        elif setType == 'capitol':
-            # TODO(craig): Create new capitol.
+        if not self.inForm(form, 'type', 'capitol', 'x', 'y', 'd',
+                           'blockx', 'blocky'):
             return
 
-        # TODO(craig): Return updated map and buildable data.
-        self.response.out.write(block.getString())
+        # Construct parameters.
+        pos = Vect(form.getfirst('x'), form.getfirst('y'),
+                   BuildType.dToJSON.index(form.getfirst('d')))
+        buildtype = BuildType.tToJSON.index(form.getfirst('type'))
+        blockVect = Vect(form.getfirst('blockx'), form.getfirst('blocky'))
+        if not inf.validBlockCoord(pos):
+            return
+        # Load from database.
+        nationName = self.getNation().getName()
+        capitol = Capitol(self.getNation().getName(), form.getfirst('capitol'))
+        buildableblock = BuildableBlock(blockVect)
+        if not capitol or not buildableblock:
+            return
+
+        # Build.
+        build = Buildable(pos, buildtype)
+        build.build(capitol, buildableblock)
+        print buildableblock._model._buildables
+        capitol.save()
+        buildableblock.save()
+
+        # Return updated BuildableBlock.
+        r = {'buildableblock': buildableblock.getJSONList()}
+        self.writeJSON(r)
 
 
 application = webapp.WSGIApplication(
                                      [('/', Session),
                                       ('/get/map.*', GetBlock),
+                                      ('/set/build.*', Build),
                                       ('/session.*', Session)],
                                      debug=True)
 
