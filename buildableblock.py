@@ -8,7 +8,7 @@ from buildable import BuildType
 from inf import Vect, Tile, TileType
 
 
-BUILDABLE_LIST_SIZE = 6
+BUILDABLE_LIST_SIZE = 8
 
 
 class BuildableModel(db.Model):
@@ -44,9 +44,11 @@ class BuildableBlock(inf.DatabaseObject):
                                      buildables=[], nations=[])
         self.save()
 
-    def addBuildable(self, buildable):
+    def addBuildable(self, buildable, colors):
         nationIndex = self._getNationIndex(buildable.nationName)
+        assert len(colors) == 2
         self._model.buildables.extend(buildable.getList())
+        self._model.buildables.extend(colors)
         self._model.buildables.extend([nationIndex, buildable.capitolNum])
 
     def delBuildable(self, pos):
@@ -58,13 +60,15 @@ class BuildableBlock(inf.DatabaseObject):
                 break
 
     def getJSONList(self):
-        """Construct a list of JSON Buildable representations."""
-        return ['{x:' + str(int(self._model.buildables[i])) +\
-                ',y:' + str(int(self._model.buildables[i+1])) +\
-                ',d:' + BuildType.dToJSON[self._model.buildables[i+2]] +\
-                ',t:' + BuildType.tToJSON[self._model.buildables[i+3]] +\
-                ',n:' + self._model.nations[self._model.buildables[i+4]] +\
-                ',i:' + str(int(self._model.buildables[i+5])) + '}'\
+        """Construct a list of dictionary representations of buildables."""
+        return [{'x': int(self._model.buildables[i]),
+                 'y': int(self._model.buildables[i+1]),
+                 'd': BuildType.dToJSON[self._model.buildables[i+2]],
+                 't': BuildType.tToJSON[self._model.buildables[i+3]],
+                 'c1': self._int2hexcolor(self._model.buildables[i+4]),
+                 'c2': self._int2hexcolor(self._model.buildables[i+5]),
+                 'n': self._model.nations[self._model.buildables[i+6]],
+                 'i': int(self._model.buildables[i+7])}
                 for i in xrange(0, len(self._model.buildables),
                                 BUILDABLE_LIST_SIZE)]
 
@@ -77,7 +81,9 @@ class BuildableBlock(inf.DatabaseObject):
         if nationName not in self._model.nations:
             self._model.nations.append(nationName)
         return self._model.nations.index(nationName)
-        
+
+    def _int2hexcolor(self, color):
+        return "%06x" % color
 
     def getId(self):
         """Construct a unique consistant identifier string for the Block."""

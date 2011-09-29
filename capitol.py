@@ -21,6 +21,8 @@ class CapitolModel(db.Model):
     grain = db.IntegerProperty(required=True)
     ore = db.IntegerProperty(required=True)
     gold = db.IntegerProperty(required=True)
+    color1 = db.IntegerProperty(required=True)
+    color2 = db.IntegerProperty(required=True)
     buildables = db.ListProperty(int, indexed=False)
 
 
@@ -29,7 +31,7 @@ class Capitol(inf.DatabaseObject):
     _nation = None
     _number = None
 
-    def __init__(self, nation, number, origin=None, create=False):
+    def __init__(self, nation, number, origin=None, load=True):
         """Load CapitolModel from cache/database.
 
         If create is set to True and the origin Vect is supplied the capitol
@@ -37,13 +39,10 @@ class Capitol(inf.DatabaseObject):
         """
         self._nation = nation
         self._number = number
-        assert not create or origin
-        if create and origin:
-            self.create(origin)
-        elif not create:
+        if load:
             self.load()
 
-    def create(self, origin):
+    def create(self, origin, color1, color2):
         """Creates a new Capitol model.
 
         You are responsible for saving the model.
@@ -54,7 +53,8 @@ class Capitol(inf.DatabaseObject):
                                    north=origin.y, west=origin.x,
                                    south=origin.y, east=origin.x,
                                    lumber=0, wool=0, brick=0, grain=0, ore=0,
-                                   gold=0, buildables=[])
+                                   gold=0, color1=color1, color2=color2,
+                                   buildables=[])
 
     def addBuildable(self, buildable):
         self._model.buildables.extend(buildable.getList())
@@ -82,6 +82,9 @@ class Capitol(inf.DatabaseObject):
 
     def getNumber(self):
         return self._number
+
+    def getColors(self):
+        return [self._model.color1, self._model.color2]
 
     def getId(self):
         return 'capitol_' + self._nation + '_' + self._number

@@ -715,6 +715,7 @@ function render()
 	if (!initd) return;
 
 	renderTiles();
+	renderBuildables();
 
 	switch (globalState) {
 		case 0:
@@ -742,10 +743,8 @@ function render()
 		break;
 	}
 
-	renderObjects();
-
     if (!isAllMapsLoaded())
-        drawLoadingMap();
+        drawLoadingMapText();
 }
 
 // Check if pending map requests.
@@ -760,7 +759,7 @@ function isAllMapsLoaded()
 }
 
 // Draw "Map Loading" text.
-function drawLoadingMap()
+function drawLoadingMapText()
 {
 	ctx.font = "18pt serif";
 	ctx.fillStyle = "#fff";
@@ -776,11 +775,6 @@ function drawLoadingMap()
 function drawHighlightTile(x, y)
 {
 	ctx.drawImage(highlightedTile, outputx(x,y) - TileWidth/2, outputy(x,y) - TileHeight/2);
-}
-
-// render string
-function renderObjects()
-{
 }
 
 // render vertex
@@ -800,8 +794,8 @@ function drawVertex(v)
 	}
 
 	// draw
-	ctx.fillStyle = "#03d";
-	ctx.strokeStyle = "#00a"
+	ctx.fillStyle = "#" + v.c2;
+	ctx.strokeStyle = "#" + v.c1;
 	ctx.lineWidth = 3.0;
 	ctx.beginPath();
 	ctx.moveTo(px+10, py+10);
@@ -854,15 +848,15 @@ function drawEdge(e)
 	ctx.moveTo(dx1, dy1);
 	ctx.lineTo(dx2, dy2);
 	ctx.closePath();
-	ctx.strokeStyle = "#00a";
+	ctx.strokeStyle = "#" + e.c1;
 	ctx.lineWidth = 8.0;
 	ctx.stroke();
-	ctx.strokeStyle = "#03d";
+	ctx.strokeStyle = "#" + e.c2;
 	ctx.lineWidth = 4.0;
 	ctx.stroke();
 }
 
-// render world
+// render world background
 function renderTiles()
 {
 	if (!ctx) return;
@@ -871,7 +865,7 @@ function renderTiles()
 	ctx.fillStyle = "#e9d16c";
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	// draw
+	// draw tiles
 	for (i=-1; i<screenWidth+2; i++) {
 		for (j=-2; j<screenHeight+2; j++) {
 			drawTile(getTile(i+screenX, j+screenY), i, j);
@@ -879,26 +873,27 @@ function renderTiles()
 	}
 }
 
-// add objects
-function addObj(objstr)
+// render buildables
+function renderBuildables()
 {
-	worldObj.push(objstr);
+	// draw buildables
+    var drawable = {x: 0, y: 0, d: 'b', c1: "000000", c2: "000000"};
+	for (i=0; i<tileMap.length; i++) {
+        if (!tileMap[i].valid) continue;
+        for (j=0; j<tileMap[i].buildables.length; j++) {
+            var build = tileMap[i].buildables[j];
+            drawable.x = build.x - screenX + (i == 0 || i == 2 ? 0 : mapSizes);
+            drawable.y = build.y - screenY + (i == 0 || i == 1 ? 0 : mapSizes);
+            drawable.d = build.d;
+            drawable.t = build.t;
+            drawable.c1 = build.c1;
+            drawable.c2 = build.c2;
+            drawBuildable(drawable);
+        }
+    }
 }
 
-// coordinate calculations
-function outputy(x,y)
-{
-	return Math.floor(y*TileOffset) - Math.floor(screenOffsetY);
-}
-
-function outputx(x,y)
-{
-	return Math.floor(x*(TileWidth) + (y%2 ? TileWidth/2 : 0)) - Math.floor(screenOffsetX);
-}
-
-// draw tile
-var tileColors = ['#d00', '#d00', '#fff', '#aebacf', '#98accf', '#7a99cf', '#507ecf', '#d00', '#507ecf', '#7a99cf', '#98accf', '#aebacf', '#fff']
-
+// Draw a tile
 function drawTile(tile, x, y)
 {
 	if (tile == undefined) return;
@@ -920,8 +915,31 @@ function drawTile(tile, x, y)
 		
 }
 
-// coordinate functions
+// Draw a buildable
+function drawBuildable(buildable)
+{
+    if (buildable == undefined) return;
 
+    // Check visibility.
+    if (buildable.t == 'r' || buildable.t == 'b') {
+        drawEdge(buildable)
+    } else {
+        drawVertex(buildable)
+    }
+}
+
+// coordinate calculations
+function outputy(x,y)
+{
+	return Math.floor(y*TileOffset) - Math.floor(screenOffsetY);
+}
+
+function outputx(x,y)
+{
+	return Math.floor(x*(TileWidth) + (y%2 ? TileWidth/2 : 0)) - Math.floor(screenOffsetX);
+}
+
+// determine which tile a pixel coordinate is within
 function getTileCoord(x, y)
 {
 	var tx;
@@ -958,7 +976,7 @@ function getTileCoord(x, y)
 		}
 	}
 
-	return {x : tx, y : ty};
+	return {x: tx, y: ty};
 }
 
 // determine vertex mouseover
@@ -1060,7 +1078,13 @@ function getEdge()
 	return v;
 }
 
-/* Launches an XMLHttpRequest and parses the returned JSON object. */
+/* Launches an XMLHttpRequest.
+ *
+ * Expects a JSON formated string response. The JSON string will be parsed and
+ * the callback function will be passed an instance of the object. If the
+ * request is not successful the passed object will contain a single member
+ * variable 'error' which will be set to true.
+ */
 function RequestJSON(url, callback)
 {
     req = new XMLHttpRequest();
@@ -1071,7 +1095,10 @@ function RequestJSON(url, callback)
 	req.send(null);
 }
 
-/* Generates a JSON request callback. */
+/* Generates a JSON request callback.
+ *
+ * For the internal use of RequestJSON() only.
+ */
 function genRequestCallback(req, callback)
 {
     return function () {

@@ -11,10 +11,12 @@ class NationModel(db.Model):
     """A database model representing a Nation."""
     name = db.StringProperty(required=True)
     pwd = db.StringProperty(required=True)
-    email = db.StringProperty(required=False)
-    title = db.StringProperty(required=False)
-    points = db.IntegerProperty(required=True)
-    capitols = db.IntegerProperty(required=True)
+    email = db.StringProperty(indexed=False)
+    title = db.StringProperty(indexed=False)
+    points = db.IntegerProperty(required=True, indexed=False)
+    capitols = db.IntegerProperty(required=True, indexed=False)
+    color1 = db.IntegerProperty(required=True, indexed=False)
+    color2 = db.IntegerProperty(required=True, indexed=False)
 
 
 class Nation(inf.DatabaseObject):
@@ -23,7 +25,8 @@ class Nation(inf.DatabaseObject):
     _name = None
     _pwd = None
 
-    def __init__(self, name='', pwd='', create=False, email=''):
+    def __init__(self, name='', pwd='', email='', color1=0, color2=0,
+                 create=False):
         """Load NationModel from cache/database.
 
         If create is set to True the nation will be added to the database.
@@ -31,13 +34,13 @@ class Nation(inf.DatabaseObject):
         self._name = name
         self._pwd = pwd
         if create:
-            self.create(email)
+            self.create(email, color1, color2)
         else:
             self.load()
             if self.exists() and self._pwd != self._model.pwd:
                 self._model = None
 
-    def create(self, email):
+    def create(self, email, color1, color2):
         """Creates a new nation.
 
         This includes creating an original capitol and settlement.
@@ -50,10 +53,10 @@ class Nation(inf.DatabaseObject):
             origin = Vect(0, 0)
             self._model = NationModel(name=self._name, pwd=self._pwd,
                                       email=email, title='', points=0,
-                                      capitols=0)
+                                      capitols=0, color1=color1, color2=color2)
             capitol = self.createNewCapitol(origin)
             # create original settlement
-            build = Buildable(Vect(5, 5), BuildType.settlement, self._name, 0,
+            build = Buildable(Vect(25, 25), BuildType.settlement, self._name, 0,
                           origin)
             mapblock = MapBlock(origin)
             build.build(capitol, mapblock.getBuildableBlock())
@@ -66,8 +69,8 @@ class Nation(inf.DatabaseObject):
 
         You are responsible for saving the updated nation and capitol models.
         """
-        c = Capitol(self._name, self._model.capitols, originBlock,
-                    create=True)
+        c = Capitol(self._name, self._model.capitols, load=False)
+        c.create(originBlock, self._model.color1, self._model.color2)
         self._model.capitols += 1
         return c
 

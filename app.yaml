@@ -8,9 +8,9 @@ builtins:
 
 handlers:
 # Images and fonts.
-- url: /img/(.*\.(png|giff|jpg|woff|ttf))
+- url: /img/(.*\.(png|gif|jpg|woff|ttf))
   static_files: static/img/\1
-  upload: static/img/(.*\.(png|giff|jpg|woff|ttf))
+  upload: static/img/(.*\.(png|gif|jpg|woff|ttf))
 
 # Static pages.
 - url: /static

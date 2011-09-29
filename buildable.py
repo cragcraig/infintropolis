@@ -32,7 +32,7 @@ class Buildable:
     def build(self, capitol, buildableblock):
         """Adds this buildable in all necessary database models."""
         capitol.addBuildable(self)
-        buildableblock.addBuildable(self)
+        buildableblock.addBuildable(self, capitol.getColors())
 
     def copy(self):
         return copy.copy(self)

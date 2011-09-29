@@ -33,7 +33,8 @@ class Session(request.Handler):
             # Create.
             elif action == 'create':
                 self.create(form.getfirst('nation'), form.getfirst('pwd'),
-                            form.getfirst('confirm'), form.getfirst('email'))
+                            form.getfirst('confirm'), form.getfirst('email'),
+                            form.getfirst('color1'), form.getfirst('color2'))
             else:
                 self.redirectToLogin()
         # Already logged in, go to map.
@@ -64,7 +65,7 @@ class Session(request.Handler):
         self.deleteCookie('nation')
         self.deleteCookie('pwd')
 
-    def create(self, nation, password, confirm, email):
+    def create(self, nation, password, confirm, email, color1, color2):
         """Create a new nation."""
         error = None
         # Check fields.
@@ -78,9 +79,16 @@ class Session(request.Handler):
         elif password != confirm:
             error = 'Passwords do not match.'
         elif not re.match("\w+@\w+\.\w{2,32}", email):
-            error = 'Bad email address'
+            error = 'Bad email address.'
+        elif not re.match("[\da-fA-F]{6}", color1) or\
+             not re.match("[\da-fA-F]{6}", color2):
+            error = 'Bad color format (should be 6 digit hex).'
+        elif color1 == color2:
+            error = 'Colors cannot be the same.'
         else:
-            n = Nation(nation, self.hashStr(password), email=email, create=True)
+            n = Nation(nation, self.hashStr(password), email=email,
+                       color1=int(color1, 16), color2=int(color2, 16),
+                       create=True)
             if not n.exists():
                 error = 'Nation already exists.'
         # Login.
