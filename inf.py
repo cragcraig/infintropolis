@@ -32,6 +32,9 @@ class Vect:
     def copy(self):
         return copy.copy(self)
 
+    def getBlockJSONId(self):
+        return str(self.x) + '_' + str(self.y)
+
     def getList(self):
         return [self.x, self.y, self.d]
 

@@ -14,6 +14,7 @@ from buildableblock import BuildableBlock
 from nation import Nation
 from capitol import Capitol
 
+
 class GetBlock(request.Handler):
     """Handle MapBlock requests."""
 
@@ -25,14 +26,34 @@ class GetBlock(request.Handler):
 
         # Check coordinates.
         form = cgi.FieldStorage()
-        if not self.inForm(form, 'x', 'y'):
+        if not self.inForm(form, 'bx', 'by'):
             return
 
         # Retrieve MapBlock.
-        block = MapBlock(Vect(form.getfirst('x'), form.getfirst('y')))
+        block = MapBlock(Vect(form.getfirst('bx'), form.getfirst('by')))
         r = {'mapblock': block.getString(),
              'buildableblock': block.getBuildableBlock().getJSONList()}
-        self.writeJSON(r)
+        self.writeJSON({block.getPos().getBlockJSONId(): r})
+
+
+class GetBuildableBlock(request.Handler):
+    """Handle BuildableBlock requests."""
+
+    def get(self):
+        """Return BuildableBlock data."""
+        # Check user.
+        if not self.loadNation():
+            return
+
+        # Check coordinates.
+        form = cgi.FieldStorage()
+        if not self.inForm(form, 'bx', 'by'):
+            return
+
+        # Retrieve MapBlock.
+        block = BuildableBlock(Vect(form.getfirst('bx'), form.getfirst('by')))
+        r = {'buildableblock': block.getJSONList()}
+        self.writeJSON({block.getPos().getBlockJSONId(): r})
 
 
 class Build(request.Handler):
@@ -47,14 +68,14 @@ class Build(request.Handler):
         # Check arguments.
         form = cgi.FieldStorage()
         if not self.inForm(form, 'type', 'capitol', 'x', 'y', 'd',
-                           'blockx', 'blocky'):
+                           'bx', 'by'):
             return
 
         # Construct parameters.
         pos = Vect(form.getfirst('x'), form.getfirst('y'),
                    BuildType.dToJSON.index(form.getfirst('d')))
         buildtype = BuildType.tToJSON.index(form.getfirst('type'))
-        blockVect = Vect(form.getfirst('blockx'), form.getfirst('blocky'))
+        blockVect = Vect(form.getfirst('bx'), form.getfirst('by'))
         if not inf.validBlockCoord(pos):
             return
         # Load from database.
@@ -67,18 +88,18 @@ class Build(request.Handler):
         # Build.
         build = Buildable(pos, buildtype)
         build.build(capitol, buildableblock)
-        print buildableblock._model._buildables
         capitol.save()
         buildableblock.save()
 
         # Return updated BuildableBlock.
         r = {'buildableblock': buildableblock.getJSONList()}
-        self.writeJSON(r)
+        self.writeJSON({buildableblock.getPos().getBlockJSONId(): r})
 
 
 application = webapp.WSGIApplication(
                                      [('/', Session),
                                       ('/get/map.*', GetBlock),
+                                      ('/get/build.*', GetBuildableBlock),
                                       ('/set/build.*', Build),
                                       ('/session.*', Session)],
                                      debug=True)

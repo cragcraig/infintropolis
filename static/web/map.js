@@ -26,6 +26,7 @@ var screenHeight;
 
 // state
 var globalState = 3;
+var globalBuildState = false;
 var selectedTile;
 var selectedEdge;
 var selectedVertex;
@@ -42,7 +43,7 @@ var civLoader = [];
 /* MapBlock object constructor */
 function MapBlock()
 {
-	var o = {valid: false, error: false, map: new Array(mapSizes), buildables: new Array()};
+	var o = {valid: false, map: new Array(mapSizes), buildables: new Array()};
 	
 	for (var j=0; j < mapSizes; j++) {
 		o.map[j] = new Array(mapSizes);
@@ -65,22 +66,41 @@ function loaderGen(f, i)
 	};
 }
 
-function blockCallback(i, json)
+function getWorldPos(i)
+{
+    var r = {x: mapX, y: mapY};
+    r.x += (i == 0 || i == 2 ? 0 : 1);
+    r.y += (i == 0 || i == 1 ? 0 : 1);
+    return r;
+}
+
+function JSONCallback(json)
 {
     /* json error */
     var error = false;
-    if (json.error)
+    if (json.error) {
         error = true;
+    } else {
 
-    /* parse data */
-    if (!error && json.mapblock)
-        error = parseMapBlock(i, json.mapblock);
-    if (!error && json.buildableblock)
-        error = parseBuildableBlock(i, json.buildableblock);
+        /* parse block data */
+        for (i=0; i<tileMap.length; i++) {
+            var pos = getWorldPos(i);
+            var id = pos.x + '_' + pos.y;
+            if (json[id]) {
+                /* map data */
+                if (json[id].mapblock) {
+                    error = parseMapBlock(i, json[id].mapblock);
+                    tileMap[i].valid = true;
+                }
+                /* buildable data */
+                if (json[id].buildableblock) {
+                    error = parseBuildableBlock(i, json[id].buildableblock);
+                }
+            }
+        }
 
-    /* set map valid */
-    tileMap[i].valid = !error;
-    tileMap[i].error = error;
+        /* parse capitol and nation data */
+    }
     render();
 }
 
@@ -122,7 +142,7 @@ function requestMap(i)
 	tileMap[i].valid = false;
 
 	/* XHR */
-    RequestJSON("/get/map?x="+x+"&y="+y, loaderGen(blockCallback, i))
+    RequestJSON("/get/map?bx="+x+"&by="+y, JSONCallback)
 }
 
 function goMap(worldX, worldY)
@@ -441,6 +461,12 @@ function initMouseScroll()
 function mouseCallback()
 {
 	if (mouseScrollTimer != null) return;
+
+    /* UI click */
+    if (UIHandleClick(pureMouseX, pureMouseY))
+        return;
+
+    /* start mouse scroll */
 	mouseScrollTimer = setInterval(mouseScroll, dragDelay);
 
 	oldMouseX = pureMouseX;
@@ -629,17 +655,26 @@ function loading()
 
 	// load tiles
 	for (i=0; i<numTilesImgs; i++) {
-		tiles[i] = loadImg('img/' + i + '.png');
+		tiles[i] = loadImg('/img/' + i + '.png');
 	}
-	highlightedTile = loadImg('img/high.png');
+	highlightedTile = loadImg('/img/high.png');
 	// load tokens
 	for (i=0; i<11; i++) {
-		tokens[i] = loadImg('img/tokens/' + (i+2) + '.png');
+		tokens[i] = loadImg('/img/tokens/' + (i+2) + '.png');
 	}
 	for (i=0; i<1; i++) {
-		specialTokens[i] = loadImg('img/tokens/s' + i + '.png');
+		specialTokens[i] = loadImg('/img/tokens/s' + i + '.png');
 	}
+    // create UI buttons
+    UIAddButton(UIButton(-60, 50, loadImg('/img/buttons/settlement.png'), 0,
+                         BuildModeSettlement));
+    UIAddButton(UIButton(-60, 110, loadImg('/img/buttons/road.png'), 0,
+                         BuildModeRoad));
+    UIAddButton(UIButton(-60, 50, loadImg('/img/buttons/cancel.png'), 1,
+                         BuildModeCancel));
+    UIGroupVisible(0, true);
 
+    // load all images
 	loadNext();
 }
 
@@ -743,6 +778,8 @@ function render()
 		break;
 	}
 
+    UIRenderButtons();
+
     if (!isAllMapsLoaded())
         drawLoadingMapText();
 }
@@ -843,8 +880,8 @@ function drawEdge(e)
 	}
 
 	// draw
-	ctx.lineCap = "round";
 	ctx.beginPath();
+	ctx.lineCap = "round";
 	ctx.moveTo(dx1, dy1);
 	ctx.lineTo(dx2, dy2);
 	ctx.closePath();
@@ -1084,6 +1121,9 @@ function getEdge()
  * the callback function will be passed an instance of the object. If the
  * request is not successful the passed object will contain a single member
  * variable 'error' which will be set to true.
+ *
+ * url: The URL to perform an XMLHttpRequest GET requect.
+ * callback: Callback function accepting a JSON-decoded object.
  */
 function RequestJSON(url, callback)
 {
@@ -1098,6 +1138,8 @@ function RequestJSON(url, callback)
 /* Generates a JSON request callback.
  *
  * For the internal use of RequestJSON() only.
+ * req: XMLHttpRequest object.
+ * callback: Callback function accepting a JSON-decoded object.
  */
 function genRequestCallback(req, callback)
 {
@@ -1111,4 +1153,105 @@ function genRequestCallback(req, callback)
             delete req;
         }
     };
+}
+
+/* The user interface data.
+ *
+ */
+UIButtons = new Array();
+
+/* A user interface button.
+ *
+ * x: Screen position. Negative values are relative to the right edge.
+ * y: Screen position. Negative values are relative to the bottom edge.
+ */
+function UIButton(x, y, img, group, callback)
+{
+	var o = {x: x, y: y, img: img, callback: callback, group: group,
+             enabled: false}
+
+	return o;
+}
+
+/* Add a UIButton to the interface. */
+function UIAddButton(button)
+{
+    UIButtons.push(button);
+}
+
+/* Enables or disables visibility of a UIButton group.
+ * 
+ * group: The group ID.
+ * visible: Either true or false.
+ */
+function UIGroupVisible(group, visible)
+{
+    for (i=0; i<UIButtons.length; i++) {
+        if (UIButtons[i].group == group) {
+            UIButtons[i].enabled = visible;
+        }
+    }
+}
+
+/* Handles UI button clicks.
+ *
+ * Returns true if the click is fully handled by the UI.
+ */
+function UIHandleClick(clickx, clicky)
+{
+    var x;
+    var y;
+    for (i=0; i<UIButtons.length; i++) {
+        if (!UIButtons[i].enabled) continue;
+        x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
+        y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
+        if (clickx > x && clickx < x + UIButtons[i].img.width &&
+            clicky > y && clicky < y + UIButtons[i].img.height) {
+            UIButtons[i].callback();
+            return true;
+        }
+    }
+    return false;
+}
+
+/* Renders visible UIButton objects to the canvas. */
+function UIRenderButtons()
+{
+    var x;
+    var y;
+    for (i=0; i<UIButtons.length; i++) {
+        if (!UIButtons[i].enabled) continue;
+        x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
+        y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
+        ctx.drawImage(UIButtons[i].img, x, y);
+    }
+}
+
+/* Build Mode */
+function BuildModeSettlement()
+{
+    globalState = 2;
+    globalBuildState = 's';
+    UIGroupVisible(0, false);
+    UIGroupVisible(1, true);
+    render();
+}
+
+function BuildModeRoad()
+{
+    globalState = 3;
+    globalBuildState = 'r';
+    UIGroupVisible(0, false);
+    UIGroupVisible(1, true);
+    render();
+
+}
+
+function BuildModeCancel()
+{
+    globalState = 0;
+    globalBuildState = false;
+    UIGroupVisible(0, true);
+    UIGroupVisible(1, false);
+    render();
 }

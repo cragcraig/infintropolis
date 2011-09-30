@@ -62,6 +62,9 @@ class MapBlock(inf.DatabaseObject):
                 self._buildableBlock = BuildableBlock(self._pos,
                                                       create_new=True)
 
+    def getPos(self):
+        return self._pos
+
     def get(self, coord):
         """Get the tile at a specified coordinate."""
         if not self._model:
