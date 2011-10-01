@@ -60,7 +60,11 @@ class Handler(webapp.RequestHandler):
 
     def loadNation(self):
         """Load the nation the client is logged in as."""
-        n = Nation(self.getCookie('nation'), self.getCookie('pwd'))
+        nation = self.getCookie('nation')
+        pwd = self.getCookie('pwd')
+        if not nation or not pwd:
+            return False
+        n = Nation(nation, pwd)
         if n.exists():
             self._nation = n
             return True

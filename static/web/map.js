@@ -25,11 +25,11 @@ var screenWidth;
 var screenHeight;
 
 // state
-var globalState = 3;
+var globalState = 0;
 var globalBuildState = false;
 var selectedTile;
-var selectedEdge;
 var selectedVertex;
+var selectedEdge;
 var tDrawRollTokens = true;
 
 // map
@@ -59,19 +59,17 @@ function initMap(w, h)
 	}
 }
 
-function loaderGen(f, i)
-{
-	return function (json) {
-		f(i, json);
-	};
-}
-
 function getWorldPos(i)
 {
     var r = {x: mapX, y: mapY};
     r.x += (i == 0 || i == 2 ? 0 : 1);
     r.y += (i == 0 || i == 1 ? 0 : 1);
     return r;
+}
+
+function getiFromPos(x, y)
+{
+    return (x < mapSizes ? 0 : 1) + (y < mapSizes ? 0 : 2);
 }
 
 function JSONCallback(json)
@@ -142,7 +140,7 @@ function requestMap(i)
 	tileMap[i].valid = false;
 
 	/* XHR */
-    RequestJSON("/get/map?bx="+x+"&by="+y, JSONCallback)
+    RequestJSON("/get/map?bx="+x+"&by="+y, JSONCallback);
 }
 
 function goMap(worldX, worldY)
@@ -436,8 +434,8 @@ function updateMouseOut()
 {
 	mouseActive = false;
 	selectedTile = null;
-	selectedEdge = null;
 	selectedVertex = null;
+	selectedEdge = null;
 	mouseOutCallback();
 	render();
 }
@@ -465,6 +463,12 @@ function mouseCallback()
     /* UI click */
     if (UIHandleClick(pureMouseX, pureMouseY))
         return;
+
+    /* build click */
+    if (globalBuildState) {
+        BuildModeDo();
+        return;
+    }
 
     /* start mouse scroll */
 	mouseScrollTimer = setInterval(mouseScroll, dragDelay);
@@ -667,9 +671,9 @@ function loading()
 	}
     // create UI buttons
     UIAddButton(UIButton(-60, 50, loadImg('/img/buttons/settlement.png'), 0,
-                         BuildModeSettlement));
+                         function () {BuildModeEnable('s');}));
     UIAddButton(UIButton(-60, 110, loadImg('/img/buttons/road.png'), 0,
-                         BuildModeRoad));
+                         function () {BuildModeEnable('r');}));
     UIAddButton(UIButton(-60, 50, loadImg('/img/buttons/cancel.png'), 1,
                          BuildModeCancel));
     UIGroupVisible(0, true);
@@ -831,6 +835,8 @@ function drawVertex(v)
 	}
 
 	// draw
+    if (v.alpha)
+        ctx.globalAlpha = v.alpha;
 	ctx.fillStyle = "#" + v.c2;
 	ctx.strokeStyle = "#" + v.c1;
 	ctx.lineWidth = 3.0;
@@ -843,6 +849,7 @@ function drawVertex(v)
 	ctx.closePath();
 	ctx.fill();
 	ctx.stroke();
+    ctx.globalAlpha = 1.0;
 }
 
 // render edge
@@ -881,6 +888,8 @@ function drawEdge(e)
 
 	// draw
 	ctx.beginPath();
+    if (e.alpha)
+        ctx.globalAlpha = e.alpha;
 	ctx.lineCap = "round";
 	ctx.moveTo(dx1, dy1);
 	ctx.lineTo(dx2, dy2);
@@ -891,6 +900,7 @@ function drawEdge(e)
 	ctx.strokeStyle = "#" + e.c2;
 	ctx.lineWidth = 4.0;
 	ctx.stroke();
+    ctx.globalAlpha = 1.0;
 }
 
 // render world background
@@ -1039,7 +1049,7 @@ function getVertex()
 
 	if (selected < 0) return null;
 	
-	var v = {x : 0, y : 0, d : 't'};
+	var v = {x : 0, y : 0, d : 't', alpha: 0.65, c1: "000", c2: "fff"};
 	v.x = selectedTile.x;
 	v.y = selectedTile.y;
 	if (selected == 0 || selected == 3) {
@@ -1077,7 +1087,7 @@ function getEdge()
 
 	if (selected < 0) return null;
 	
-	var v = {x : 0, y : 0, d : 't'};
+	var v = {x : 0, y : 0, d : 't', alpha: 0.65, c1: "000", c2: "fff"};
 	v.x = selectedTile.x;
 	v.y = selectedTile.y;
 
@@ -1157,8 +1167,11 @@ function genRequestCallback(req, callback)
 
 /* The user interface data.
  *
+ * UIButtons: Holds the list of UI buttons.
+ * UIMapType: Maps buildable types {vertex/edge} => {true/false}.
  */
 UIButtons = new Array();
+UIMapType = {s: true, c: true, r: false, b: false};
 
 /* A user interface button.
  *
@@ -1227,31 +1240,52 @@ function UIRenderButtons()
     }
 }
 
-/* Build Mode */
-function BuildModeSettlement()
+/* Enable Build Mode.
+ *
+ * buildType: {s, c, r, b}
+ */
+function BuildModeEnable(buildType)
 {
-    globalState = 2;
-    globalBuildState = 's';
-    UIGroupVisible(0, false);
-    UIGroupVisible(1, true);
-    render();
-}
-
-function BuildModeRoad()
-{
-    globalState = 3;
-    globalBuildState = 'r';
+    globalState = (UIMapType[buildType] ? 2 : 3);
+    globalBuildState = buildType;
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
     render();
 
 }
 
+/* End Build Mode. */
 function BuildModeCancel()
 {
     globalState = 0;
+    selectedTile = null;
+    selectedVertex = null;
+    selectedEdge = null;
     globalBuildState = false;
     UIGroupVisible(0, true);
     UIGroupVisible(1, false);
     render();
+}
+
+/* Build a buildable at the currently selected location. */
+function BuildModeDo()
+{
+    if (!globalBuildState) return;
+    var selected = (globalState == 2 ? selectedVertex : selectedEdge);
+    if (selected) {
+        /* Modify selected into a proper buildable object. */
+        selected.x = (selected.x + screenX) % mapSizes;
+        selected.y = (selected.y + screenY) % mapSizes;
+        i = getiFromPos(selected.x, selected.y);
+        selected.t = globalBuildState;
+        selected.i = i;
+        tileMap[i].buildables.push(selected);
+        var block = getWorldPos(i);
+        /* Launch build request. */
+        RequestJSON("/set/build?bx="+block.x+"&by="+block.y+
+                    "&x="+selected.x+"&y="+selected.y+
+                    "&d="+selected.d+"&type="+selected.t+
+                    "&capitol=0", JSONCallback);
+    }
+    BuildModeCancel();
 }
