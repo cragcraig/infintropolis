@@ -1274,9 +1274,11 @@ function BuildModeDo()
     var selected = (globalState == 2 ? selectedVertex : selectedEdge);
     if (selected) {
         /* Modify selected into a proper buildable object. */
-        selected.x = (selected.x + screenX) % mapSizes;
-        selected.y = (selected.y + screenY) % mapSizes;
-        i = getiFromPos(selected.x, selected.y);
+        var x = selected.x + screenX;
+        var y = selected.y + screenY;
+        i = getiFromPos(x, y);
+        selected.x = x % mapSizes;
+        selected.y = y % mapSizes;
         selected.t = globalBuildState;
         selected.i = i;
         tileMap[i].buildables.push(selected);

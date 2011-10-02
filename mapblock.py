@@ -46,8 +46,7 @@ class MapBlock(inf.DatabaseObject):
     _pos = Vect(0,0)
     _buildableBlock = None
 
-    def __init__(self, pos, load=True, load_buildables=True,
-                 generate_nonexist=True):
+    def __init__(self, pos, load=True, load_buildables=True, generate_nonexist=True):
         """Load BlockModel from cache/database.
 
         By default a BlockModel will be generated and stored to the database
