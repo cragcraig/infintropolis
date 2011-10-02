@@ -101,14 +101,15 @@ class Tile:
 
 class TileType:
     """Enumeration for tile types."""
-    none, water, field, pasture, forest, hills, mountain, desert, \
+    none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
 
 
 class DatabaseObject:
     """A wrapper for a Database model.
 
-    The getId() and getGQL() methods must be overloaded.
+    The getKeyName() and dbget() methods must be overloaded and modelClass must
+    be defined as the associated db.Model class.
     """
     _model = None
     _useCached = False
@@ -118,37 +119,38 @@ class DatabaseObject:
         # Memcache.
         self._useCached = use_cached
         if self._useCached:
-            self._model = memcache.get(self.getId())
+            self._model = memcache.get(self.getKeyName())
         # Database.
         if not self._model:
-            query = db.GqlQuery(self.getGQL())
-            result = list(query.fetch(limit=1))
-            # Exists in database.
-            if len(result):
-                self._model = result[0]
-                if self._useCached:
-                    self.cache()
+            self.dbGet()
 
     def save(self):
-        """Store MapBlock state to database."""
+        """Store model state to database."""
         if (self.exists()):
             db.put(self._model)
-            if self._useCached:
-                self.cache()
+            self.cache()
 
     def cache(self, timeout=5):
         """Store Model state to cache."""
         if (self.exists()):
-            memcache.set(self.getId(), self._model, time=60*timeout)
+            memcache.set(self.getKeyName(), self._model, time=60*timeout)
 
     def exists(self):
         """Returns True if the Model has been successfully loaded."""
         return self._model is not None
 
-    def getId(self):
-        """Returns a unique identifier string for the Model."""
-        raise NotImplementedError, 'getId() is not implemented in this class.'
+    def dbGet(self, parent=None):
+        """Get the model from the database."""
+        self._model = self.modelClass.get_by_key_name(self.getKeyName(),
+                                                      parent=parent)
+        self.cache()
 
-    def getGQL(self):
-        """Constructs a database query to select the Model."""
-        raise NotImplementedError, 'getGQL() is not implemented in this class.'
+    def loadOrCreate(self, parent=None, **kwags):
+        """Gets the model from the database, creating it if it doesn't exist."""
+        self._model = self.modelClass.get_or_insert(self.getKeyName(),
+                                                    parent=parent, **kwags)
+        self.cache()
+
+    def getKeyName(self):
+        """Returns the key_name for the model in the database."""
+        raise NotImplementedError, "getKeyName() is not implemented."

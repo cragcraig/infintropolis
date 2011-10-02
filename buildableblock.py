@@ -21,28 +21,20 @@ class BuildableModel(db.Model):
 
 class BuildableBlock(inf.DatabaseObject):
     """A block of buildables."""
+    modelClass = BuildableModel
     _pos = Vect(0,0)
 
-    def __init__(self, pos, create_new=False):
+    def __init__(self, pos):
         """Load BuildableModel from database.
 
-        By default a new BuildableModel will NOT be generated and the model
-        will be loaded from the database. If create_new is True the database
-        will not be checked before creating a new BuildableModel; it is up to
-        you to prevent the creation of duplicate database entries.
+        The model will be loaded from the database if it exists, otherwise an
+        empty model will be created and stored to the database.
         """
         self._pos = pos.copy() 
-        if create_new:
-            self.create()
-        else:
-            self.load()
-
-    def create(self):
-        # TODO(craig): Should be an ancestor query to ensure consistancy.
-        # TODO(craig): Atomic check&set to avoid race conditions.
-        self._model = BuildableModel(x=self._pos.x, y=self._pos.y,
-                                     buildables=[], nations=[])
-        self.save()
+        self.load()
+        if not self.exists():
+            self.loadOrCreate(x=self._pos.x, y=self._pos.y,
+                              buildables=[], nations=[])
 
     def addBuildable(self, buildable, colors):
         nationIndex = self._getNationIndex(buildable.nationName)
@@ -88,10 +80,5 @@ class BuildableBlock(inf.DatabaseObject):
     def _int2hexcolor(self, color):
         return "%06x" % color
 
-    def getId(self):
-        """Construct a unique consistant identifier string for the Block."""
-        return 'buildableblock_' + str(self._pos.x) + ',' + str(self._pos.y)
-
-    def getGQL(self):
-        return  "SELECT * FROM BuildableModel WHERE x = " + str(self._pos.x) +\
-                " AND y = " + str(self._pos.y)
+    def getKeyName(self):
+        return 'buildableblock:' + str(self._pos.x) + ',' + str(self._pos.y)

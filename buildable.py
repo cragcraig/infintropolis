@@ -28,10 +28,9 @@ class Buildable:
 
     def build(self, capitol, buildableblock):
         """Adds this buildable in all necessary database models."""
-        self.nationName = capitol.getNation()
+        self.nationName = capitol.getNationName()
         self.capitolNum = capitol.getNumber()
         self.block = buildableblock.getPos().copy()
-        capitol.addBuildable(self)
         buildableblock.addBuildable(self, capitol.getColors())
 
     def copy(self):

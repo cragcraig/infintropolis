@@ -80,7 +80,7 @@ class Build(request.Handler):
             return
         # Load from database.
         nationName = self.getNation().getName()
-        capitol = Capitol(self.getNation().getName(), form.getfirst('capitol'))
+        capitol = Capitol(self.getNation(), form.getfirst('capitol'))
         buildableblock = BuildableBlock(blockVect)
         if not capitol or not buildableblock:
             return

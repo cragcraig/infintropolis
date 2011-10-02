@@ -42,6 +42,7 @@ class SurroundingMapBlocks:
 
 class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
+    modelClass = BlockModel
     _pos = Vect(0,0)
     _buildableBlock = None
 
@@ -57,10 +58,10 @@ class MapBlock(inf.DatabaseObject):
             self.load()
             if not self._model and generate_nonexist:
                 self.generate(PROBABILITY_MAP)
-                # TODO(craig): Atomic check + set to avoid race conditions.
-                self.save()
-                self._buildableBlock = BuildableBlock(self._pos,
-                                                      create_new=True)
+                self.loadOrCreate(x=self._pos.x, y=self._pos.y,
+                                  isFullOfCapitols=False,
+                                  tiletype=self._model.tiletype,
+                                  roll=self._model.roll)
 
     def getPos(self):
         return self._pos
@@ -111,13 +112,8 @@ class MapBlock(inf.DatabaseObject):
                         str(int(self._model.roll[i])) + ','
                         for i in xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE)])
 
-    def getId(self):
-        """Construct a unique consistant identifier string for the MapBlock."""
-        return 'map_' + str(self._pos.x) + ',' + str(self._pos.y)
-
-    def getGQL(self):
-        return  "SELECT * FROM BlockModel WHERE x = " + str(self._pos.x) +\
-                " AND y = " + str(self._pos.y)
+    def getKeyName(self):
+        return 'mapblock:' + str(self._pos.x) + ',' + str(self._pos.y)
 
     def getBuildableBlock(self):
         if not self._buildableBlock:
@@ -152,7 +148,6 @@ class MapBlock(inf.DatabaseObject):
 
     def _sumLand(self, coord, surrounding_blocks):
         """Sum the number of land tiles around the given tile coord."""
-        # TODO(craig): Use list comprehensions instead for a speedup.
         sum = 0
         t = TileType.water
         n = Vect(0, 0)

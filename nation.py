@@ -14,13 +14,14 @@ class NationModel(db.Model):
     email = db.StringProperty(indexed=False)
     title = db.StringProperty(indexed=False)
     points = db.IntegerProperty(required=True, indexed=False)
-    capitols = db.IntegerProperty(required=True, indexed=False)
+    capitolcount = db.IntegerProperty(required=True, indexed=False)
     color1 = db.IntegerProperty(required=True, indexed=False)
     color2 = db.IntegerProperty(required=True, indexed=False)
 
 
 class Nation(inf.DatabaseObject):
     """Represents the set of all Capitols controlled by a single user."""
+    modelClass = NationModel
     _error = None
     _name = None
     _pwd = None
@@ -37,52 +38,46 @@ class Nation(inf.DatabaseObject):
             self.create(email, color1, color2)
         else:
             self.load()
-            if self.exists() and self._pwd != self._model.pwd:
-                self._model = None
+            self.checkPassword()
+
+    def checkPassword(self):
+        if self.exists() and self._pwd != self._model.pwd:
+            self._model = None
 
     def create(self, email, color1, color2):
         """Creates a new nation.
 
         This includes creating an original capitol and settlement.
         """
-        # TODO(craig): Should be an ancestor query to ensure consistancy.
-        # TODO(craig): Atomic check&set to avoid race conditions.
-        query = db.GqlQuery(self.getGQL())
-        result = list(query.fetch(limit=1))
-        if not len(result):
-            origin = Vect(0, 0)
-            self._model = NationModel(name=self._name, pwd=self._pwd,
-                                      email=email, title='', points=0,
-                                      capitols=0, color1=color1, color2=color2)
+        origin = Vect(0, 0)
+        self.loadOrCreate(name=self._name, pwd=self._pwd, email=email,
+                          title='', points=0, capitolcount=0, color1=color1,
+                          color2=color2)
+        # Confirm that this nation did not previously exist.
+        self.checkPassword()
+        if self.exists() and self.getCapitolCount() == 0:
             capitol = self.createNewCapitol(origin)
-            # create original settlement
-            build = Buildable(Vect(25, 25), BuildType.settlement)
-            mapblock = MapBlock(origin)
-            build.build(capitol, mapblock.getBuildableBlock())
+            #TODO(craig): Must be atomic.
             self.save()
             capitol.save()
-            mapblock.getBuildableBlock().save()
 
     def createNewCapitol(self, originBlock):
         """Adds a new capitol.
 
         You are responsible for saving the updated nation and capitol models.
         """
-        c = Capitol(self._name, self._model.capitols, load=False)
+        #TODO(craig): Must be atomic.
+        c = Capitol(self, self._model.capitolcount, load=False)
         c.create(originBlock, self._model.color1, self._model.color2)
-        self._model.capitols += 1
+        self._model.capitolcount += 1
         return c
 
     def getCapitolCount(self):
         """Return the current number of capitols under this nation."""
-        return int(self._model.capitols)
+        return int(self._model.capitolcount)
 
     def getName(self):
         return self._name
 
-    def getId(self):
-        return 'nation_' + self._name
-
-    def getGQL(self):
-        return "SELECT * FROM NationModel " +\
-               "WHERE name = '" + self._name + "'"
+    def getKeyName(self):
+        return 'nation:' + self._name
