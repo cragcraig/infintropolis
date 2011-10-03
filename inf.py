@@ -130,7 +130,7 @@ class DatabaseObject:
             db.put(self._model)
             self.cache()
 
-    def cache(self, timeout=5):
+    def cache(self, timeout=60):
         """Store Model state to cache."""
         if (self.exists()):
             memcache.set(self.getKeyName(), self._model, time=60*timeout)

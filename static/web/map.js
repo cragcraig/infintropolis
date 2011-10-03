@@ -72,6 +72,10 @@ function getiFromPos(x, y)
     return (x < mapSizes ? 0 : 1) + (y < mapSizes ? 0 : 2);
 }
 
+/* Parses a JSON response from the server.
+ *
+ * json: A decoded object.
+ */
 function JSONCallback(json)
 {
     /* json error */
@@ -98,10 +102,16 @@ function JSONCallback(json)
         }
 
         /* parse capitol and nation data */
+        /* Not implemented yet. */
     }
     render();
 }
 
+/* Parses a MapBlock formatted string.
+ *
+ * i: The associated tileMap[] index.
+ * str: The MapBlock formatted string.
+ * */
 function parseMapBlock(i, str)
 {
     var error = false;
@@ -124,23 +134,14 @@ function parseMapBlock(i, str)
     return error;
 }
 
+/* Parses a BuildableBlock object.
+ *
+ * i: The associated tileMap[] index.
+ * list: A list of Buildable objects.
+ */
 function parseBuildableBlock(i, list)
 {
     tileMap[i].buildables = list;
-}
-
-function requestMap(i)
-{
-	if (mapX == Infinity || mapY == Infinity ||
-        mapX == NaN || mapY == NaN) return;
-
-	/* map id */
-	var x = mapX + (i == 0 || i == 2 ? 0 : 1);
-	var y = mapY + (i == 0 || i == 1 ? 0 : 1);
-	tileMap[i].valid = false;
-
-	/* XHR */
-    RequestJSON("/get/map?bx="+x+"&by="+y, JSONCallback);
 }
 
 function goMap(worldX, worldY)
@@ -190,14 +191,14 @@ function goMap(worldX, worldY)
 	mapX = worldX;
 	mapY = worldY;
 	
-	/* request */
+	/* request blocks */
+    var req = new Array();
 	for (var i=0; i < 4; i++) {
 		if (!tileMap[i].valid) {
-			/* get map file */
-			requestMap(i);
+            req.push(i);
 		}
 	}
-
+	requestBlocks(req);
 }
 
 function moveWest()
@@ -670,11 +671,11 @@ function loading()
 		specialTokens[i] = loadImg('/img/tokens/s' + i + '.png');
 	}
     // create UI buttons
-    UIAddButton(UIButton(-60, 50, loadImg('/img/buttons/settlement.png'), 0,
+    UIAddButton(UIButton(-60, 50, loadImg('/img/ui/settlement.png'), 0,
                          function () {BuildModeEnable('s');}));
-    UIAddButton(UIButton(-60, 110, loadImg('/img/buttons/road.png'), 0,
+    UIAddButton(UIButton(-60, 110, loadImg('/img/ui/road.png'), 0,
                          function () {BuildModeEnable('r');}));
-    UIAddButton(UIButton(-60, 50, loadImg('/img/buttons/cancel.png'), 1,
+    UIAddButton(UIButton(-60, 50, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel));
     UIGroupVisible(0, true);
 
@@ -1135,16 +1136,26 @@ function getEdge()
  * url: The URL to perform an XMLHttpRequest GET requect.
  * callback: Callback function accepting a JSON-decoded object.
  */
-function RequestJSON(url, callback)
+function RequestJSON(method, url, data)
 {
+    if (method != "GET" && method != "POST") return;
     req = new XMLHttpRequest();
-    req.onreadystatechange = genRequestCallback(req, callback);
-	req.open("GET", url, true);
+    req.onreadystatechange = genRequestCallback(req, JSONCallback);
+    json = "request=" + JSON.stringify(data);
+    if (method == "GET") {
+        url += "?" + json;
+    }
+	req.open(method, url, true);
 	req.setRequestHeader("Cache-Control", "no-cache");
 	req.setRequestHeader("Pragma", "no-cache");
-	req.send(null);
+    if (method == "POST") {
+        req.setRequestHeader("Content-type",
+                             "application/x-www-form-urlencoded");
+	    req.send(json);
+    } else {
+	    req.send(null);
+    }
 }
-
 /* Generates a JSON request callback.
  *
  * For the internal use of RequestJSON() only.
@@ -1155,8 +1166,13 @@ function genRequestCallback(req, callback)
 {
     return function () {
         if (req.readyState == 4) {
-            if (req.status == 200) {
-                callback(JSON.parse(req.responseText));
+            if (req.status == 200 && req.responseText != '') {
+                res = JSON.parse(req.responseText);
+                if (res.logout) {
+                    logout();
+                } else {
+                    callback(res);
+                }
             } else {
                 callback({error: true});
             }
@@ -1165,13 +1181,31 @@ function genRequestCallback(req, callback)
     };
 }
 
+/* Request block data from the server.
+ *
+ * blocks: A list of block ids, ex. [0, 1, 2].
+ */
+function requestBlocks(blocks)
+{
+    /* Construct request list. */
+    var blockList = new Array();
+    for (j=0; j<blocks.length; j++) {
+        var i = blocks[j];
+        tileMap[i].valid = false;
+        blockList.push(getWorldPos(i));
+    }
+    if (!blockList.length) return;
+    /* Send request. */
+    RequestJSON("GET", "/get/map", blockList);
+}
+
 /* The user interface data.
  *
  * UIButtons: Holds the list of UI buttons.
- * UIMapType: Maps buildable types {vertex/edge} => {true/false}.
+ * BuildablesTypeMap: Maps buildable types {vertex/edge} => {true/false}.
  */
 UIButtons = new Array();
-UIMapType = {s: true, c: true, r: false, b: false};
+UIBuildablesTypeMap = {s: true, c: true, r: false, b: false};
 
 /* A user interface button.
  *
@@ -1246,7 +1280,7 @@ function UIRenderButtons()
  */
 function BuildModeEnable(buildType)
 {
-    globalState = (UIMapType[buildType] ? 2 : 3);
+    globalState = (UIBuildablesTypeMap[buildType] ? 2 : 3);
     globalBuildState = buildType;
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
@@ -1284,10 +1318,15 @@ function BuildModeDo()
         tileMap[i].buildables.push(selected);
         var block = getWorldPos(i);
         /* Launch build request. */
-        RequestJSON("/set/build?bx="+block.x+"&by="+block.y+
-                    "&x="+selected.x+"&y="+selected.y+
-                    "&d="+selected.d+"&type="+selected.t+
-                    "&capitol=0", JSONCallback);
+        RequestJSON("POST", "/set/build",
+                    {bx: block.x, by: block.y, x: selected.x, y: selected.y,
+                    d: selected.d, type: selected.t, capitol: 0});
     }
     BuildModeCancel();
+}
+
+/* Logs out the current user. */
+function logout()
+{
+    window.location = "/session?action=logout";
 }

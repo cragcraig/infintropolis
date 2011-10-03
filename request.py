@@ -36,10 +36,10 @@ class Handler(webapp.RequestHandler):
         """Delete a cookie from the client browser."""
         self.setCookie(key, '', timeout=-1)
 
-    def inForm(self, form, *args):
-        """Returns True if all strings passed exist in form."""
+    def inDict(self, dictionary, *args):
+        """Returns True if all strings passed exist in dictionary."""
         for i in args:
-            if i not in form:
+            if i not in dictionary:
                 return False
         return True
 
@@ -71,11 +71,17 @@ class Handler(webapp.RequestHandler):
         else:
             return False
 
+    def writeLogoutJSON(self):
+        self.writeJSON({'logout': True})
+
     def writeJSON(self, obj):
         """Write a Python object out as a JSON string."""
         self.response.headers['Content-Type'] = 'text/plain'
         j = json.JSONEncoder().encode(obj)
         self.response.out.write(j)
+
+    def getJSONRequest(self):
+        return json.loads(self.request.get('request'))
 
     def getNation(self):
         return self._nation

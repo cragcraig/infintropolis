@@ -22,18 +22,22 @@ class GetBlock(request.Handler):
         """Return requested data."""
         # Check user.
         if not self.loadNation():
+            self.writeLogoutJSON()
             return
 
-        # Check coordinates.
-        form = cgi.FieldStorage()
-        if not self.inForm(form, 'bx', 'by'):
-            return
+        # Setup.
+        request = self.getJSONRequest()
+        response = {}
 
-        # Retrieve MapBlock.
-        block = MapBlock(Vect(form.getfirst('bx'), form.getfirst('by')))
-        r = {'mapblock': block.getString(),
-             'buildableblock': block.getBuildableBlock().getJSONList()}
-        self.writeJSON({block.getPos().getBlockJSONId(): r})
+        # Retrieve MapBlocks and BuildableBlocks.
+        for reqblock in request:
+            if self.inDict(reqblock, 'x', 'y'):
+                block = MapBlock(Vect(reqblock['x'], reqblock['y']))
+                response[block.getPos().getBlockJSONId()] = {
+                    'mapblock': block.getString(),
+                    'buildableblock': block.getBuildableBlock().getJSONList()}
+
+        self.writeJSON(response)
 
 
 class GetBuildableBlock(request.Handler):
@@ -43,44 +47,52 @@ class GetBuildableBlock(request.Handler):
         """Return BuildableBlock data."""
         # Check user.
         if not self.loadNation():
+            self.writeLogoutJSON()
             return
 
-        # Check coordinates.
-        form = cgi.FieldStorage()
-        if not self.inForm(form, 'bx', 'by'):
-            return
+        # Setup.
+        request = self.getJSONRequest()
+        response = {}
 
-        # Retrieve MapBlock.
-        block = BuildableBlock(Vect(form.getfirst('bx'), form.getfirst('by')))
-        r = {'buildableblock': block.getJSONList()}
-        self.writeJSON({block.getPos().getBlockJSONId(): r})
+        # Retrieve BuildableBlocks.
+        for reqblock in request:
+            if self.inDict(reqblock, 'x', 'y'):
+                block = BuildableBlock(Vect(form.getfirst('bx'), form.getfirst('by')))
+                response[block.getPos().getBlockJSONId()] = {
+                    'buildableblock': block.getJSONList()}
+
+        self.writeJSON(response)
+
 
 
 class Build(request.Handler):
     """Handle build requests."""
 
-    def get(self):
+    def post(self):
         """Build building and return updated BuildableBlock."""
         # Check user.
         if not self.loadNation():
+            self.writeLogoutJSON()
             return
 
+        # Setup.
+        request = self.getJSONRequest()
+        response = {}
         # Check arguments.
-        form = cgi.FieldStorage()
-        if not self.inForm(form, 'type', 'capitol', 'x', 'y', 'd',
-                           'bx', 'by'):
+        if not self.inDict(request, 'type', 'capitol', 'x', 'y', 'd', 'bx',
+                           'by'):
             return
 
         # Construct parameters.
-        pos = Vect(form.getfirst('x'), form.getfirst('y'),
-                   BuildType.dToJSON.index(form.getfirst('d')))
-        buildtype = BuildType.tToJSON.index(form.getfirst('type'))
-        blockVect = Vect(form.getfirst('bx'), form.getfirst('by'))
+        pos = Vect(request['x'], request['y'],
+                   BuildType.dToJSON.index(request['d']))
+        buildtype = BuildType.tToJSON.index(request['type'])
+        blockVect = Vect(request['bx'], request['by'])
         if not inf.validBlockCoord(pos):
             return
         # Load from database.
         nationName = self.getNation().getName()
-        capitol = Capitol(self.getNation(), form.getfirst('capitol'))
+        capitol = Capitol(self.getNation(), request['capitol'])
         buildableblock = BuildableBlock(blockVect)
         if not capitol or not buildableblock:
             return
