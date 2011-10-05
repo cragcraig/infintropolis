@@ -841,7 +841,7 @@ function drawVertex(v)
         ctx.globalAlpha = v.alpha;
 	ctx.fillStyle = "#" + v.c2;
 	ctx.strokeStyle = "#" + v.c1;
-	ctx.lineWidth = 3.0;
+	ctx.lineWidth = 3.5;
 	ctx.beginPath();
 	ctx.moveTo(px+10, py+10);
 	ctx.lineTo(px-10, py+10);
@@ -897,7 +897,7 @@ function drawEdge(e)
 	ctx.lineTo(dx2, dy2);
 	ctx.closePath();
 	ctx.strokeStyle = "#" + e.c1;
-	ctx.lineWidth = 8.0;
+	ctx.lineWidth = 10.0;
 	ctx.stroke();
 	ctx.strokeStyle = "#" + e.c2;
 	ctx.lineWidth = 4.0;
