@@ -39,10 +39,7 @@ class Capitol(inf.DatabaseObject):
             self.load()
 
     def create(self, origin, color1, color2):
-        """Creates a new Capitol model.
-
-        You are responsible for saving the model.
-        """
+        """Creates a new Capitol model."""
         # TODO(craig): Should be an ancestor query to ensure consistancy.
         # TODO(craig): Atomic check&set to avoid race conditions.
         self.loadOrCreate(nation=self.getNationName(), number=self._number,

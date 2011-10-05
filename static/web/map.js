@@ -142,6 +142,7 @@ function parseMapBlock(i, str)
 function parseBuildableBlock(i, list)
 {
     tileMap[i].buildables = list;
+    launchAutoUpdate();
 }
 
 function goMap(worldX, worldY)
@@ -198,7 +199,7 @@ function goMap(worldX, worldY)
             req.push(i);
 		}
 	}
-	requestBlocks(req);
+	requestBlocks(req, true);
 }
 
 function moveWest()
@@ -379,6 +380,7 @@ function toggleRollTokens()
 function updateMouse(e)
 {
 	if (!mouseActive) return;
+    reportUserActivity();
 
 	if (e.pageX != undefined && e.pageY != undefined) {
 		mouseX = e.pageX - canvas.offsetLeft;
@@ -459,7 +461,7 @@ function initMouseScroll()
 /* callbacks */
 function mouseCallback()
 {
-	if (mouseScrollTimer != null) return;
+    reportUserActivity();
 
     /* UI click */
     if (UIHandleClick(pureMouseX, pureMouseY))
@@ -472,6 +474,7 @@ function mouseCallback()
     }
 
     /* start mouse scroll */
+	if (mouseScrollTimer != null) return;
 	mouseScrollTimer = setInterval(mouseScroll, dragDelay);
 
 	oldMouseX = pureMouseX;
@@ -570,8 +573,8 @@ TileEdges[4] = {x: -TileWidth/2, y: 0};
 TileEdges[5] = {x: (TileVerts[5].x+TileVerts[0].x)/2, y: (TileVerts[5].y+TileVerts[0].y)/2};
 
 // load tiles
-var numTilesImgs = 10;
-var tiles = [];
+var tileSpriteSize = 11;
+var tileSprite;
 var highlightedTile;
 var tokens = [];
 var specialTokens = [];
@@ -659,9 +662,7 @@ function loading()
 	initMap();
 
 	// load tiles
-	for (i=0; i<numTilesImgs; i++) {
-		tiles[i] = loadImg('/img/' + i + '.png');
-	}
+	tileSprite = loadImg('/img/tiles.png');
 	highlightedTile = loadImg('/img/high.png');
 	// load tokens
 	for (i=0; i<11; i++) {
@@ -948,7 +949,8 @@ function drawTile(tile, x, y)
 
 	var dx = outputx(x,y);
 	var dy = outputy(x,y);
-	ctx.drawImage(tiles[tile.type], dx - TileWidth/2, dy - TileHeight/2);
+	ctx.drawImage(tileSprite, TileWidth * tile.type, 0, TileWidth, TileHeight,
+                  dx - TileWidth/2, dy - TileHeight/2, TileWidth, TileHeight);
 
 	if (tDrawRollTokens && tile.roll != 0) {
 		/* circle */
@@ -1126,6 +1128,24 @@ function getEdge()
 	return v;
 }
 
+/* Determine a list of the visible mapTiles[]. */
+function computeVisibleBlocks()
+{
+    var r = new Array();
+    var p = new Array();
+    p.push({x: -1, y: -1});
+    p.push({x: screenWidth + 2, y: -1});
+    p.push({x: -1, y: screenHeight + 2});
+    p.push({x: screenWidth + 2, y: screenHeight + 2});
+
+    for (j=0; j<p.length; j++) {
+        var i = getiFromPos(p[j].x + screenX, p[j].y + screenY);
+        if (r.indexOf(i) == -1)
+            r.push(i);
+    }
+    return r;
+}
+
 /* Launches an XMLHttpRequest.
  *
  * Expects a JSON formated string response. The JSON string will be parsed and
@@ -1184,19 +1204,22 @@ function genRequestCallback(req, callback)
 /* Request block data from the server.
  *
  * blocks: A list of block ids, ex. [0, 1, 2].
+ * include_maps: Whether to get MapBlocks with BuildableBlocks.
  */
-function requestBlocks(blocks)
+function requestBlocks(blocks, include_maps)
 {
     /* Construct request list. */
     var blockList = new Array();
     for (j=0; j<blocks.length; j++) {
         var i = blocks[j];
-        tileMap[i].valid = false;
+        if (include_maps)
+            tileMap[i].valid = false;
         blockList.push(getWorldPos(i));
     }
     if (!blockList.length) return;
     /* Send request. */
-    RequestJSON("GET", "/get/map", blockList);
+    var url = include_maps ? "/get/map" : "/get/build";
+    RequestJSON("GET", url, blockList);
 }
 
 /* The user interface data.
@@ -1322,6 +1345,7 @@ function BuildModeDo()
                     {bx: block.x, by: block.y, x: selected.x, y: selected.y,
                     d: selected.d, type: selected.t, capitol: 0});
     }
+    launchAutoUpdate();
     BuildModeCancel();
 }
 
@@ -1329,4 +1353,68 @@ function BuildModeDo()
 function logout()
 {
     window.location = "/session?action=logout";
+}
+
+/* Update visible BuildableBlocks. */
+function requestBuildableBlocks()
+{
+    var bb = computeVisibleBlocks();
+    if (!bb.length) return;
+    requestBlocks(bb, false);
+}
+
+/* Autoupdate State Variables. */
+var autoupdateMinPeriod = 10;
+var autoupdateMaxPeriod = 10 * 60;
+var autoupdatePeriod = autoupdateMinPeriod;
+var autoupdateMovement = false;
+var autoupdateTimer = null;
+
+/* Auto-update BuildableBlocks callback. */
+function autoupdateBuildableBlocks()
+{
+    clearAutoUpdate();
+    requestBuildableBlocks();
+    if (autoupdateMovement == true) {
+        autoupdatePeriod = autoupdateMinPeriod;
+    } else {
+        autoupdatePeriod = autoupdateMinPeriod + 3 * autoupdatePeriod / 2;
+        if (autoupdatePeriod > autoupdateMaxPeriod)
+            autoupdatePeriod = autoupdateMaxPeriod;
+    }
+    autoupdateMovement = false;
+    launchAutoUpdate();
+}
+
+/* Launch an Auto-update. */
+function launchAutoUpdate()
+{
+    clearAutoUpdate();
+    autoupdateTimer = setTimeout(autoupdateBuildableBlocks,
+                                 autoupdatePeriod * 1000);
+}
+
+/* Clear Auto-update timer. */
+function clearAutoUpdate()
+{
+    if (autoupdateTimer != null) {
+        clearTimeout(autoupdateTimer);
+        autoupdateTimer = null;
+    }
+}
+
+/* Reset Auto-update timer. */
+function resetAutoUpdate()
+{
+    autoupdatePeriod = autoupdateMinPeriod;
+    launchAutoUpdate();
+}
+
+/* Report user activity. */
+function reportUserActivity()
+{
+    autoupdateMovement = true;
+    if (autoupdatePeriod != autoupdateMinPeriod) {
+        autoupdateBuildableBlocks();
+    }
 }

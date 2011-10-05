@@ -24,26 +24,41 @@ class BuildableBlock(inf.DatabaseObject):
     modelClass = BuildableModel
     _pos = Vect(0,0)
 
-    def __init__(self, pos):
+    def __init__(self, pos, use_cached=True):
         """Load BuildableModel from database.
 
         The model will be loaded from the database if it exists, otherwise an
         empty model will be created and stored to the database.
         """
         self._pos = pos.copy() 
-        self.load()
+        self.load(use_cached=use_cached)
         if not self.exists():
             self.loadOrCreate(x=self._pos.x, y=self._pos.y,
                               buildables=[], nations=[])
 
-    def addBuildable(self, buildable, colors):
+    def atomicBuild(self, buildable, colors):
+        """Builds the buildable in an atomic database transaction."""
+        if db.run_in_transaction(BuildableBlock._build, self, buildable,
+                                 colors):
+            self.cache()
+        else:
+            self.load()
+
+    def _build(self, buildable, colors):
+        """Builds the buildable. For use inside atomicBuild()."""
+        self.dbGet()
+        self._addBuildable(buildable, colors)
+        self.put()
+        return True
+
+    def _addBuildable(self, buildable, colors):
         nationIndex = self._getNationIndex(buildable.nationName)
         assert len(colors) == 2
         self._model.buildables.extend(buildable.getList())
         self._model.buildables.extend(colors)
         self._model.buildables.extend([int(nationIndex), int(buildable.capitolNum)])
 
-    def delBuildable(self, pos):
+    def _delBuildable(self, pos):
         p = pos.getList()
         lp = len(p)
         for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):

@@ -123,12 +123,16 @@ class DatabaseObject:
         # Database.
         if not self._model:
             self.dbGet()
+            self.cache()
 
     def save(self):
         """Store model state to database."""
         if (self.exists()):
-            db.put(self._model)
+            self.put()
             self.cache()
+
+    def put(self):
+        db.put(self._model)
 
     def cache(self, timeout=60):
         """Store Model state to cache."""
@@ -143,7 +147,6 @@ class DatabaseObject:
         """Get the model from the database."""
         self._model = self.modelClass.get_by_key_name(self.getKeyName(),
                                                       parent=parent)
-        self.cache()
 
     def loadOrCreate(self, parent=None, **kwags):
         """Gets the model from the database, creating it if it doesn't exist."""

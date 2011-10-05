@@ -31,7 +31,7 @@ class Buildable:
         self.nationName = capitol.getNationName()
         self.capitolNum = capitol.getNumber()
         self.block = buildableblock.getPos().copy()
-        buildableblock.addBuildable(self, capitol.getColors())
+        buildableblock.atomicBuild(self, capitol.getColors())
 
     def copy(self):
         return copy.copy(self)

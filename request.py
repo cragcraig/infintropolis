@@ -16,7 +16,7 @@ class Handler(webapp.RequestHandler):
     _encodeMap = string.maketrans(' \'', '+*')
     _decodeMap = string.maketrans('+*', ' \'')
 
-    def setCookie(self, key, value, timeout=99999):
+    def setCookie(self, key, value, timeout=999999):
         """Add a cookie to the header."""
         value = value.encode('ascii').translate(self._encodeMap)
         self.response.headers.add_header('Set-Cookie',

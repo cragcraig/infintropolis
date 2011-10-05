@@ -57,7 +57,7 @@ class GetBuildableBlock(request.Handler):
         # Retrieve BuildableBlocks.
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
-                block = BuildableBlock(Vect(form.getfirst('bx'), form.getfirst('by')))
+                block = BuildableBlock(Vect(reqblock['x'], reqblock['y']))
                 response[block.getPos().getBlockJSONId()] = {
                     'buildableblock': block.getJSONList()}
 
@@ -92,7 +92,12 @@ class Build(request.Handler):
             return
         # Load from database.
         nationName = self.getNation().getName()
+
+        #TODO(craig): Don't use memcache.
+        #TODO(craig): Update capitol in a transaction (atomic).
         capitol = Capitol(self.getNation(), request['capitol'])
+        capitol.save()
+
         buildableblock = BuildableBlock(blockVect)
         if not capitol or not buildableblock:
             return
@@ -100,8 +105,6 @@ class Build(request.Handler):
         # Build.
         build = Buildable(pos, buildtype)
         build.build(capitol, buildableblock)
-        capitol.save()
-        buildableblock.save()
 
         # Return updated BuildableBlock.
         r = {'buildableblock': buildableblock.getJSONList()}
