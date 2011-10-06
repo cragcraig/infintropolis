@@ -1,5 +1,6 @@
 import copy
 import random
+import math
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
@@ -31,6 +32,11 @@ class Vect:
 
     def copy(self):
         return copy.copy(self)
+
+    def distanceTo(self, vect):
+        x = self.x - vect.x
+        y = self.y - vect.y
+        math.sqrt(x*x + y*y)
 
     def getBlockJSONId(self):
         return str(self.x) + '_' + str(self.y)
@@ -103,6 +109,25 @@ class TileType:
     """Enumeration for tile types."""
     none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
+
+
+def tileDirMove(coord, d):
+    """Get the first tile coordinate in direction d from the given coord."""
+    out = Vect(coord.x, coord.y)
+    if d == 1:
+        out.y -= 1
+    elif d == 4:
+        out.y += 1
+    else:
+        if d == 0 or d == 5:
+            out.x += 1
+        elif d == 2 or d == 3:
+            out.x -= 1
+    if (not coord.x % 2) and (d == 0 or d == 2):
+        out.y -= 1
+    elif coord.x % 2 and (d == 3 or d == 5):
+        out.y += 1
+    return out
 
 
 class DatabaseObject:

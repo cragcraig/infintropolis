@@ -15,9 +15,9 @@ PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
 
 class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
-    x = db.IntegerProperty(required=True)
-    y = db.IntegerProperty(required=True)
-    isFullOfCapitols = db.BooleanProperty(required=True)
+    x = db.IntegerProperty(required=True, indexed=False)
+    y = db.IntegerProperty(required=True, indexed=False)
+    isFullOfCapitols = db.BooleanProperty(required=True, indexed=True)
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
 
@@ -119,6 +119,21 @@ class MapBlock(inf.DatabaseObject):
             self._buildableBlock = BuildableBlock(self._pos)
         return self._buildableBlock
 
+    def findOpenSpace(self):
+        loc = random.sample(xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE), 300)
+        for l in loc:
+            pos = Vect(l % inf.BLOCK_SIZE, l // inf.BLOCK_SIZE)
+            tile = self.get(pos)
+            # Ensure enough surrounding blocks are land.
+            if tile.isLand() or self.get(inf.tileDirMove(pos, 3).isLand() and\
+               self._sumLand(pos) > 3:
+                # Check distance to all buildables.
+                for # each buildable
+                    if pos.distanceTo(Vect(# buildable pos)) < inf.CAPITOL_SPACING:
+                        continue
+                return pos
+        return None
+
     def _clear(self):
         """Clear the MapBlock to all water tiles."""
         self._model.tiletype = ((inf.BLOCK_SIZE * inf.BLOCK_SIZE) *
@@ -145,7 +160,7 @@ class MapBlock(inf.DatabaseObject):
             out.y += 1
         return out
 
-    def _sumLand(self, coord, surrounding_blocks):
+    def _sumLand(self, coord, surrounding_blocks=None):
         """Sum the number of land tiles around the given tile coord."""
         sum = 0
         t = TileType.water
@@ -155,6 +170,8 @@ class MapBlock(inf.DatabaseObject):
             if (n.x < inf.BLOCK_SIZE and n.x >= 0 and n.y < inf.BLOCK_SIZE and
                 n.y >= 0):
                 t = self.fastGetTileType(n.x, n.y)
+            elif not surrounding_blocks:
+                t = TileType.water
             elif (n.x < 0 and n.y < inf.BLOCK_SIZE and n.y >= 0 and
                   surrounding_blocks.west.exists()):
                 t = surrounding_blocks.west.fastGetTileType(
