@@ -8,7 +8,7 @@ from google.appengine.api import memcache
 
 # Block size.
 BLOCK_SIZE = 50
-CAPITOL_SPACING = 0
+CAPITOL_SPACING = 10
 
 def validBlockCoord(coord):
     return 0 <= coord.x < BLOCK_SIZE and 0 <= coord.y < BLOCK_SIZE
