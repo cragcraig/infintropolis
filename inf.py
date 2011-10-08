@@ -8,6 +8,7 @@ from google.appengine.api import memcache
 
 # Block size.
 BLOCK_SIZE = 50
+CAPITOL_SPACING = 0
 
 def validBlockCoord(coord):
     return 0 <= coord.x < BLOCK_SIZE and 0 <= coord.y < BLOCK_SIZE
@@ -36,7 +37,7 @@ class Vect:
     def distanceTo(self, vect):
         x = self.x - vect.x
         y = self.y - vect.y
-        math.sqrt(x*x + y*y)
+        return math.sqrt(x*x + y*y)
 
     def getBlockJSONId(self):
         return str(self.x) + '_' + str(self.y)
@@ -46,6 +47,9 @@ class Vect:
 
     def getListPos(self):
         return self.x + BLOCK_SIZE * self.y
+
+    def isInBlockBounds(self):
+        return 0 <= self.x < BLOCK_SIZE and 0 <= self.y < BLOCK_SIZE
 
     def getBlockVect(self):
         return Vect(self.x // BLOCK_SIZE, self.y // BLOCK_SIZE)
@@ -167,6 +171,9 @@ class DatabaseObject:
     def exists(self):
         """Returns True if the Model has been successfully loaded."""
         return self._model is not None
+
+    def setModel(self, model):
+        self._model = model
 
     def dbGet(self, parent=None):
         """Get the model from the database."""

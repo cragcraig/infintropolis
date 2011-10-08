@@ -1,6 +1,6 @@
 canvas { border: 0px solid black; }
 html { height: 100% }
-body { height: 100%; margin: 0px; padding: 0px; background-color: #000; color: #fff; overflow: hidden; font-family: infbasic, Verdana, sans-serif; }
+body { height: 100%; margin: 0px; padding: 0px; background-color: #000; color: #fff; font-family: infbasic, Verdana, sans-serif; }
 
 @font-face {
     font-family: "infbasic";

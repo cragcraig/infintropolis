@@ -17,7 +17,6 @@ class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
     x = db.IntegerProperty(required=True, indexed=False)
     y = db.IntegerProperty(required=True, indexed=False)
-    isFullOfCapitols = db.BooleanProperty(required=True, indexed=True)
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
 
@@ -46,19 +45,19 @@ class MapBlock(inf.DatabaseObject):
     _pos = Vect(0,0)
     _buildableBlock = None
 
-    def __init__(self, pos, load=True, load_buildables=True, generate_nonexist=True):
+    def __init__(self, pos, load=True, generate_nonexist=True, buildable_block=None):
         """Load BlockModel from cache/database.
 
         By default a BlockModel will be generated and stored to the database
         if one does not exist.
         """
-        self._pos = pos.copy() 
+        self._pos = pos.copy()
+        self._buildableBlock = buildable_block
         if load:
             self.load()
             if not self._model and generate_nonexist:
                 self.generate(PROBABILITY_MAP)
                 self.loadOrCreate(x=self._pos.x, y=self._pos.y,
-                                  isFullOfCapitols=False,
                                   tiletype=self._model.tiletype,
                                   roll=self._model.roll)
 
@@ -88,8 +87,7 @@ class MapBlock(inf.DatabaseObject):
 
     def generate(self, prob_map):
         """Randomly generate the MapBlock."""
-        self._model = BlockModel(x=self._pos.x, y=self._pos.y,
-                                 isFullOfCapitols=False)
+        self._model = BlockModel(x=self._pos.x, y=self._pos.y)
         self._clear()
         surrounding = SurroundingMapBlocks(self._pos)
         for t in xrange(len(prob_map)):
@@ -120,18 +118,34 @@ class MapBlock(inf.DatabaseObject):
         return self._buildableBlock
 
     def findOpenSpace(self):
+        bb = self.getBuildableBlock()
+        blist = None
+        if bb:
+            blist = bb.getBuildablesList()
         loc = random.sample(xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE), 300)
         for l in loc:
             pos = Vect(l % inf.BLOCK_SIZE, l // inf.BLOCK_SIZE)
             tile = self.get(pos)
+            otherpos = inf.tileDirMove(pos, 3)
+            othertile = None
+            if otherpos.isInBlockBounds():
+                othertile = self.get(otherpos)
             # Ensure enough surrounding blocks are land.
-            if tile.isLand() or self.get(inf.tileDirMove(pos, 3).isLand() and\
-               self._sumLand(pos) > 3:
+            if (tile.isLand() or (othertile and othertile.isLand()))\
+                and self._sumLand(pos) > 3:
                 # Check distance to all buildables.
-                for # each buildable
-                    if pos.distanceTo(Vect(# buildable pos)) < inf.CAPITOL_SPACING:
-                        continue
-                return pos
+                clear = True
+                if blist:
+                    for b in blist:
+                        if pos.distanceTo(b.pos) < inf.CAPITOL_SPACING:
+                            clear = False
+                            break
+                if clear == True:
+                    return {'x': pos.x, 'y': pos.y,
+                            'bx': self._pos.x, 'by': self._pos.y}
+        #TODO(craig): Do in transaction.
+        #bb._model.isFullOfCapitols = True;
+        #bb.save()
         return None
 
     def _clear(self):

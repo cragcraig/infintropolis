@@ -4,7 +4,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
-from buildable import BuildType
+from buildable import Buildable, BuildType
 from inf import Vect, Tile, TileType
 
 
@@ -13,8 +13,10 @@ BUILDABLE_LIST_SIZE = 8
 
 class BuildableModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
-    x = db.IntegerProperty(required=True)
-    y = db.IntegerProperty(required=True)
+    x = db.IntegerProperty(required=True, indexed=False)
+    y = db.IntegerProperty(required=True, indexed=False)
+    count = db.IntegerProperty(required=True, indexed=True)
+    isFullOfCapitols = db.BooleanProperty(required=True, indexed=True)
     buildables = db.ListProperty(int, indexed=False)
     nations = db.StringListProperty(indexed=False)
 
@@ -24,17 +26,19 @@ class BuildableBlock(inf.DatabaseObject):
     modelClass = BuildableModel
     _pos = Vect(0,0)
 
-    def __init__(self, pos, use_cached=True):
+    def __init__(self, pos, load=True, use_cached=True):
         """Load BuildableModel from database.
 
         The model will be loaded from the database if it exists, otherwise an
         empty model will be created and stored to the database.
         """
-        self._pos = pos.copy() 
-        self.load(use_cached=use_cached)
-        if not self.exists():
-            self.loadOrCreate(x=self._pos.x, y=self._pos.y,
-                              buildables=[], nations=[])
+        self._pos = pos.copy()
+        if load:
+            self.load(use_cached=use_cached)
+            if not self.exists():
+                self.loadOrCreate(x=self._pos.x, y=self._pos.y, count=0,
+                                  isFullOfCapitols=False, buildables=[],
+                                  nations=[])
 
     def atomicBuild(self, buildable, colors):
         """Builds the buildable in an atomic database transaction."""
@@ -44,6 +48,14 @@ class BuildableBlock(inf.DatabaseObject):
         else:
             self.load()
 
+    def getBuildablesList(self):
+        return [Buildable(Vect(self._model.buildables[i],
+                               self._model.buildables[i+1],
+                               self._model.buildables[i+2]),
+                          self._model.buildables[i+3])
+                for i in xrange(0, len(self._model.buildables),
+                                BUILDABLE_LIST_SIZE)]
+
     def _build(self, buildable, colors):
         """Builds the buildable. For use inside atomicBuild()."""
         self.dbGet()
@@ -52,18 +64,22 @@ class BuildableBlock(inf.DatabaseObject):
         return True
 
     def _addBuildable(self, buildable, colors):
+        """Adds a buildable to the internal list."""
         nationIndex = self._getNationIndex(buildable.nationName)
         assert len(colors) == 2
+        self._model.count += 1
         self._model.buildables.extend(buildable.getList())
         self._model.buildables.extend(colors)
         self._model.buildables.extend([int(nationIndex), int(buildable.capitolNum)])
 
     def _delBuildable(self, pos):
+        """Removes a buildable from the internal list."""
         p = pos.getList()
         lp = len(p)
         for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):
             if self._model.buildables[i:i+lp] == p:
                 del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
+                self._model.count -= 1
                 break
 
     def getPos(self):

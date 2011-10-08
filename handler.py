@@ -6,6 +6,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 import request
 import inf
+import algorithms
 from session import Session
 from inf import Vect
 from buildable import Buildable, BuildType
@@ -64,7 +65,6 @@ class GetBuildableBlock(request.Handler):
         self.writeJSON(response)
 
 
-
 class Build(request.Handler):
     """Handle build requests."""
 
@@ -111,8 +111,24 @@ class Build(request.Handler):
         self.writeJSON({buildableblock.getPos().getBlockJSONId(): r})
 
 
+class GetDebug(request.Handler):
+    """Handle Debug requests."""
+
+    def get(self):
+        """Return requested data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Debug response.
+        r = algorithms.findOpenStart()
+        self.writeJSON(r)
+
+
 application = webapp.WSGIApplication(
                                      [('/', Session),
+                                      ('/get/debug.*', GetDebug),
                                       ('/get/map.*', GetBlock),
                                       ('/get/build.*', GetBuildableBlock),
                                       ('/set/build.*', Build),
