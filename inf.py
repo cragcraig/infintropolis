@@ -114,6 +114,10 @@ class TileType:
     none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
 
+def isGoodStartType(tiletype):
+    """Returns if a tile is good to start a capitol on."""
+    return tiletype != TileType.water and tiletype != TileType.fish and\
+           tiletype != TileType.volcano
 
 def tileDirMove(coord, d):
     """Get the first tile coordinate in direction d from the given coord."""

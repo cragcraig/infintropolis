@@ -48,6 +48,18 @@ class BuildableBlock(inf.DatabaseObject):
         else:
             self.load()
 
+    def atomicSetFullOfCapitols(self):
+        """Builds the buildable in an atomic database transaction."""
+        if db.run_in_transaction(BuildableBlock._setFull, self):
+            self.cache()
+
+    def _setFull(self):
+        """Set full of capitols."""
+        self.dbGet()
+        self._model.isFullOfCapitols = True
+        self.put()
+        return True
+ 
     def getBuildablesList(self):
         return [Buildable(Vect(self._model.buildables[i],
                                self._model.buildables[i+1],

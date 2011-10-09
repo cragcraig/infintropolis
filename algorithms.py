@@ -1,3 +1,5 @@
+import random
+
 import google.appengine.ext.db as db
 
 from inf import Vect
@@ -18,8 +20,20 @@ def findOpenStart():
         mapblock = MapBlock(Vect(buildmodel.x, buildmodel.y),
                             buildable_block=buildableblock)
         startPos = mapblock.findOpenSpace()
-        if (startPos):
+        if startPos:
             return startPos
 
-    # TODO(craig): Create new MapBlocks until space is found.
-    return None
+    # Pick empty start locations.
+    x = 0
+    query = db.GqlQuery("SELECT * FROM BlockModel "
+                        "ORDER BY x DESC")
+    r = query.fetch(1)
+    if len(r):
+        x = r[0].x
+
+    # Create new MapBlocks until space is found.
+    while not startPos:
+        mapblock = MapBlock(Vect(x, random.randint(-10, 10)))
+        startPos = mapblock.findOpenSpace()
+        x += 1
+    return startPos

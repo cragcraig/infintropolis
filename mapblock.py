@@ -15,7 +15,7 @@ PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
 
 class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
-    x = db.IntegerProperty(required=True, indexed=False)
+    x = db.IntegerProperty(required=True, indexed=True)
     y = db.IntegerProperty(required=True, indexed=False)
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
@@ -75,6 +75,10 @@ class MapBlock(inf.DatabaseObject):
         """Get the tiletype of the tile at (x, y) without any checks."""
         return self._model.tiletype[x + inf.BLOCK_SIZE * y]
 
+    def getTileType(self, pos):
+        """Get the tiletype of the tile at (x, y) without any checks."""
+        return self._model.tiletype[pos.x + inf.BLOCK_SIZE * pos.y]
+
     def fastGetRoll(self, x, y):
         """Get the roll value of the tile at (x, y) without any checks."""
         return self._model.roll[x + inf.BLOCK_SIZE * y]
@@ -122,17 +126,17 @@ class MapBlock(inf.DatabaseObject):
         blist = None
         if bb:
             blist = bb.getBuildablesList()
-        loc = random.sample(xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE), 300)
-        for l in loc:
-            pos = Vect(l % inf.BLOCK_SIZE, l // inf.BLOCK_SIZE)
-            tile = self.get(pos)
-            otherpos = inf.tileDirMove(pos, 3)
-            othertile = None
-            if otherpos.isInBlockBounds():
-                othertile = self.get(otherpos)
+        bsize = inf.BLOCK_SIZE-inf.CAPITOL_SPACING
+        sl = random.sample(xrange(bsize**2), 300)
+        for l in sl:
+            pos = Vect(l % bsize + inf.CAPITOL_SPACING // 2,
+                       l // bsize + inf.CAPITOL_SPACING // 2)
+            tiles = [self.getTileType(pos),
+                     self.getTileType(inf.tileDirMove(pos, 2)),
+                     self.getTileType(inf.tileDirMove(pos, 3)),
+                     self.getTileType(inf.tileDirMove(pos, 4))]
             # Ensure enough surrounding blocks are land.
-            if (tile.isLand() or (othertile and othertile.isLand()))\
-                and self._sumLand(pos) > 3:
+            if len(filter(inf.isGoodStartType, tiles)) == 4:
                 # Check distance to all buildables.
                 clear = True
                 if blist:
@@ -143,9 +147,7 @@ class MapBlock(inf.DatabaseObject):
                 if clear == True:
                     return {'x': pos.x, 'y': pos.y,
                             'bx': self._pos.x, 'by': self._pos.y}
-        #TODO(craig): Do in transaction.
-        #bb._model.isFullOfCapitols = True;
-        #bb.save()
+        bb.atomicSetFullOfCapitols()
         return None
 
     def _clear(self):
