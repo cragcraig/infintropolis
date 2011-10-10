@@ -172,6 +172,18 @@ class DatabaseObject:
         if (self.exists()):
             memcache.set(self.getKeyName(), self._model, time=60*timeout)
 
+    def atomic(self, method, *args, **kwargs):
+        """Load the model and execute function in an atomic transaction.
+
+        The updated object is cached and reloaded if the transaction failed.
+        """
+        if db.run_in_transaction(method, self, *args, **kwargs):
+            self.cache()
+            return True
+        else:
+            self.load()
+            return False
+
     def exists(self):
         """Returns True if the Model has been successfully loaded."""
         return self._model is not None

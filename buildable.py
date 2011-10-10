@@ -26,12 +26,12 @@ class Buildable:
         self.pos = pos.copy()
         self.level = int(level)
 
-    def build(self, capitol, buildableblock):
+    def build(self, nation, capitol, buildableblock):
         """Adds this buildable in all necessary database models."""
-        self.nationName = capitol.getNationName()
+        self.nationName = nation.getName()
         self.capitolNum = capitol.getNumber()
         self.block = buildableblock.getPos().copy()
-        buildableblock.atomicBuild(self, capitol.getColors())
+        buildableblock.atomicBuild(self, nation.getColors())
 
     def copy(self):
         return copy.copy(self)

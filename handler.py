@@ -65,7 +65,31 @@ class GetBuildableBlock(request.Handler):
         self.writeJSON(response)
 
 
-class Build(request.Handler):
+class GetCapitol(request.Handler):
+    """Handle Capitol requests."""
+
+    def get(self):
+        """Return requested data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Setup.
+        request = self.getJSONRequest()
+        response = {}
+
+        # Retrieve Capitol data.
+        if self.inDict(reqblock, 'x', 'y'):
+            block = MapBlock(Vect(reqblock['x'], reqblock['y']))
+            response[block.getPos().getBlockJSONId()] = {
+                'mapblock': block.getString(),
+                'buildableblock': block.getBuildableBlock().getJSONList()}
+
+        self.writeJSON(response)
+
+
+class PostBuild(request.Handler):
     """Handle build requests."""
 
     def post(self):
@@ -96,7 +120,6 @@ class Build(request.Handler):
         #TODO(craig): Don't use memcache.
         #TODO(craig): Update capitol in a transaction (atomic).
         capitol = Capitol(self.getNation(), request['capitol'])
-        capitol.save()
 
         buildableblock = BuildableBlock(blockVect)
         if not capitol or not buildableblock:
@@ -104,7 +127,7 @@ class Build(request.Handler):
 
         # Build.
         build = Buildable(pos, buildtype)
-        build.build(capitol, buildableblock)
+        build.build(self.getNation(), capitol, buildableblock)
 
         # Return updated BuildableBlock.
         r = {'buildableblock': buildableblock.getJSONList()}
@@ -129,9 +152,10 @@ class GetDebug(request.Handler):
 application = webapp.WSGIApplication(
                                      [('/', Session),
                                       ('/get/debug.*', GetDebug),
+                                      ('/get/capitol.*', GetCapitol),
                                       ('/get/map.*', GetBlock),
                                       ('/get/build.*', GetBuildableBlock),
-                                      ('/set/build.*', Build),
+                                      ('/set/build.*', PostBuild),
                                       ('/session.*', Session)],
                                      debug=True)
 

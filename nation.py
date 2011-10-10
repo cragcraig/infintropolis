@@ -51,30 +51,30 @@ class Nation(inf.DatabaseObject):
         """
         origin = Vect(0, 0)
         self.loadOrCreate(name=self._name, pwd=self._pwd, email=email,
-                          title='', points=0, capitolcount=0, color1=color1,
+                          title='', points=0, capitolcount=1, color1=color1,
                           color2=color2)
         # Confirm that this nation did not previously exist.
         self.checkPassword()
-        if self.exists() and self.getCapitolCount() == 0:
-            capitol = self.createNewCapitol(origin)
-            #TODO(craig): Must be atomic.
-            self.save()
-            capitol.save()
 
-    def createNewCapitol(self, originBlock):
-        """Adds a new capitol.
+    def atomicAddCapitol(self):
+        """Increment the capitol count by 1 in a transaction."""
+        if db.run_in_transaction(Nation._addCapitol, self):
+            self.cache()
+        else:
+            self.load()
 
-        You are responsible for saving the updated nation and capitol models.
-        """
-        #TODO(craig): Must be atomic.
-        c = Capitol(self, self._model.capitolcount, load=False)
-        c.create(originBlock, self._model.color1, self._model.color2)
+    def _addCapitol(self):
+        self.dbGet()
         self._model.capitolcount += 1
-        return c
+        self.put()
+        return True
 
     def getCapitolCount(self):
         """Return the current number of capitols under this nation."""
         return int(self._model.capitolcount)
+
+    def getColors(self):
+        return [int(self._model.color1), int(self._model.color2)]
 
     def getName(self):
         return self._name

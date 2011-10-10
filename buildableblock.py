@@ -4,7 +4,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
-from buildable import Buildable, BuildType
+from buildable import BuildType
 from inf import Vect, Tile, TileType
 
 
@@ -52,6 +52,8 @@ class BuildableBlock(inf.DatabaseObject):
         """Builds the buildable in an atomic database transaction."""
         if db.run_in_transaction(BuildableBlock._setFull, self):
             self.cache()
+        else:
+            self.load()
 
     def _setFull(self):
         """Set full of capitols."""
