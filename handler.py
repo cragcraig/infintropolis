@@ -36,7 +36,7 @@ class GetBlock(request.Handler):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']))
                 response[block.getPos().getBlockJSONId()] = {
                     'mapblock': block.getString(),
-                    'buildableblock': block.getBuildableBlock().getJSONList()}
+                    'buildableblock': block.getBuildableBlock().getJSON()}
 
         self.writeJSON(response)
 
@@ -60,7 +60,7 @@ class GetBuildableBlock(request.Handler):
             if self.inDict(reqblock, 'x', 'y'):
                 block = BuildableBlock(Vect(reqblock['x'], reqblock['y']))
                 response[block.getPos().getBlockJSONId()] = {
-                    'buildableblock': block.getJSONList()}
+                    'buildableblock': block.getJSON()}
 
         self.writeJSON(response)
 
@@ -80,11 +80,15 @@ class GetCapitol(request.Handler):
         response = {}
 
         # Retrieve Capitol data.
-        if self.inDict(reqblock, 'x', 'y'):
-            block = MapBlock(Vect(reqblock['x'], reqblock['y']))
-            response[block.getPos().getBlockJSONId()] = {
-                'mapblock': block.getString(),
-                'buildableblock': block.getBuildableBlock().getJSONList()}
+        if self.inDict(request, 'capitol'):
+            capitolNum = request['capitol']
+            capitol = Capitol(self.getNation(), capitolNum)
+            if not capitol.exists() or not capitol.hasSetLocation():
+                self.writeJSON({'hasSet': capitol.hasSetLocation(),
+                                'hasLoc': capitol.hasLocation(),
+                                'loc': capitol._model.location})
+                return
+            response['capitol:' + str(capitolNum)] = capitol.getJSON()
 
         self.writeJSON(response)
 
@@ -130,7 +134,7 @@ class PostBuild(request.Handler):
         build.build(self.getNation(), capitol, buildableblock)
 
         # Return updated BuildableBlock.
-        r = {'buildableblock': buildableblock.getJSONList()}
+        r = {'buildableblock': buildableblock.getJSON()}
         self.writeJSON({buildableblock.getPos().getBlockJSONId(): r})
 
 

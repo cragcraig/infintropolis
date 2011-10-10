@@ -4,7 +4,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
-from buildable import BuildType
+from buildable import Buildable, BuildType
 from inf import Vect, Tile, TileType
 
 
@@ -99,7 +99,7 @@ class BuildableBlock(inf.DatabaseObject):
     def getPos(self):
         return self._pos
 
-    def getJSONList(self):
+    def getJSON(self):
         """Construct a list of dictionary representations of buildables."""
         return [{'x': int(self._model.buildables[i]),
                  'y': int(self._model.buildables[i+1]),

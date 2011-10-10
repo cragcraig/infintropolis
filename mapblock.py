@@ -122,6 +122,10 @@ class MapBlock(inf.DatabaseObject):
         return self._buildableBlock
 
     def findOpenSpace(self):
+        """Find an open space for a new capitol, if possible.
+        
+        Returns either False or a tuple (Vect(block), Vect(pos)).
+        """
         bb = self.getBuildableBlock()
         blist = None
         if bb:
@@ -145,8 +149,7 @@ class MapBlock(inf.DatabaseObject):
                             clear = False
                             break
                 if clear == True:
-                    return {'x': pos.x, 'y': pos.y,
-                            'bx': self._pos.x, 'by': self._pos.y}
+                    return (Vect(self._pos.x, self._pos.y), Vect(pos.x, pos.y))
         bb.atomicSetFullOfCapitols()
         return None
 

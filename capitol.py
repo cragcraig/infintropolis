@@ -1,8 +1,9 @@
 from google.appengine.ext import db
 
 import inf
+import algorithms
 from buildable import Buildable, BuildType
-
+from buildableblock import BuildableBlock
 
 BUILDABLE_LIST_SIZE = 6
 
@@ -12,7 +13,7 @@ class CapitolModel(db.Model):
     nation = db.StringProperty(required=True)
     number = db.IntegerProperty(required=True)
     location = db.ListProperty(int, indexed=False, required=True)
-    unset = db.BooleanProperty(required=True, indexed=False)
+    hasSet = db.BooleanProperty(required=True, indexed=False)
     lumber = db.IntegerProperty(required=True)
     wool = db.IntegerProperty(required=True)
     brick = db.IntegerProperty(required=True)
@@ -39,16 +40,61 @@ class Capitol(inf.DatabaseObject):
             self.load()
             if not self.exists():
                 self.create()
+            self.updateLocationLogic()
 
     def create(self):
         """Creates a new Capitol model."""
         self.loadOrCreate(nation=self.getNationName(), number=self._number,
-                          unset=True, location=[],
+                          hasSet=False, location=[],
                           lumber=0, wool=0, brick=0, grain=0, ore=0, gold=0)
 
     def getNationName(self):
         """Returns the name of the controlling nation."""
         return self._nation.getName()
+
+    def getJSON(self):
+        """Return JSON dictionary."""
+        return {'number': self._number,
+                'bx': self._model.location[0],
+                'by': self._model.location[1],
+                'x': self._model.location[2],
+                'y': self._model.location[3],
+                'resources': self.getResourceList()}
+
+    def getResourceList(self):
+        """Get Capitol's resources in list form."""
+        return [self._model.lumber, self._model.wool, self._model.brick,
+                self._model.grain, self._model.ore, self._model.gold]
+
+    def hasLocation(self):
+        """Returns true if a location has been assigned.
+
+        This location is not required to be permanent.
+        """
+        return len(self._model.location) > 0
+
+    def hasSetLocation(self):
+        """Return whether this capitol location is permanent."""
+        return self._model.hasSet
+
+    def updateLocationLogic(self):
+        """Logic to update capitol origin location."""
+        if self.hasSetLocation():
+            return
+        elif not self.hasLocation():
+            blockVect, pos = algorithms.findOpenStart()
+            if blockVect and pos:
+                self.atomicSetLocation(blockVect, pos)
+        if self.hasLocation(): #TODO(craig): and not settlementExists()
+            #TODO(craig): Check that build can actually occur.
+            buildableblock = BuildableBlock(Vect(self._model.location[0],
+                                                 self._model.location[1]))
+            build = Buildable(Vect(self._model.location[3],
+                                   self._model.location[4]),
+                              BuildType.settlement)
+            build.build(self._nation, self, buildableblock)
+        if not self.hasSetLocation(): #TODO(craig) and settlementExists()
+            self.atomicSetHasLocation()
 
     def atomicSetLocation(self, blockVect, pos):
         """Atomic set location (not permanent)."""
@@ -61,6 +107,20 @@ class Capitol(inf.DatabaseObject):
         self.dbGet()
         self._model.location = [blockVect.x, blockVect.y, pos.x, pos.y]
         self.put()
+        return True
+
+    def atomicSetHasLocation(self):
+        """Atomic set location (not permanent)."""
+        if db.run_in_transaction(Capitol._setHasLocation, self):
+            self.cache()
+        else:
+            self.load()
+
+    def _setHasLocation(self):
+        self.dbGet()
+        self._model.hasSet = True
+        self.put()
+        return True
 
     def getNumber(self):
         return self._number
