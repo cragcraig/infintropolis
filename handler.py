@@ -84,11 +84,8 @@ class GetCapitol(request.Handler):
             capitolNum = request['capitol']
             capitol = Capitol(self.getNation(), capitolNum)
             if not capitol.exists() or not capitol.hasSetLocation():
-                self.writeJSON({'hasSet': capitol.hasSetLocation(),
-                                'hasLoc': capitol.hasLocation(),
-                                'loc': capitol._model.location})
                 return
-            response['capitol:' + str(capitolNum)] = capitol.getJSON()
+            response['capitol'] = capitol.getJSON()
 
         self.writeJSON(response)
 

@@ -6,6 +6,7 @@ from google.appengine.api import memcache
 import inf
 from inf import Vect, Tile, TileType
 from buildableblock import BuildableBlock
+from buildable import BuildType
 
 # Probabilities for map generator.
 PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
@@ -76,7 +77,7 @@ class MapBlock(inf.DatabaseObject):
         return self._model.tiletype[x + inf.BLOCK_SIZE * y]
 
     def getTileType(self, pos):
-        """Get the tiletype of the tile at (x, y) without any checks."""
+        """Get the tiletype of the tile at pos(x, y) without any checks."""
         return self._model.tiletype[pos.x + inf.BLOCK_SIZE * pos.y]
 
     def fastGetRoll(self, x, y):
@@ -149,7 +150,8 @@ class MapBlock(inf.DatabaseObject):
                             clear = False
                             break
                 if clear == True:
-                    return (Vect(self._pos.x, self._pos.y), Vect(pos.x, pos.y))
+                    d = random.sample([BuildType.topVertex, BuildType.bottomVertex], 1)
+                    return (Vect(self._pos.x, self._pos.y), Vect(pos.x, pos.y, d[0]))
         bb.atomicSetFullOfCapitols()
         return None
 

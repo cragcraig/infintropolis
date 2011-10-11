@@ -2,6 +2,7 @@ from google.appengine.ext import db
 
 import inf
 import algorithms
+from inf import Vect
 from buildable import Buildable, BuildType
 from buildableblock import BuildableBlock
 
@@ -89,7 +90,8 @@ class Capitol(inf.DatabaseObject):
             #TODO(craig): Check that build can actually occur.
             buildableblock = BuildableBlock(Vect(self._model.location[0],
                                                  self._model.location[1]))
-            build = Buildable(Vect(self._model.location[3],
+            build = Buildable(Vect(self._model.location[2],
+                                   self._model.location[3],
                                    self._model.location[4]),
                               BuildType.settlement)
             build.build(self._nation, self, buildableblock)
@@ -105,7 +107,7 @@ class Capitol(inf.DatabaseObject):
 
     def _setLoc(self, blockVect, pos):
         self.dbGet()
-        self._model.location = [blockVect.x, blockVect.y, pos.x, pos.y]
+        self._model.location = [blockVect.x, blockVect.y, pos.x, pos.y, pos.d]
         self.put()
         return True
 

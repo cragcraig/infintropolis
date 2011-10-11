@@ -17,8 +17,8 @@ var scrollWE = 0;
 var scrollNS = 0;
 
 // globals
-var screenX = 24;
-var screenY = 24;
+var screenX = 0;
+var screenY = 0;
 var screenOffsetX = 0;
 var screenOffsetY = 0;
 var screenWidth;
@@ -32,9 +32,12 @@ var selectedVertex;
 var selectedEdge;
 var tDrawRollTokens = true;
 
+// nation
+var capitol = null;
+
 // map
-var mapX = Infinity;
-var mapY = Infinity;
+var mapX = 0;
+var mapY = 0;
 var mapSizes = 50;
 var tileMap = [];
 var tileLoader = [];
@@ -102,9 +105,22 @@ function JSONCallback(json)
         }
 
         /* parse capitol and nation data */
-        /* Not implemented yet. */
+        if (json['capitol']) {
+            parseCapitol(json['capitol']);
+        }
     }
     render();
+}
+
+/* Parses a Capitol JSON object. */
+function parseCapitol(json)
+{
+    if (!capitol || (json.number != capitol.number)) {
+        goMap(json.bx, json.by);
+        screenX = json.x - Math.round(screenWidth/2);
+        screenY = json.y - Math.round(screenHeight/2);
+    }
+    capitol = json;
 }
 
 /* Parses a MapBlock formatted string.
@@ -251,10 +267,10 @@ function getTile(x, y)
         y -= mapSizes;
     }
     /* return tile */
-    if (x < 0 || y < 0 || x >= mapSizes || y >= mapSizes || !tileMap[i].valid) {
+    if (!tileMap[i].valid || x < 0 || y < 0 || x >= mapSizes || y >= mapSizes) {
         return {type: 0, roll: 0};
     }
-    return tileMap[i].map[x][y];
+    return tileMap[i].map[y][x];
 
 }
 
@@ -705,7 +721,7 @@ function init()
 {
     // ensure only once
     if (initd) return;
-    
+
     // init
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext("2d");
@@ -715,13 +731,13 @@ function init()
     canvas.onmouseover = updateMouseOver;
     canvas.onmouseout = updateMouseOut;
 
-    // set map position
-    goMap(0, 0);
+    // request server data
+    RequestJSON("GET", "/get/capitol", {'capitol': 0});
 
     // keypress
     document.onkeydown = keyPressCallback;
     document.onkeyup = keyReleaseCallback;
-    
+
     // mouse scroll
     initMouseScroll();
 
