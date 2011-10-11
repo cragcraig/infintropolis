@@ -117,9 +117,14 @@ function JSONCallback(json)
 function parseCapitol(json)
 {
     if (!capitol || (json.number != capitol.number)) {
-        goMap(json.bx, json.by);
-        screenX = json.x - Math.round(screenWidth/2);
-        screenY = json.y - Math.round(screenHeight/2);
+        var xoff = 0;
+        var yoff = 0;
+        if (json.x < mapSizes/2) xoff = 1;
+        if (json.y < mapSizes/2) yoff = 1;
+        goMap(json.bx - xoff, json.by - yoff);
+        screenX = json.x - Math.round(screenWidth/2) + mapSizes*xoff;
+        screenY = Math.floor((json.y - Math.floor(screenHeight/2))/2)*2
+                  + mapSizes*yoff;
     }
     capitol = json;
 }

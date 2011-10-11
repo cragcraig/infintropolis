@@ -9,11 +9,12 @@ from buildableblock import BuildableBlock
 from buildable import BuildType
 
 # Probabilities for map generator.
-PROBABILITY_MAP = [[3, 30, 10, 10, 30, 80, 90],
+PROBABILITY_MAP = [[3, 40, 30, 10, 30, 80, 90],
                    [0, 0, 50, 75, 85, 95, 80],
                    [0, 20, 0, 0, 0, 0, 100]]
-#PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
-#                   [0, 0, 65, 75, 85, 95, 100],
+# SMALL ISLANDS
+#PROBABILITY_MAP = [[3, 30, 10, 10, 30, 80, 90],
+#                   [0, 0, 50, 75, 85, 95, 80],
 #                   [0, 20, 0, 0, 0, 0, 100]]
 
 
