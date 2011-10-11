@@ -27,6 +27,7 @@ var screenHeight;
 // state
 var globalState = 0;
 var globalBuildState = false;
+var globalDebug = false;
 var selectedTile;
 var selectedVertex;
 var selectedEdge;
@@ -826,8 +827,8 @@ function drawLoadingMapText()
     ctx.lineWidth = 2;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.strokeText("[ loading map data ]", canvas.width/2, 10);
-    ctx.fillText("[ loading map data ]", canvas.width/2, 10);
+    ctx.strokeText("[ loading map ]", canvas.width/2, 10);
+    ctx.fillText("[ loading map ]", canvas.width/2, 10);
 }
 
 // render highlight tile
@@ -978,7 +979,14 @@ function drawTile(tile, x, y)
     if (tDrawRollTokens && tile.type == 9) {
         ctx.drawImage(specialTokens[0], dx - specialTokens[0].width/2, dy - specialTokens[0].height/2);
     }
-        
+    /* draw debug text */
+    if (globalDebug) {
+        ctx.font = "16pt serif";
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText((x + screenX)%mapSizes + "," + (y + screenY)%mapSizes, dx, dy);
+    }
 }
 
 // Draw a buildable

@@ -9,9 +9,12 @@ from buildableblock import BuildableBlock
 from buildable import BuildType
 
 # Probabilities for map generator.
-PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
-                   [0, 0, 65, 75, 85, 95, 100],
+PROBABILITY_MAP = [[3, 30, 10, 10, 30, 80, 90],
+                   [0, 0, 50, 75, 85, 95, 80],
                    [0, 20, 0, 0, 0, 0, 100]]
+#PROBABILITY_MAP = [[5, 50, 30, 10, 30, 80, 90],
+#                   [0, 0, 65, 75, 85, 95, 100],
+#                   [0, 20, 0, 0, 0, 0, 100]]
 
 
 class BlockModel(db.Model):
@@ -175,7 +178,7 @@ class MapBlock(inf.DatabaseObject):
                 out.x += 1
             elif d == 2 or d == 3:
                 out.x -= 1
-        if (not coord.x % 2) and (d == 0 or d == 2):
+        if (coord.x % 2 == 0) and (d == 0 or d == 2):
             out.y -= 1
         elif coord.x % 2 and (d == 3 or d == 5):
             out.y += 1
@@ -220,6 +223,6 @@ class MapBlock(inf.DatabaseObject):
         sum = self._sumLand(coord, surrounding_blocks)
         t = self.get(coord)
         # Land tile.
-        if random.randint(1, 100) < probabilities[sum]:
+        if random.randint(0, 99) < probabilities[sum]:
             t.randomize()
         self.set(coord, t)

@@ -146,8 +146,17 @@ class GetDebug(request.Handler):
             return
 
         # Debug response.
-        r = algorithms.findOpenStart()
-        self.writeJSON(r)
+        request = self.getJSONRequest()
+        mapblock = MapBlock(Vect(request['bx'], request['by']),
+                            generate_nonexist=False)
+        if mapblock.exists():
+            out = Vect(0,0)
+            mapblock._getNeighbor(Vect(request['x'], request['y']), request['d'], out)
+            self.writeJSON({'sumLand':
+                mapblock._sumLand(Vect(request['x'], request['y'])),
+                'dirTile': str(out.x) + "," + str(out.y)})
+        else:
+            self.writeJSON("No such mapblock: " + str(mapblock._pos.x) + "," + str(mapblock._pos.y))
 
 
 application = webapp.WSGIApplication(

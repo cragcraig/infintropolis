@@ -1,6 +1,6 @@
 import cgi
 import string
-import simplejson as json
+import json
 
 from google.appengine.ext import webapp
 
