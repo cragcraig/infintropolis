@@ -169,19 +169,20 @@ class MapBlock(inf.DatabaseObject):
         """Get the first tile in direction d from the given coord."""
         out.x = coord.x
         out.y = coord.y
-        if d == 1:
+        if d == 0:
+            out.x += 1
+            return out
+        elif d == 3:
+            out.x -= 1
+            return out
+        elif d == 1 or d == 2:
             out.y -= 1
-        elif d == 4:
+        elif d == 4 or d == 5:
             out.y += 1
-        else:
-            if d == 0 or d == 5:
-                out.x += 1
-            elif d == 2 or d == 3:
-                out.x -= 1
-        if (coord.x % 2 == 0) and (d == 0 or d == 2):
-            out.y -= 1
-        elif coord.x % 2 and (d == 3 or d == 5):
-            out.y += 1
+        if (coord.y % 2 == 0) and (d == 2 or d == 4):
+            out.x -= 1
+        elif coord.y % 2 and (d == 1 or d == 5):
+            out.x += 1
         return out
 
     def _sumLand(self, coord, surrounding_blocks=None):
