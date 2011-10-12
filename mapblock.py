@@ -183,55 +183,36 @@ class MapBlock(inf.DatabaseObject):
                                  [TileType.water])
         self._model.roll = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
 
-    @staticmethod
-    def _getNeighbor(coord, d, out):
-        """Get the first tile in direction d from the given coord."""
-        out.x = coord.x
-        out.y = coord.y
-        if d == 0:
-            out.x += 1
-            return out
-        elif d == 3:
-            out.x -= 1
-            return out
-        elif d == 1 or d == 2:
-            out.y -= 1
-        elif d == 4 or d == 5:
-            out.y += 1
-        if (coord.y % 2 == 0) and (d == 2 or d == 4):
-            out.x -= 1
-        elif coord.y % 2 and (d == 1 or d == 5):
-            out.x += 1
-        return out
-
     def _sumLand(self, coord, surrounding_blocks=None):
         """Sum the number of land tiles around the given tile coord."""
         sum = 0
         t = TileType.water
-        n = Vect(0, 0)
-        for i in xrange(6):
-            self._getNeighbor(coord, i, n)
-            if (n.x < inf.BLOCK_SIZE and n.x >= 0 and n.y < inf.BLOCK_SIZE and
-                n.y >= 0):
-                t = self.fastGetTileType(n.x, n.y)
+        x = None
+        y = None
+        for p in inf.listSurroundingTilePos(coord):
+            x = p[0]
+            y = p[1]
+            if (x < inf.BLOCK_SIZE and x >= 0 and y < inf.BLOCK_SIZE and
+                y >= 0):
+                t = self.fastGetTileType(x, y)
             elif not surrounding_blocks:
                 t = TileType.water
-            elif (n.x < 0 and n.y < inf.BLOCK_SIZE and n.y >= 0 and
+            elif (x < 0 and y < inf.BLOCK_SIZE and y >= 0 and
                   surrounding_blocks.west.exists()):
                 t = surrounding_blocks.west.fastGetTileType(
-                    n.x + inf.BLOCK_SIZE, n.y)
-            elif (n.x >= inf.BLOCK_SIZE and n.y < inf.BLOCK_SIZE and
-                  n.y >= 0 and surrounding_blocks.east.exists()):
+                    x + inf.BLOCK_SIZE, y)
+            elif (x >= inf.BLOCK_SIZE and y < inf.BLOCK_SIZE and
+                  y >= 0 and surrounding_blocks.east.exists()):
                 t = surrounding_blocks.east.fastGetTileType(
-                    n.x - inf.BLOCK_SIZE, n.y)
-            elif (n.y < 0 and n.x < inf.BLOCK_SIZE and n.x >= 0 and
+                    x - inf.BLOCK_SIZE, y)
+            elif (y < 0 and x < inf.BLOCK_SIZE and x >= 0 and
                   surrounding_blocks.north.exists()):
                 t = surrounding_blocks.north.fastGetTileType(
-                    n.x, n.y + inf.BLOCK_SIZE)
-            elif (n.y >= inf.BLOCK_SIZE and n.x < inf.BLOCK_SIZE and
-                  n.x >= 0 and surrounding_blocks.south.exists()):
+                    x, y + inf.BLOCK_SIZE)
+            elif (y >= inf.BLOCK_SIZE and x < inf.BLOCK_SIZE and
+                  x >= 0 and surrounding_blocks.south.exists()):
                 t = surrounding_blocks.south.fastGetTileType(
-                    n.x, n.y - inf.BLOCK_SIZE)
+                    x, y - inf.BLOCK_SIZE)
             else:
                 t = TileType.water
             if t != TileType.water:
