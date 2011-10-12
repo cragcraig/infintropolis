@@ -2,12 +2,14 @@ import random
 
 import google.appengine.ext.db as db
 
-from inf import Vect
+import inf
+from inf import Vect, TileType
 from mapblock import MapBlock
 from buildableblock import BuildableBlock
 
 
 def findOpenStart():
+    """Find or generate an unoccupied location to start a capitol."""
     startPos = None
     # Find space in an avaliable MapBlock.
     query = db.GqlQuery("SELECT * FROM BuildableModel "
@@ -37,3 +39,27 @@ def findOpenStart():
         startPos = mapblock.findOpenSpace()
         x += 1
     return startPos
+
+
+def recurseLOS(pos, unique, los, costmap, tiles, count):
+    """Recursively performs line of sight calculations.
+
+    pos: Current pos as a Vert().
+    unique: A unique id > 0 for this algorithm run.
+    los: List containing LOS data for the MapBlock.
+    tiles: List containing map tile data for the MapBlock.
+    count: Current LOS counter.
+    """
+    index = pos.getListPos()
+    if index < 0 or index > inf.BLOCK_SIZE * inf.BLOCK_SIZE:
+        #TODO(craig): Can't do this, need to handle multi-map visibility.
+        return
+    if los[index] == unique and costmap[index] > count:
+        return
+    los[index] = unique
+    costmap[index] = count
+    newcount = count - TileType.LOSCost[tiles[index]]
+    if newcount <= 0:
+        return
+    for p in inf.listSurroundingTilePos(pos):
+        recurseLOS(Vect(p[0], p[1]), unique, los, costmap, tiles, newcount)

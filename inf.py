@@ -8,7 +8,7 @@ from google.appengine.api import memcache
 
 # Block size.
 BLOCK_SIZE = 50
-CAPITOL_SPACING = 6
+CAPITOL_SPACING = 4
 
 def validBlockCoord(coord):
     return 0 <= coord.x < BLOCK_SIZE and 0 <= coord.y < BLOCK_SIZE
@@ -113,6 +113,7 @@ class TileType:
     """Enumeration for tile types."""
     none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
+    LOSCost = [None, 1, 2, 2, 3, 3, 4, 2, 2, 4, 1]
 
 
 def isGoodStartType(tiletype):
@@ -139,6 +140,16 @@ def tileDirMove(coord, d):
     elif coord.y % 2 and (d == 1 or d == 5):
         out.x += 1
     return out
+
+
+def listSurroundingTilePos(coord):
+    """Returns a tuple of the tiles surrounding coord as (x,y) pair tuples."""
+    x = coord.x
+    y = coord.y
+    if y % 2:
+        return ((x+1, y), (x, y-1), (x-1, y-1), (x-1, y), (x-1, y+1), (x, y+1))
+    else:
+        return ((x+1, y), (x+1, y-1), (x, y-1), (x-1, y), (x, y+1), (x+1, y+1))
 
 
 class DatabaseObject:

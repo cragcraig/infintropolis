@@ -4,6 +4,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
+import algorithms
 from inf import Vect, Tile, TileType
 from buildableblock import BuildableBlock
 from buildable import BuildType
@@ -49,6 +50,7 @@ class MapBlock(inf.DatabaseObject):
     modelClass = BlockModel
     _pos = Vect(0,0)
     _buildableBlock = None
+    _visibilityMap = None
 
     def __init__(self, pos, load=True, generate_nonexist=True, buildable_block=None):
         """Load BlockModel from cache/database.
@@ -112,10 +114,24 @@ class MapBlock(inf.DatabaseObject):
                 for k in xrange(i, j, -1):
                     self._generateTile(Vect(k, j), surrounding, prob_map[t])
 
+    def generateLineOfSight(self):
+        """Generates line of sight."""
+        if not self.exists():
+            return
+        los = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
+        costmap = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [inf.BLOCK_SIZE]
+        blist = self.getBuildableBlock().getBuildablesList()
+        for i in xrange(len(blist)):
+            for v in blist[i].getSurroundingTiles():
+                algorithms.recurseLOS(v, i + 1, los, costmap,
+                                      self._model.tiletype, 5)
+        self._visibilityMap = los
+
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
-        return ''.join([str(int(self._model.tiletype[i])) + ':' +
+        return ''.join([(str(int(self._model.tiletype[i])) + ':' +
                         str(int(self._model.roll[i])) + ','
+                        if self._visibilityMap[i] else "0:0,")
                         for i in xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE)])
 
     def getKeyName(self):

@@ -1,5 +1,7 @@
 import copy
 
+import inf
+
 
 class Buildable:
     """Represents an buildable game object.
@@ -41,6 +43,24 @@ class Buildable:
         l = self.pos.getList()
         l.append(self.level)
         return l
+
+    def getSurroundingTiles(self):
+        """Returns a list of the surrounding tile positions."""
+        if self.pos.d == BuildType.topEdge:
+            return [self.pos, inf.tileDirMove(self.pos, 2)]
+        elif self.pos.d == BuildType.centerEdge:
+            return [self.pos, inf.tileDirMove(self.pos, 3)]
+        elif self.pos.d == BuildType.bottomEdge:
+            return [self.pos, inf.tileDirMove(self.pos, 4)]
+        elif self.pos.d == BuildType.topVertex:
+            return [self.pos, inf.tileDirMove(self.pos, 2),
+                    inf.tileDirMove(self.pos, 3)]
+        elif self.pos.d == BuildType.bottomVertex:
+            return [self.pos, inf.tileDirMove(self.pos, 4),
+                    inf.tileDirMove(self.pos, 3)]
+        else:
+            return []
+                
 
 
 class BuildType:

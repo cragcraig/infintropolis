@@ -34,6 +34,7 @@ class GetBlock(request.Handler):
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']))
+                block.generateLineOfSight()
                 response[block.getPos().getBlockJSONId()] = {
                     'mapblock': block.getString(),
                     'buildableblock': block.getBuildableBlock().getJSON()}
