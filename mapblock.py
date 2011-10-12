@@ -114,24 +114,26 @@ class MapBlock(inf.DatabaseObject):
                 for k in xrange(i, j, -1):
                     self._generateTile(Vect(k, j), surrounding, prob_map[t])
 
-    def generateLineOfSight(self):
+    def generateLineOfSight(self, nationName):
         """Generates line of sight."""
         if not self.exists():
             return
         los = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
-        costmap = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [inf.BLOCK_SIZE]
+        costmap = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
         blist = self.getBuildableBlock().getBuildablesList()
-        for i in xrange(len(blist)):
-            for v in blist[i].getSurroundingTiles():
-                algorithms.recurseLOS(v, i + 1, los, costmap,
-                                      self._model.tiletype, 5)
+        for b in blist:
+            if b.nationName == nationName:
+                for v in b.getSurroundingTiles():
+                    algorithms.recurseLOS(v, los, costmap,
+                                          self._model.tiletype,
+                                          BuildType.LOSVision[b.level])
         self._visibilityMap = los
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
-        return ''.join([(str(int(self._model.tiletype[i])) + ':' +
-                        str(int(self._model.roll[i])) + ','
-                        if self._visibilityMap[i] else "0:0,")
+        return ''.join([str(int(self._model.tiletype[i])) + ':' +
+                        (str(int(self._model.roll[i])) + ','
+                         if self._visibilityMap[i] else "-1,")
                         for i in xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE)])
 
     def getKeyName(self):

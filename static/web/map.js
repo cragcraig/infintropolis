@@ -971,17 +971,18 @@ function drawTile(tile, x, y)
 
     var dx = outputx(x,y);
     var dy = outputy(x,y);
-    ctx.drawImage(tileSprite, TileWidth * tile.type, 0, TileWidth, TileHeight,
+    ctx.drawImage(tileSprite, TileWidth * tile.type,
+                  (tile.roll == -1 ? TileHeight : 0), TileWidth, TileHeight,
                   dx - TileWidth/2, dy - TileHeight/2, TileWidth, TileHeight);
 
-    if (tDrawRollTokens && tile.roll != 0) {
+    if (tDrawRollTokens && tile.roll > 0) {
         /* circle */
         var color = (tile.roll == 6 || tile.roll == 8) ? "#ad151b" : "#000";
         var numDots = tile.roll - 2;
         ctx.drawImage(tokens[numDots], dx - tokens[numDots].width/2, dy - tokens[numDots].height/2);
     }
     /* event text */
-    if (tDrawRollTokens && tile.type == 9) {
+    if (tDrawRollTokens && tile.type == 9 && tile.roll != -1) {
         ctx.drawImage(specialTokens[0], dx - specialTokens[0].width/2, dy - specialTokens[0].height/2);
     }
     /* draw debug text */

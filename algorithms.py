@@ -41,12 +41,12 @@ def findOpenStart():
     return startPos
 
 
-def recurseLOS(pos, unique, los, costmap, tiles, count):
+def recurseLOS(pos, los, costmap, tiles, count):
     """Recursively performs line of sight calculations.
 
     pos: Current pos as a Vert().
-    unique: A unique id > 0 for this algorithm run.
     los: List containing LOS data for the MapBlock.
+    costmap: List containing temporary LOS cost data for the MapBlock.
     tiles: List containing map tile data for the MapBlock.
     count: Current LOS counter.
     """
@@ -54,12 +54,12 @@ def recurseLOS(pos, unique, los, costmap, tiles, count):
     if index < 0 or index > inf.BLOCK_SIZE * inf.BLOCK_SIZE:
         #TODO(craig): Can't do this, need to handle multi-map visibility.
         return
-    if los[index] == unique and costmap[index] > count:
+    if costmap[index] >= count:
         return
-    los[index] = unique
+    los[index] = 1
     costmap[index] = count
     newcount = count - TileType.LOSCost[tiles[index]]
     if newcount <= 0:
         return
     for p in inf.listSurroundingTilePos(pos):
-        recurseLOS(Vect(p[0], p[1]), unique, los, costmap, tiles, newcount)
+        recurseLOS(Vect(p[0], p[1]), los, costmap, tiles, newcount)

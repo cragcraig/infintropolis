@@ -1,5 +1,4 @@
 import hashlib
-import cgi
 import re
 
 import request
@@ -19,22 +18,23 @@ class Session(request.Handler):
 
     def logic(self):
         """Handle all session logic."""
-        form = cgi.FieldStorage()
         # Perform action.
-        if 'action' in form:
-            action = form.getfirst('action')
+        if self.request.get('action'):
+            action = self.request.get('action')
             # Login.
             if action == 'login':
-                self.login(form.getfirst('nation'), form.getfirst('pwd'))
+                self.login(self.request.get('nation'), self.request.get('pwd'))
             # Logout.
             elif action == 'logout':
                 self.logout()
                 self.redirectToLogin()
             # Create.
             elif action == 'create':
-                self.create(form.getfirst('nation'), form.getfirst('pwd'),
-                            form.getfirst('confirm'), form.getfirst('email'),
-                            form.getfirst('color1'), form.getfirst('color2'))
+                self.create(self.request.get('nation'), self.request.get('pwd'),
+                            self.request.get('confirm'),
+                            self.request.get('email'),
+                            self.request.get('color1'),
+                            self.request.get('color2'))
             else:
                 self.redirectToLogin()
         # Already logged in, go to map.

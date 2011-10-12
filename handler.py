@@ -34,7 +34,7 @@ class GetBlock(request.Handler):
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']))
-                block.generateLineOfSight()
+                block.generateLineOfSight(self.getNation().getName())
                 response[block.getPos().getBlockJSONId()] = {
                     'mapblock': block.getString(),
                     'buildableblock': block.getBuildableBlock().getJSON()}
@@ -148,14 +148,11 @@ class GetDebug(request.Handler):
 
         # Debug response.
         request = self.getJSONRequest()
-        mapblock = MapBlock(Vect(request['bx'], request['by']),
-                            generate_nonexist=False)
+        mapblock = BuildableBlock(Vect(request['bx'], request['by']))
         if mapblock.exists():
-            out = Vect(0,0)
-            mapblock._getNeighbor(Vect(request['x'], request['y']), request['d'], out)
-            self.writeJSON({'sumLand':
-                mapblock._sumLand(Vect(request['x'], request['y'])),
-                'dirTile': str(out.x) + "," + str(out.y)})
+            self.writeJSON({'build': str(mapblock._model.buildables),
+                            'nations': str(mapblock._model.nations),
+                            'json': mapblock.getJSON()})
         else:
             self.writeJSON("No such mapblock: " + str(mapblock._pos.x) + "," + str(mapblock._pos.y))
 

@@ -66,7 +66,9 @@ class BuildableBlock(inf.DatabaseObject):
         return [Buildable(Vect(self._model.buildables[i],
                                self._model.buildables[i+1],
                                self._model.buildables[i+2]),
-                          self._model.buildables[i+3])
+                          self._model.buildables[i+3],
+                          self._model.nations[self._model.buildables[i+6]],
+                          self._model.buildables[i+7])
                 for i in xrange(0, len(self._model.buildables),
                                 BUILDABLE_LIST_SIZE)]
 

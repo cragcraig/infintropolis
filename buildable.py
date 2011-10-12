@@ -24,9 +24,11 @@ class Buildable:
     nationName = None
     capitolNum = None
 
-    def __init__(self, pos, level):
+    def __init__(self, pos, level, nationName=None, capitolNum=None):
         self.pos = pos.copy()
         self.level = int(level)
+        self.nationName = nationName
+        self.capitolNum = capitolNum
 
     def build(self, nation, capitol, buildableblock):
         """Adds this buildable in all necessary database models."""
@@ -70,3 +72,4 @@ class BuildType:
 
     settlement, city, road, ship = range(4)
     tToJSON = ['s', 'c', 'r', 'b']
+    LOSVision = [15, 25, 8, 10]

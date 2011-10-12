@@ -113,7 +113,7 @@ class TileType:
     """Enumeration for tile types."""
     none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
-    LOSCost = [None, 1, 2, 2, 3, 3, 4, 2, 2, 4, 1]
+    LOSCost = [None, 2, 5, 5, 7, 7, 9, 5, 5, 7, 2]
 
 
 def isGoodStartType(tiletype):
@@ -147,9 +147,9 @@ def listSurroundingTilePos(coord):
     x = coord.x
     y = coord.y
     if y % 2:
-        return ((x+1, y), (x, y-1), (x-1, y-1), (x-1, y), (x-1, y+1), (x, y+1))
-    else:
         return ((x+1, y), (x+1, y-1), (x, y-1), (x-1, y), (x, y+1), (x+1, y+1))
+    else:
+        return ((x+1, y), (x, y-1), (x-1, y-1), (x-1, y), (x-1, y+1), (x, y+1))
 
 
 class DatabaseObject:
