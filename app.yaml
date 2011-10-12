@@ -23,4 +23,4 @@ handlers:
 # Scripts.
 - url: /.*
   script: handler.py
-  script: handler.app
+#  script: handler.app

@@ -1,6 +1,8 @@
 import random
 
-import webapp2
+#import webapp2
+from google.appengine.ext import webapp
+from google.appengine.ext.webapp.util import run_wsgi_app
 
 import request
 import inf
@@ -156,14 +158,14 @@ class GetDebug(request.Handler):
 
 
 app = webapp.WSGIApplication(
-                              [('/', Session),
-                               ('/get/debug.*', GetDebug),
-                               ('/get/capitol.*', GetCapitol),
-                               ('/get/map.*', GetBlock),
-                               ('/get/build.*', GetBuildableBlock),
-                               ('/set/build.*', PostBuild),
-                               ('/session.*', Session)],
-                              debug=True)
+                             [('/', Session),
+                              ('/get/debug.*', GetDebug),
+                              ('/get/capitol.*', GetCapitol),
+                              ('/get/map.*', GetBlock),
+                              ('/get/build.*', GetBuildableBlock),
+                              ('/set/build.*', PostBuild),
+                              ('/session.*', Session)],
+                             debug=True)
 
 
 def main():
