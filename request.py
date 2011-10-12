@@ -2,12 +2,12 @@ import cgi
 import string
 import json
 
-from google.appengine.ext import webapp
+import webapp2
 
 from nation import Nation
 
 
-class Handler(webapp.RequestHandler):
+class Handler(webapp2.RequestHandler):
     """Abstract request details.
     
     Provides methods covering cookies and browser redirects.

@@ -6,8 +6,7 @@ from google.appengine.api import memcache
 import inf
 import algorithms
 from inf import Vect, Tile, TileType
-from buildableblock import BuildableBlock
-from buildable import BuildType
+from buildable import Buildable, BuildType
 
 # Probabilities for map generator.
 PROBABILITY_MAP = [[3, 40, 30, 10, 30, 80, 90],
@@ -18,14 +17,21 @@ PROBABILITY_MAP = [[3, 40, 30, 10, 30, 80, 90],
 #                   [0, 0, 50, 75, 85, 95, 80],
 #                   [0, 20, 0, 0, 0, 0, 100]]
 
+BUILDABLE_LIST_SIZE = 8
+
 
 class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
     x = db.IntegerProperty(required=True, indexed=True)
     y = db.IntegerProperty(required=True, indexed=False)
+    # MapBlock
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
-
+    # BuildableBlock
+    count = db.IntegerProperty(indexed=True)
+    isFullOfCapitols = db.BooleanProperty(indexed=True)
+    buildables = db.ListProperty(int, indexed=False)
+    nations = db.StringListProperty(indexed=False)
 
 class SurroundingMapBlocks:
     """Nearbly map tile blocks.
@@ -49,24 +55,24 @@ class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
     modelClass = BlockModel
     _pos = Vect(0,0)
-    _buildableBlock = None
     _visibilityMap = None
 
-    def __init__(self, pos, load=True, generate_nonexist=True, buildable_block=None):
+    def __init__(self, pos, load=True, generate_nonexist=True):
         """Load BlockModel from cache/database.
 
         By default a BlockModel will be generated and stored to the database
         if one does not exist.
         """
         self._pos = pos.copy()
-        self._buildableBlock = buildable_block
         if load:
             self.load()
             if not self._model and generate_nonexist:
                 self.generate(PROBABILITY_MAP)
                 self.loadOrCreate(x=self._pos.x, y=self._pos.y,
                                   tiletype=self._model.tiletype,
-                                  roll=self._model.roll)
+                                  roll=self._model.roll, count=0,
+                                  isFullOfCapitols=False, buildables=[],
+                                  nations=[])
 
     def getPos(self):
         return self._pos
@@ -120,7 +126,7 @@ class MapBlock(inf.DatabaseObject):
             return
         los = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
         costmap = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
-        blist = self.getBuildableBlock().getBuildablesList()
+        blist = self.getBuildablesList()
         for b in blist:
             if b.nationName == nationName:
                 for v in b.getSurroundingTiles():
@@ -139,20 +145,12 @@ class MapBlock(inf.DatabaseObject):
     def getKeyName(self):
         return 'mapblock:' + str(self._pos.x) + ',' + str(self._pos.y)
 
-    def getBuildableBlock(self):
-        if not self._buildableBlock:
-            self._buildableBlock = BuildableBlock(self._pos)
-        return self._buildableBlock
-
     def findOpenSpace(self):
         """Find an open space for a new capitol, if possible.
         
         Returns either False or a tuple (Vect(block), Vect(pos)).
         """
-        bb = self.getBuildableBlock()
-        blist = None
-        if bb:
-            blist = bb.getBuildablesList()
+        blist = self.getBuildablesList()
         bsize = inf.BLOCK_SIZE-inf.CAPITOL_SPACING
         sl = random.sample(xrange(bsize**2), 300)
         for l in sl:
@@ -227,3 +225,89 @@ class MapBlock(inf.DatabaseObject):
         if random.randint(0, 99) < probabilities[sum]:
             t.randomize()
         self.set(coord, t)
+
+    def atomicBuild(self, buildable, colors):
+        """Builds the buildable in an atomic database transaction."""
+        if db.run_in_transaction(MapBlock._build, self, buildable,
+                                 colors):
+            self.cache()
+        else:
+            self.load()
+
+    def atomicSetFullOfCapitols(self):
+        """Builds the buildable in an atomic database transaction."""
+        if db.run_in_transaction(MapBlock._setFull, self):
+            self.cache()
+        else:
+            self.load()
+
+    def _setFull(self):
+        """Set full of capitols."""
+        self.dbGet()
+        self._model.isFullOfCapitols = True
+        self.put()
+        return True
+ 
+    def getBuildablesList(self):
+        return [Buildable(Vect(self._model.buildables[i],
+                               self._model.buildables[i+1],
+                               self._model.buildables[i+2]),
+                          self._model.buildables[i+3],
+                          self._model.nations[self._model.buildables[i+6]],
+                          self._model.buildables[i+7])
+                for i in xrange(0, len(self._model.buildables),
+                                BUILDABLE_LIST_SIZE)]
+
+    def _build(self, buildable, colors):
+        """Builds the buildable. For use inside atomicBuild()."""
+        self.dbGet()
+        self._addBuildable(buildable, colors)
+        self.put()
+        return True
+
+    def _addBuildable(self, buildable, colors):
+        """Adds a buildable to the internal list."""
+        nationIndex = self._getNationIndex(buildable.nationName)
+        assert len(colors) == 2
+        self._model.count += 1
+        self._model.buildables.extend(buildable.getList())
+        self._model.buildables.extend(colors)
+        self._model.buildables.extend([int(nationIndex), int(buildable.capitolNum)])
+
+    def _delBuildable(self, pos):
+        """Removes a buildable from the internal list."""
+        p = pos.getList()
+        lp = len(p)
+        for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):
+            if self._model.buildables[i:i+lp] == p:
+                del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
+                self._model.count -= 1
+                break
+
+    def getBuildablesJSON(self):
+        """Construct a list of dictionary representations of buildables."""
+        return [{'x': int(self._model.buildables[i]),
+                 'y': int(self._model.buildables[i+1]),
+                 'd': BuildType.dToJSON[self._model.buildables[i+2]],
+                 't': BuildType.tToJSON[self._model.buildables[i+3]],
+                 'c1': self._int2hexcolor(self._model.buildables[i+4]),
+                 'c2': self._int2hexcolor(self._model.buildables[i+5]),
+                 'n': self._model.nations[self._model.buildables[i+6]],
+                 'i': int(self._model.buildables[i+7])}
+                for i in xrange(0, len(self._model.buildables),
+                                BUILDABLE_LIST_SIZE)]
+
+    def _getNationIndex(self, nationName):
+        """Get the index of a nation in the model's nation list.
+
+        Adds the nation if it does not exist. It is up to you to save the
+        updated model to the database.
+        """
+        if nationName not in self._model.nations:
+            self._model.nations.append(nationName)
+        return self._model.nations.index(nationName)
+
+    def _int2hexcolor(self, color):
+        return "%06x" % color
+
+

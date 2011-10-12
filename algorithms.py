@@ -5,23 +5,19 @@ import google.appengine.ext.db as db
 import inf
 from inf import Vect, TileType
 from mapblock import MapBlock
-from buildableblock import BuildableBlock
 
 
 def findOpenStart():
     """Find or generate an unoccupied location to start a capitol."""
     startPos = None
     # Find space in an avaliable MapBlock.
-    query = db.GqlQuery("SELECT * FROM BuildableModel "
+    query = db.GqlQuery("SELECT * FROM BlockModel "
                         "WHERE isFullOfCapitols = FALSE "
                         "ORDER BY count DESC")
-    for buildmodel in query:
-        buildableblock = BuildableBlock(Vect(buildmodel.x, buildmodel.y),
-                                        load=False)
-        buildableblock.setModel(buildmodel)
-        mapblock = MapBlock(Vect(buildmodel.x, buildmodel.y),
-                            buildable_block=buildableblock)
-        startPos = mapblock.findOpenSpace()
+    for model in query:
+        block = MapBlock(Vect(model.x, model.y), load=False)
+        block.setModel(model)
+        startPos = block.findOpenSpace()
         if startPos:
             return startPos
 
@@ -35,8 +31,8 @@ def findOpenStart():
 
     # Create new MapBlocks until space is found.
     while not startPos:
-        mapblock = MapBlock(Vect(x, random.randint(-10, 10)))
-        startPos = mapblock.findOpenSpace()
+        block = MapBlock(Vect(x, random.randint(-10, 10)))
+        startPos = block.findOpenSpace()
         x += 1
     return startPos
 

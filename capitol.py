@@ -4,7 +4,7 @@ import inf
 import algorithms
 from inf import Vect
 from buildable import Buildable, BuildType
-from buildableblock import BuildableBlock
+from mapblock import MapBlock
 
 BUILDABLE_LIST_SIZE = 6
 
@@ -88,13 +88,13 @@ class Capitol(inf.DatabaseObject):
                 self.atomicSetLocation(blockVect, pos)
         if self.hasLocation(): #TODO(craig): and not settlementExists()
             #TODO(craig): Check that build can actually occur.
-            buildableblock = BuildableBlock(Vect(self._model.location[0],
-                                                 self._model.location[1]))
+            block = MapBlock(Vect(self._model.location[0],
+                                  self._model.location[1]))
             build = Buildable(Vect(self._model.location[2],
                                    self._model.location[3],
                                    self._model.location[4]),
                               BuildType.settlement)
-            build.build(self._nation, self, buildableblock)
+            build.build(self._nation, self, block)
         if not self.hasSetLocation(): #TODO(craig) and settlementExists()
             self.atomicSetHasLocation()
 

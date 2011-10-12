@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: BlockModel
+  properties:
+  - name: isFullOfCapitols
+  - name: count
+    direction: desc
+
 - kind: BuildableModel
   properties:
   - name: isFullOfCapitols

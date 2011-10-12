@@ -1,8 +1,6 @@
 import random
-import cgi
 
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
 
 import request
 import inf
@@ -11,7 +9,6 @@ from session import Session
 from inf import Vect
 from buildable import Buildable, BuildType
 from mapblock import MapBlock
-from buildableblock import BuildableBlock
 from nation import Nation
 from capitol import Capitol
 
@@ -30,14 +27,14 @@ class GetBlock(request.Handler):
         request = self.getJSONRequest()
         response = {}
 
-        # Retrieve MapBlocks and BuildableBlocks.
+        # Retrieve MapBlocks.
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']))
                 block.generateLineOfSight(self.getNation().getName())
                 response[block.getPos().getBlockJSONId()] = {
                     'mapblock': block.getString(),
-                    'buildableblock': block.getBuildableBlock().getJSON()}
+                    'buildableblock': block.getBuildablesJSON()}
 
         self.writeJSON(response)
 
@@ -59,9 +56,10 @@ class GetBuildableBlock(request.Handler):
         # Retrieve BuildableBlocks.
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
-                block = BuildableBlock(Vect(reqblock['x'], reqblock['y']))
+                block = MapBlock(Vect(reqblock['x'], reqblock['y']),
+                                 generate_nonexist=False)
                 response[block.getPos().getBlockJSONId()] = {
-                    'buildableblock': block.getJSON()}
+                    'buildableblock': block.getBuildablesJSON()}
 
         self.writeJSON(response)
 
@@ -123,7 +121,7 @@ class PostBuild(request.Handler):
         #TODO(craig): Update capitol in a transaction (atomic).
         capitol = Capitol(self.getNation(), request['capitol'])
 
-        buildableblock = BuildableBlock(blockVect)
+        buildableblock = MapBlock(blockVect)
         if not capitol or not buildableblock:
             return
 
@@ -132,7 +130,7 @@ class PostBuild(request.Handler):
         build.build(self.getNation(), capitol, buildableblock)
 
         # Return updated BuildableBlock.
-        r = {'buildableblock': buildableblock.getJSON()}
+        r = {'buildableblock': buildableblock.getBuildablesJSON()}
         self.writeJSON({buildableblock.getPos().getBlockJSONId(): r})
 
 
@@ -148,28 +146,28 @@ class GetDebug(request.Handler):
 
         # Debug response.
         request = self.getJSONRequest()
-        mapblock = BuildableBlock(Vect(request['bx'], request['by']))
+        mapblock = MapBlock(Vect(request['bx'], request['by']))
         if mapblock.exists():
             self.writeJSON({'build': str(mapblock._model.buildables),
                             'nations': str(mapblock._model.nations),
-                            'json': mapblock.getJSON()})
+                            'json': mapblock.getBuildablesJSON()})
         else:
             self.writeJSON("No such mapblock: " + str(mapblock._pos.x) + "," + str(mapblock._pos.y))
 
 
-application = webapp.WSGIApplication(
-                                     [('/', Session),
-                                      ('/get/debug.*', GetDebug),
-                                      ('/get/capitol.*', GetCapitol),
-                                      ('/get/map.*', GetBlock),
-                                      ('/get/build.*', GetBuildableBlock),
-                                      ('/set/build.*', PostBuild),
-                                      ('/session.*', Session)],
-                                     debug=True)
+app = webapp.WSGIApplication(
+                              [('/', Session),
+                               ('/get/debug.*', GetDebug),
+                               ('/get/capitol.*', GetCapitol),
+                               ('/get/map.*', GetBlock),
+                               ('/get/build.*', GetBuildableBlock),
+                               ('/set/build.*', PostBuild),
+                               ('/session.*', Session)],
+                              debug=True)
 
 
 def main():
-  run_wsgi_app(application)
+  run_wsgi_app(app)
 
 if __name__ == "__main__":
   main()

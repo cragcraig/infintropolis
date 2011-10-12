@@ -1,11 +1,9 @@
 application: infintropolis
 version: 1
-runtime: python27
+runtime: python
+#runtime: python27
 api_version: 1
-threadsafe: true
-
-builtins:
-- appstats: on
+#threadsafe: true
 
 handlers:
 # Images and fonts.
@@ -17,10 +15,6 @@ handlers:
 - url: /static
   static_dir: static/web
 
-# Profiler.
-- url: /stats.*
-  script: $PYTHON_LIB/google/appengine/ext/appstats/ui.py
-
 # Map interface.
 - url: /map
   static_files: static/web/map.htm
@@ -29,3 +23,4 @@ handlers:
 # Scripts.
 - url: /.*
   script: handler.py
+  script: handler.app
