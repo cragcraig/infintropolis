@@ -1,6 +1,7 @@
 import copy
 import random
 import math
+import os
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
@@ -166,7 +167,7 @@ class DatabaseObject:
         # Memcache.
         self._useCached = use_cached
         if self._useCached:
-            self._model = memcache.get(self.getKeyName())
+            self.getCached()
         # Database.
         if not self._model:
             self.dbGet()
@@ -184,7 +185,12 @@ class DatabaseObject:
     def cache(self, timeout=60):
         """Store Model state to cache."""
         if (self.exists()):
-            memcache.set(self.getKeyName(), self._model, time=60*timeout)
+            memcache.set(self.getVersion() + self.getKeyName(),
+                         self._model, time=60*timeout)
+
+    def getCached(self):
+        """Load Model state from cache, if possible."""
+        self._model = memcache.get(self.getVersion() + self.getKeyName())
 
     def atomic(self, method, *args, **kwargs):
         """Load the model and execute function in an atomic transaction.
@@ -219,3 +225,6 @@ class DatabaseObject:
     def getKeyName(self):
         """Returns the key_name for the model in the database."""
         raise NotImplementedError, "getKeyName() is not implemented."
+
+    def getVersion(self):
+        return os.environ["CURRENT_VERSION_ID"]
