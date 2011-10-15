@@ -55,7 +55,8 @@ class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
     modelClass = BlockModel
     _pos = Vect(0,0)
-    _visibilityMap = None
+    los = None
+    costmap = None
 
     def __init__(self, pos, load=True, generate_nonexist=True):
         """Load BlockModel from cache/database.
@@ -66,13 +67,14 @@ class MapBlock(inf.DatabaseObject):
         self._pos = pos.copy()
         if load:
             self.load()
-            if not self._model and generate_nonexist:
-                self.generate(PROBABILITY_MAP)
-                self.loadOrCreate(x=self._pos.x, y=self._pos.y,
-                                  tiletype=self._model.tiletype,
-                                  roll=self._model.roll, count=0,
-                                  isFullOfCapitols=False, buildables=[],
-                                  nations=[])
+            if not self.exists() and generate_nonexist:
+                self.generate()
+        self.initLOS()
+                
+    def initLOS(self):
+        """Create data structures required for LOS."""
+        self.los = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
+        self.costmap = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
 
     def getPos(self):
         return self._pos
@@ -102,8 +104,9 @@ class MapBlock(inf.DatabaseObject):
         self._model.tiletype[t] = tile.tiletype
         self._model.roll[t] = tile.roll
 
-    def generate(self, prob_map):
+    def generate(self):
         """Randomly generate the MapBlock."""
+        prob_map = PROBABILITY_MAP
         self._model = BlockModel(x=self._pos.x, y=self._pos.y)
         self._clear()
         surrounding = SurroundingMapBlocks(self._pos)
@@ -119,31 +122,20 @@ class MapBlock(inf.DatabaseObject):
                     self._generateTile(Vect(i, k), surrounding, prob_map[t])
                 for k in xrange(i, j, -1):
                     self._generateTile(Vect(k, j), surrounding, prob_map[t])
-
-    def generateLineOfSight(self, nationName):
-        """Generates line of sight."""
-        if not self.exists():
-            return
-        los = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
-        costmap = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]
-        blist = self.getBuildablesList()
-        for b in blist:
-            if b.nationName == nationName:
-                for v in b.getSurroundingTiles():
-                    algorithms.recurseLOS(v, los, costmap,
-                                          self._model.tiletype,
-                                          BuildType.LOSVision[b.level])
-        self._visibilityMap = los
+        self.loadOrCreate(x=self._pos.x, y=self._pos.y,
+                          tiletype=self._model.tiletype,
+                          roll=self._model.roll, count=0,
+                          isFullOfCapitols=False, buildables=[], nations=[])
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
         return ''.join([str(int(self._model.tiletype[i])) + ':' +
                         (str(int(self._model.roll[i])) + ','
-                         if self._visibilityMap[i] else "-1,")
+                         if self.los[i] else "-1,")
                         for i in xrange(inf.BLOCK_SIZE * inf.BLOCK_SIZE)])
 
     def getKeyName(self):
-        return 'mapblock:' + str(self._pos.x) + ',' + str(self._pos.y)
+        return genKey(self._pos)
 
     def findOpenSpace(self):
         """Find an open space for a new capitol, if possible.
@@ -311,3 +303,10 @@ class MapBlock(inf.DatabaseObject):
         return "%06x" % color
 
 
+def genKey(blockVect):
+    """Generates a db key for a mapblock."""
+    return 'mapblock:' + str(blockVect.x) + ',' + str(blockVect.y)
+
+def genCacheKey(blockVect):
+    """Generates a memcache key for a mapblock."""
+    return inf.getCachePrefix() + genKey(blockVect)

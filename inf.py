@@ -27,10 +27,13 @@ class Vect:
         self.d = int(d)
 
     def __eq__(self, other):
-        return x == other.x and y == other.y and d == other.d
+        return self.x == other.x and self.y == other.y and self.d == other.d
 
     def __ne__(self, other):
-        return x != other.x or y != other.y or d != other.d
+        return self.x != other.x or self.y != other.y or self.d != other.d
+
+    def __hash__(self):
+        return hash((self.x, self.y, self.d))
 
     def copy(self):
         return copy.copy(self)
@@ -57,6 +60,14 @@ class Vect:
 
     def getRelativeVect(self):
         return Vect(self.x % BLOCK_SIZE, self.y % BLOCK_SIZE, self.d)
+
+    def getSurroundingBlocks(self):
+        """Returns a tuple of the block's dependency blocks."""
+        x = self.x
+        y = self.y
+        return (Vect(x, y), Vect(x+1, y), Vect(x-1, y), Vect(x, y+1),
+                Vect(x, y-1), Vect(x+1, y+1), Vect(x-1, y-1), Vect(x+1, y-1),
+                Vect(x-1, y+1))
 
 
 class Tile:
@@ -185,12 +196,11 @@ class DatabaseObject:
     def cache(self, timeout=60):
         """Store Model state to cache."""
         if (self.exists()):
-            memcache.set(self.getVersion() + self.getKeyName(),
-                         self._model, time=60*timeout)
+            memcache.set(self.getCacheKey(), self._model, time=60*timeout)
 
     def getCached(self):
         """Load Model state from cache, if possible."""
-        self._model = memcache.get(self.getVersion() + self.getKeyName())
+        self._model = memcache.get(self.getCacheKey())
 
     def atomic(self, method, *args, **kwargs):
         """Load the model and execute function in an atomic transaction.
@@ -226,5 +236,9 @@ class DatabaseObject:
         """Returns the key_name for the model in the database."""
         raise NotImplementedError, "getKeyName() is not implemented."
 
-    def getVersion(self):
-        return os.environ["CURRENT_VERSION_ID"]
+    def getCacheKey(self):
+        return getCachePrefix() + self.getKeyName()
+
+
+def getCachePrefix():
+    return os.environ["CURRENT_VERSION_ID"] + '_'

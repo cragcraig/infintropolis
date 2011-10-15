@@ -1,4 +1,5 @@
 import random
+import cProfile
 
 #import webapp2
 from google.appengine.ext import webapp
@@ -9,6 +10,7 @@ import inf
 import algorithms
 from session import Session
 from inf import Vect
+from worldshard import WorldShard
 from buildable import Buildable, BuildType
 from mapblock import MapBlock
 from nation import Nation
@@ -27,16 +29,16 @@ class GetBlock(request.Handler):
 
         # Setup.
         request = self.getJSONRequest()
-        response = {}
+        shard = WorldShard()
 
         # Retrieve MapBlocks.
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
-                block = MapBlock(Vect(reqblock['x'], reqblock['y']))
-                block.generateLineOfSight(self.getNation().getName())
-                response[block.getPos().getBlockJSONId()] = {
-                    'mapblock': block.getString(),
-                    'buildableblock': block.getBuildablesJSON()}
+                shard.addBlock(Vect(reqblock['x'], reqblock['y']))
+
+        # WorldShard.
+        shard.loadDependencies()
+        response = shard.getJSONDict()
 
         self.writeJSON(response)
 
@@ -172,4 +174,4 @@ def main():
   run_wsgi_app(app)
 
 if __name__ == "__main__":
-  main()
+  cProfile.run('main()')
