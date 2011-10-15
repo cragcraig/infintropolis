@@ -4,7 +4,7 @@ import algorithms
 import inf
 import mapblock
 from inf import Vect, TileType
-from buildable import Buildable
+from buildable import Buildable, BuildType
 from mapblock import MapBlock
 
 
@@ -36,6 +36,8 @@ class WorldShard:
         Removes successfully loaded blocks from self._toload.
         """
         vects = list(self._toload)
+        if not len(vects):
+            return
         keys = map(mapblock.genCacheKey, vects)
         models = memcache.get_multi(keys)
         for n in models.values():
@@ -53,6 +55,8 @@ class WorldShard:
         Removes successfully loaded blocks from self._toload.
         """
         vects = list(self._toload)
+        if not len(vects):
+            return
         keys = map(mapblock.genKey, vects)
         models = mapblock.BlockModel.get_by_key_name(keys)
         for n in zip(vects, models):
@@ -65,9 +69,9 @@ class WorldShard:
 
     def applyLOS(self, nationName):
         """Generates line of sight data for all blocks."""
-        for m in self._mapblocks:
+        for m in self._mapblocks.values():
             m.initLOS()
-        for m in self._mapblocks:
+        for m in self._mapblocks.values():
             blist = m.getBuildablesList()
             for b in blist:
                 if b.nationName == nationName:
@@ -86,7 +90,7 @@ class WorldShard:
             return
         block.los[index] = 1
         block.costmap[index] = count
-        newcount = count - TileType.LOSCost[tiles[index]]
+        newcount = count - TileType.LOSCost[block._model.tiletype[index]]
         if newcount <= 0:
             return
         for p in inf.listSurroundingTilePos(pos):
@@ -115,13 +119,11 @@ class WorldShard:
         """Return a JSON dictionary for the core MapBlocks."""
         r = {}
         for v in self._core:
-            jId = v.getBlockJSONId()
-            r[jId] = " "
             if v not in self._mapblocks:
                 continue
             block = self._mapblocks[v]
             if block.exists():
-                r[jId] = {
+                r[v.getBlockJSONId()] = {
                     'mapblock': block.getString(),
                     'buildableblock': block.getBuildablesJSON()}
         return r

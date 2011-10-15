@@ -69,8 +69,7 @@ class MapBlock(inf.DatabaseObject):
             self.load()
             if not self.exists() and generate_nonexist:
                 self.generate()
-        self.initLOS()
-                
+
     def initLOS(self):
         """Create data structures required for LOS."""
         self.los = (inf.BLOCK_SIZE * inf.BLOCK_SIZE) * [0]

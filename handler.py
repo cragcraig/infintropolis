@@ -1,5 +1,4 @@
 import random
-import cProfile
 
 #import webapp2
 from google.appengine.ext import webapp
@@ -38,6 +37,7 @@ class GetBlock(request.Handler):
 
         # WorldShard.
         shard.loadDependencies()
+        shard.applyLOS(self.getNation().getName())
         response = shard.getJSONDict()
 
         self.writeJSON(response)
@@ -174,4 +174,4 @@ def main():
   run_wsgi_app(app)
 
 if __name__ == "__main__":
-  cProfile.run('main()')
+  main()
