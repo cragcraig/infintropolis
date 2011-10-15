@@ -125,7 +125,7 @@ class TileType:
     """Enumeration for tile types."""
     none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
-    LOSCost = [None, 2, 5, 5, 7, 7, 9, 5, 5, 7, 2]
+    LOSCost = [None, 2.9, 5, 5, 7, 7, 9, 5, 5, 7, 2]
 
 
 def isGoodStartType(tiletype):

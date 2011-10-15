@@ -125,5 +125,6 @@ class WorldShard:
             if block.exists():
                 r[v.getBlockJSONId()] = {
                     'mapblock': block.getString(),
-                    'buildableblock': block.getBuildablesJSON()}
+                    'buildableblock': block.getBuildablesJSON(),
+                    'token': block.getToken()}
         return r

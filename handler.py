@@ -59,11 +59,12 @@ class GetBuildableBlock(request.Handler):
 
         # Retrieve BuildableBlocks.
         for reqblock in request:
-            if self.inDict(reqblock, 'x', 'y'):
+            if self.inDict(reqblock, 'x', 'y', 'token'):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']),
                                  generate_nonexist=False)
-                response[block.getPos().getBlockJSONId()] = {
-                    'buildableblock': block.getBuildablesJSON()}
+                if block.checkToken(reqblock['token']):
+                    response[block.getPos().getBlockJSONId()] = {
+                        'buildableblock': block.getBuildablesJSON()}
 
         self.writeJSON(response)
 

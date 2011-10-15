@@ -47,7 +47,8 @@ var civLoader = [];
 /* MapBlock object constructor */
 function MapBlock()
 {
-    var o = {valid: false, map: new Array(mapSizes), buildables: new Array()};
+    var o = {valid: false, invalidLOS: false, token: 0,
+             map: new Array(mapSizes), buildables: new Array()};
     
     for (var j=0; j < mapSizes; j++) {
         o.map[j] = new Array(mapSizes);
@@ -87,16 +88,25 @@ function JSONCallback(json)
     if (json.error) {
         error = true;
     } else {
+        /* parse capitol and nation data */
+        if (json['capitol']) {
+            parseCapitol(json['capitol']);
+        }
 
         /* parse block data */
         for (i=0; i<tileMap.length; i++) {
             var pos = getWorldPos(i);
             var id = pos.x + '_' + pos.y;
             if (json[id]) {
+                /* block token */
+                if (json[id].token) {
+                    tileMap[i].token = json[id].token;
+                }
                 /* map data */
                 if (json[id].mapblock) {
                     error = parseMapBlock(i, json[id].mapblock);
                     tileMap[i].valid = true;
+                    tileMap[i].invalidLOS = false;
                 }
                 /* buildable data */
                 if (json[id].buildableblock) {
@@ -105,10 +115,8 @@ function JSONCallback(json)
             }
         }
 
-        /* parse capitol and nation data */
-        if (json['capitol']) {
-            parseCapitol(json['capitol']);
-        }
+        /* Update LOS on an as-needed basis. */
+        updateLOSAsNeeded();
     }
     render();
 }
@@ -163,10 +171,64 @@ function parseMapBlock(i, str)
  */
 function parseBuildableBlock(i, list)
 {
+    /* Count nations's buildables. */
+    var count = -1;
+    if (tileMap[i].buildables.length > 0) {
+        count = countBuildables(i);
+    }
+
+    /* Use new data and start autoupdate. */
     tileMap[i].buildables = list;
     launchAutoUpdate();
+
+    /* Re-count buildables and issue LOS update if needed. */
+    if (count != -1) {
+        if (count != countBuildables(i)) {
+            tileMap[i].invalidLOS = true;
+        }
+    }
 }
 
+/* Counts the number of buildables owned by the nation in tileMap[i].
+ *
+ * TODO(craig): This method will have to change once volcanoes and knights are
+ * implemented as they can change the LOS without changing the buildables count.
+ * */
+function countBuildables(i)
+{
+    if (!capitol || !tileMap[i].valid) {
+        return 0;
+    }
+    var count = 0;
+    for (var j=0; j < tileMap[i].buildables.length; j++) {
+        if (tileMap[i].buildables[j].n == capitol.nation) {
+            count++;
+        }
+    }
+    return count;
+}
+
+/* Request updated MapBlock data if LOS changes. */
+function updateLOSAsNeeded()
+{
+    var update = false;
+    var req = new Array();
+    /* Check if a LOS update is needed. */
+    for (var i=0; i<tileMap.length; i++) {
+        req.push(i);
+        if (tileMap[i].invalidLOS == true) {
+            update = true;
+            break;
+        }
+    }
+    /* Update LOS. */
+    if (update) {
+        requestBlocks(req, true);
+    }
+}
+
+
+/* Go to a specific MapBlock coordinate. */
 function goMap(worldX, worldY)
 {
     if (worldX == mapX && worldY == mapY) return;
@@ -1242,9 +1304,12 @@ function requestBlocks(blocks, include_maps)
     var blockList = new Array();
     for (j=0; j<blocks.length; j++) {
         var i = blocks[j];
-        if (include_maps)
-            tileMap[i].valid = false;
-        blockList.push(getWorldPos(i));
+        var p = getWorldPos(i);
+        p['token'] = tileMap[i].token;
+        /* Add block if we are getting map data or have LOS there. */
+        if (include_maps || (tileMap[i].valid && p['token'] != 0)) {
+            blockList.push(p);
+        }
     }
     if (!blockList.length) return;
     /* Send request. */

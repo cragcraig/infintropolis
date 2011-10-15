@@ -24,6 +24,7 @@ class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
     x = db.IntegerProperty(required=True, indexed=True)
     y = db.IntegerProperty(required=True, indexed=False)
+    token = db.IntegerProperty(indexed=False)
     # MapBlock
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
@@ -121,7 +122,8 @@ class MapBlock(inf.DatabaseObject):
                     self._generateTile(Vect(i, k), surrounding, prob_map[t])
                 for k in xrange(i, j, -1):
                     self._generateTile(Vect(k, j), surrounding, prob_map[t])
-        self.loadOrCreate(x=self._pos.x, y=self._pos.y,
+        tk = random.randint(1, 90000000)
+        self.loadOrCreate(x=self._pos.x, y=self._pos.y, token=tk,
                           tiletype=self._model.tiletype,
                           roll=self._model.roll, count=0,
                           isFullOfCapitols=False, buildables=[], nations=[])
@@ -287,6 +289,20 @@ class MapBlock(inf.DatabaseObject):
                  'i': int(self._model.buildables[i+7])}
                 for i in xrange(0, len(self._model.buildables),
                                 BUILDABLE_LIST_SIZE)]
+
+    def getToken(self):
+        """Return the MapBlock token required for Buildables-only requests.
+        
+        Returns 0 if none of the MapBlock is within calculated LOS.
+        """
+        if not self.los or not any(self.los):
+            return 0
+        else:
+            return self._model.token
+
+    def checkToken(self, token):
+        """Returns True if the token matches the MapBlock token."""
+        return token == self._model.token
 
     def _getNationIndex(self, nationName):
         """Get the index of a nation in the model's nation list.

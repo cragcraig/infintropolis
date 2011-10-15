@@ -55,7 +55,8 @@ class Capitol(inf.DatabaseObject):
 
     def getJSON(self):
         """Return JSON dictionary."""
-        return {'number': self._number,
+        return {'nation': self._nation.getName(),
+                'number': self._number,
                 'bx': self._model.location[0],
                 'by': self._model.location[1],
                 'x': self._model.location[2],
