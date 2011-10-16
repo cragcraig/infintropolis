@@ -15,9 +15,3 @@ indexes:
   - name: isFullOfCapitols
   - name: count
     direction: desc
-
-- kind: BuildableModel
-  properties:
-  - name: isFullOfCapitols
-  - name: count
-    direction: desc

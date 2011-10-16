@@ -9,8 +9,8 @@ from mapblock import MapBlock
 
 class NationModel(db.Model):
     """A database model representing a Nation."""
-    name = db.StringProperty(required=True)
-    pwd = db.StringProperty(required=True)
+    name = db.StringProperty(required=True, indexed=False)
+    pwd = db.StringProperty(required=True, indexed=False)
     email = db.StringProperty(indexed=False)
     title = db.StringProperty(indexed=False)
     points = db.IntegerProperty(required=True, indexed=False)

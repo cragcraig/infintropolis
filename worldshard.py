@@ -27,7 +27,7 @@ class WorldShard:
         for n in self._toload:
             if n in self._core:
                 m = MapBlock(n, load=False)
-                m.generate()
+                m.generate(self)
                 self._mapblocks[n] = m
 
     def _loadCachedBlocks(self):

@@ -45,11 +45,30 @@ class SurroundingMapBlocks:
     west = None
     east = None
 
-    def __init__(self, pos):
-        self.north = MapBlock(Vect(pos.x, pos.y - 1), generate_nonexist=False)
-        self.south = MapBlock(Vect(pos.x, pos.y + 1), generate_nonexist=False)
-        self.west = MapBlock(Vect(pos.x - 1, pos.y), generate_nonexist=False)
-        self.east = MapBlock(Vect(pos.x + 1, pos.y), generate_nonexist=False)
+    def __init__(self, pos, worldshard=None):
+        vn = Vect(pos.x, pos.y - 1)
+        vs = Vect(pos.x, pos.y + 1)
+        vw = Vect(pos.x - 1, pos.y)
+        ve = Vect(pos.x + 1, pos.y)
+        # Get preloaded MapBlocks from WorldShard.
+        if worldshard:
+            if vn in worldshard._mapblocks:
+                self.north = worldshard._mapblocks[vn]
+            if vs in worldshard._mapblocks:
+                self.south = worldshard._mapblocks[vs]
+            if vw in worldshard._mapblocks:
+                self.west = worldshard._mapblocks[vw]
+            if ve in worldshard._mapblocks:
+                self.east = worldshard._mapblocks[ve]
+        # Load unloaded MapBlocks.
+        if not self.north:
+            self.north = MapBlock(vn, generate_nonexist=False)
+        if not self.south:
+            self.south = MapBlock(vs, generate_nonexist=False)
+        if not self.west:
+            self.west = MapBlock(vw, generate_nonexist=False)
+        if not self.east:
+            self.east = MapBlock(ve, generate_nonexist=False)
 
 
 class MapBlock(inf.DatabaseObject):
@@ -104,12 +123,12 @@ class MapBlock(inf.DatabaseObject):
         self._model.tiletype[t] = tile.tiletype
         self._model.roll[t] = tile.roll
 
-    def generate(self):
+    def generate(self, worldshard=None):
         """Randomly generate the MapBlock."""
         prob_map = PROBABILITY_MAP
         self._model = BlockModel(x=self._pos.x, y=self._pos.y)
         self._clear()
-        surrounding = SurroundingMapBlocks(self._pos)
+        surrounding = SurroundingMapBlocks(self._pos, worldshard)
         for t in xrange(len(prob_map)):
             i = inf.BLOCK_SIZE
             for j in xrange(inf.BLOCK_SIZE):
