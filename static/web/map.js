@@ -44,7 +44,7 @@ var tileMap = [];
 var tileLoader = [];
 var civLoader = [];
 
-/* MapBlock object constructor */
+/* MapBlock object constructor. */
 function MapBlock()
 {
     var o = {valid: false, invalidLOS: false, token: 0,
@@ -55,6 +55,12 @@ function MapBlock()
     }
 
     return o;
+}
+
+/* Vect object constructor. */
+function Vect(x, y)
+{
+    return {"x": x, "y": y};
 }
 
 function initMap(w, h)
@@ -77,9 +83,15 @@ function getiFromPos(x, y)
     return (x < mapSizes ? 0 : 1) + (y < mapSizes ? 0 : 2);
 }
 
+function getPosFromi(i, x, y)
+{
+    return Vect(x + (i == 0 || i == 2 ? 0 : mapSizes),
+                y + (i == 0 || i == 1 ? 0 : mapSizes));
+}
+
 /* Parses a JSON response from the server.
  *
- * json: A decoded object.
+ * json: A decoded object from the server.
  */
 function JSONCallback(json)
 {
@@ -336,7 +348,7 @@ function getTile(x, y)
     }
     /* return tile */
     if (!tileMap[i].valid || x < 0 || y < 0 || x >= mapSizes || y >= mapSizes) {
-        return {type: 0, roll: 0};
+        return {type: 0, roll: -1};
     }
     return tileMap[i].map[y][x];
 
@@ -962,7 +974,7 @@ function drawEdge(e)
             dy1 = py - (TileEdge*3/5)/2;
             dx2 = px - TileWidth/2;
             dy2 = py + (TileEdge*3/5)/2;
-        break
+        break;
         
         case 'b':
             dx1 = px + (TileVerts[5].x - TileVerts[0].x)/5 + TileVerts[0].x;
@@ -1015,6 +1027,8 @@ function renderBuildables()
         if (!tileMap[i].valid) continue;
         for (j=0; j<tileMap[i].buildables.length; j++) {
             var build = tileMap[i].buildables[j];
+            if (!isBuildableVisable(i, build))
+                continue;
             drawable.x = build.x - screenX + (i == 0 || i == 2 ? 0 : mapSizes);
             drawable.y = build.y - screenY + (i == 0 || i == 1 ? 0 : mapSizes);
             drawable.d = build.d;
@@ -1512,4 +1526,90 @@ function reportUserActivity()
     if (autoupdatePeriod != autoupdateMinPeriod) {
         autoupdateBuildableBlocks();
     }
+}
+
+/* Move 1 step in Tile Coordinates.
+ *
+ * x: X part of hex coordinate.
+ * y: Y part of hex coordinate.
+ * d: Direction where 0 is east and increments counter-clockwise.
+ */
+function stepHexCoord(x, y, d)
+{
+    out = Vect(x, y);
+    if (d == 0) {
+        out.x++;
+        return out;
+    } else if (d == 3) {
+        out.x--;
+        return out;
+    } else if (d == 1 || d == 2) {
+        out.y--;
+    } else if (d == 4 || d == 5) {
+        out.y++;
+    }
+    if (y%2 == 0 && (d == 2 || d == 4)) {
+        out.x--;
+    } else if (y%2 && (d == 1 || d == 5)) {
+        out.x++;
+    }
+    return out;
+}
+
+/* Get tile coordinates surrounding a Buildable.
+ *
+ * t: Is edge (true) or is vertex (false).
+ * x: X part of hex coordinate.
+ * y: Y part of hex coordinate.
+ * d: Building position ([t,b] or [t,c,b]).
+ */
+function tilesSurroundingBuildable(t, x, y, d)
+{
+    if (t) {
+        /* edge */
+        switch (d) {
+            case 't':
+                return [Vect(x, y), stepHexCoord(x, y, 2)];
+            break;
+
+            case 'c':
+                return [Vect(x, y), stepHexCoord(x, y, 3)];
+            break;
+
+            case 'b':
+                return [Vect(x, y), stepHexCoord(x, y, 4)];
+            break;
+        }
+    } else {
+        /* vertex */
+        switch (d) {
+            case 't':
+                return [Vect(x, y), stepHexCoord(x, y, 2),
+                        stepHexCoord(x, y, 3)];
+            break;
+
+            case 'b':
+                return [Vect(x, y), stepHexCoord(x, y, 4),
+                        stepHexCoord(x, y, 3)];
+            break;
+        }
+    }
+    return [];
+}
+
+/* Checks if the buildable is adjacent to a visable tile.
+ *
+ * Returns true if an adjacent tile is visible, false otherwise.
+ */
+function isBuildableVisable(i, bld)
+{
+    st = tilesSurroundingBuildable((bld.t == 'r' || bld.t == 'b'),
+                                   bld.x, bld.y, bld.d);
+    for (var j=0; j<st.length; j++) {
+        v = getPosFromi(i, st[j].x, st[j].y);
+        t = getTile(v.x, v.y);
+        if (t.roll != -1)
+            return true;
+    }
+    return false;
 }

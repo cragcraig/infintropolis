@@ -62,7 +62,6 @@ class Buildable:
                     inf.tileDirMove(self.pos, 3)]
         else:
             return []
-                
 
 
 class BuildType:

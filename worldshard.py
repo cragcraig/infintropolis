@@ -95,7 +95,7 @@ class WorldShard:
             return
         for p in inf.listSurroundingTilePos(pos):
             v = Vect(p[0], p[1])
-            if 0 <= v.x < inf.BLOCK_SIZE and 0 <= v.y <= inf.BLOCK_SIZE:
+            if 0 <= v.x < inf.BLOCK_SIZE and 0 <= v.y < inf.BLOCK_SIZE:
                 self._recurseLOS(v, block, newcount)
                 continue
             else:
