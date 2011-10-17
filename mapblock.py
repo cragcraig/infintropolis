@@ -160,11 +160,11 @@ class MapBlock(inf.DatabaseObject):
     def findOpenSpace(self):
         """Find an open space for a new capitol, if possible.
         
-        Returns either False or a tuple (Vect(block), Vect(pos)).
+        Returns either None or a tuple (Vect(block), Vect(pos)).
         """
         blist = self.getBuildablesList()
         bsize = inf.BLOCK_SIZE-inf.CAPITOL_SPACING
-        sl = random.sample(xrange(bsize**2), 300)
+        sl = random.sample(xrange(bsize**2), 1000)
         for l in sl:
             pos = Vect(l % bsize + inf.CAPITOL_SPACING // 2,
                        l // bsize + inf.CAPITOL_SPACING // 2)
