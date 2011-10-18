@@ -669,6 +669,10 @@ TileEdges[3] = {x: (TileVerts[3].x+TileVerts[4].x)/2, y: (TileVerts[3].y+TileVer
 TileEdges[4] = {x: -TileWidth/2, y: 0};
 TileEdges[5] = {x: (TileVerts[5].x+TileVerts[0].x)/2, y: (TileVerts[5].y+TileVerts[0].y)/2};
 
+// ship rotation
+var TileCosine = [Math.cos(-Math.PI/6), Math.cos(-Math.PI/2), Math.cos(Math.PI/6)];
+var TileSine = [Math.sin(-Math.PI/6), Math.sin(-Math.PI/2), Math.sin(Math.PI/6)];
+
 // load tiles
 var tileSpriteSize = 11;
 var tileSprite;
@@ -945,19 +949,19 @@ function drawVertex(v)
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     if (v.t == 's') {
-        ctx.moveTo(px+10, py+10);
-        ctx.lineTo(px-10, py+10);
-        ctx.lineTo(px-10, py-5);
-        ctx.lineTo(px, py-13);
-        ctx.lineTo(px+10, py-5);
+        ctx.moveTo(px+8, py+8);
+        ctx.lineTo(px-8, py+8);
+        ctx.lineTo(px-8, py-4);
+        ctx.lineTo(px, py-11);
+        ctx.lineTo(px+8, py-4);
     } else {
-        ctx.moveTo(px+15, py+13);
-        ctx.lineTo(px-14, py+13);
-        ctx.lineTo(px-14, py-4);
-        ctx.lineTo(px-4, py-14);
-        ctx.lineTo(px+6, py-4);
-        ctx.lineTo(px+6, py-2);
-        ctx.lineTo(px+15, py-2);
+        ctx.moveTo(px+13, py+8);
+        ctx.lineTo(px-12, py+8);
+        ctx.lineTo(px-12, py-9);
+        ctx.lineTo(px-5, py-15);
+        ctx.lineTo(px+2, py-9);
+        ctx.lineTo(px+2, py-5);
+        ctx.lineTo(px+13, py-5);
     }
     ctx.closePath();
     ctx.fill();
@@ -974,50 +978,84 @@ function drawEdge(e)
     var px = outputx(e.x, e.y);
     var py = outputy(e.x, e.y);
 
-    var dx1, dx2, dy1, dy2;
+    if (e.alpha)
+        ctx.globalAlpha = e.alpha;
+    ctx.lineCap = "round";
 
+    /* draw roads */
+    var dx1, dx2, dy1, dy2;
     var rlf1 = 20;
     var rlf2 = 16;
     var rlf3 = 12;
     var rlf4 = rlf1 - rlf2;
-    
-    switch (e.d) {
-        case 't':
-            dx1 = px + (TileVerts[3].x - TileVerts[4].x)*rlf4/rlf1 + TileVerts[4].x;
-            dx2 = px + (TileVerts[3].x - TileVerts[4].x)*rlf2/rlf1 + TileVerts[4].x;
-            dy1 = py + (TileVerts[3].y - TileVerts[4].y)*rlf4/rlf1 + TileVerts[4].y;
-            dy2 = py + (TileVerts[3].y - TileVerts[4].y)*rlf2/rlf1 + TileVerts[4].y;
-        break;
 
-        case 'c':
-            dx1 = px - TileWidth/2;
-            dy1 = py - (TileEdge*rlf3/rlf1)/2;
-            dx2 = px - TileWidth/2;
-            dy2 = py + (TileEdge*rlf3/rlf1)/2;
-        break;
-        
-        case 'b':
-            dx1 = px + (TileVerts[5].x - TileVerts[0].x)*rlf4/rlf1 + TileVerts[0].x;
-            dx2 = px + (TileVerts[5].x - TileVerts[0].x)*rlf2/rlf1 + TileVerts[0].x;
-            dy1 = py + (TileVerts[5].y - TileVerts[0].y)*rlf4/rlf1 + TileVerts[0].y;
-            dy2 = py + (TileVerts[5].y - TileVerts[0].y)*rlf2/rlf1 + TileVerts[0].y;
-        break;
+    if (e.t == 'r') {
+        switch (e.d) {
+            case 't':
+                dx1 = px + (TileVerts[3].x - TileVerts[4].x)*rlf4/rlf1 + TileVerts[4].x;
+                dx2 = px + (TileVerts[3].x - TileVerts[4].x)*rlf2/rlf1 + TileVerts[4].x;
+                dy1 = py + (TileVerts[3].y - TileVerts[4].y)*rlf4/rlf1 + TileVerts[4].y;
+                dy2 = py + (TileVerts[3].y - TileVerts[4].y)*rlf2/rlf1 + TileVerts[4].y;
+            break;
+
+            case 'c':
+                dx1 = px - TileWidth/2;
+                dy1 = py - (TileEdge*rlf3/rlf1)/2;
+                dx2 = px - TileWidth/2;
+                dy2 = py + (TileEdge*rlf3/rlf1)/2;
+            break;
+            
+            case 'b':
+                dx1 = px + (TileVerts[5].x - TileVerts[0].x)*rlf4/rlf1 + TileVerts[0].x;
+                dx2 = px + (TileVerts[5].x - TileVerts[0].x)*rlf2/rlf1 + TileVerts[0].x;
+                dy1 = py + (TileVerts[5].y - TileVerts[0].y)*rlf4/rlf1 + TileVerts[0].y;
+                dy2 = py + (TileVerts[5].y - TileVerts[0].y)*rlf2/rlf1 + TileVerts[0].y;
+            break;
+        }
+
+        // draw
+        ctx.beginPath();
+        ctx.moveTo(dx1, dy1);
+        ctx.lineTo(dx2, dy2);
+        ctx.closePath();
+        ctx.strokeStyle = "#" + e.c1;
+        ctx.lineWidth = 10.0;
+        ctx.stroke();
+        ctx.strokeStyle = "#" + e.c2;
+        ctx.lineWidth = 4.0;
+        ctx.stroke();
+    } else {
+        var edge;
+        var vert;
+        if (e.d == 't') {
+            edge = 0;
+            px += (TileVerts[3].x - TileVerts[4].x)*0.5 + TileVerts[4].x;
+            py += (TileVerts[3].y - TileVerts[4].y)*0.5 + TileVerts[4].y;
+        } else if (e.d == 'c') {
+            edge = 1;
+            px -= TileWidth/2;
+        } else if (e.d == 'b') {
+            edge = 2;
+            px += (TileVerts[5].x - TileVerts[0].x)*0.5 + TileVerts[0].x;
+            py += (TileVerts[5].y - TileVerts[0].y)*0.5 + TileVerts[0].y;
+        }
+        var tx = [16, 20, 3, 2, 3, 0, -6, -6, -3, -3, -20, -16];
+        var ty = [3, -5, -5, -18, -32, -32, -22, -15, -7, -5, -5, 3]
+        //var tx = [16, 20, 3, 3, -16, -3, -3, -20, -16];
+        //var ty = [0, -8, -8, -35, -12, -12, -8, -8, 0]
+        ctx.beginPath();
+        ctx.moveTo(px + tx[0] * TileCosine[edge] - ty[0] * TileSine[edge],
+                   py + ty[0] * TileCosine[edge] + tx[0] * TileSine[edge]);
+        for (var i=1; i<tx.length; i++)
+            ctx.lineTo(px + tx[i] * TileCosine[edge] - ty[i] * TileSine[edge],
+                       py + ty[i] * TileCosine[edge] + tx[i] * TileSine[edge]);
+        ctx.closePath();
+        ctx.fillStyle = "#" + e.c2;
+        ctx.strokeStyle = "#" + e.c1;
+        ctx.lineWidth = 3.5;
+        ctx.fill();
+        ctx.stroke();
     }
-
-    // draw
-    ctx.beginPath();
-    if (e.alpha)
-        ctx.globalAlpha = e.alpha;
-    ctx.lineCap = "round";
-    ctx.moveTo(dx1, dy1);
-    ctx.lineTo(dx2, dy2);
-    ctx.closePath();
-    ctx.strokeStyle = "#" + e.c1;
-    ctx.lineWidth = 10.0;
-    ctx.stroke();
-    ctx.strokeStyle = "#" + e.c2;
-    ctx.lineWidth = 4.0;
-    ctx.stroke();
     ctx.globalAlpha = 1.0;
 }
 
@@ -1094,9 +1132,10 @@ function drawTile(tile, x, y)
 // Draw a buildable
 function drawBuildable(buildable)
 {
-    if (buildable == undefined) return;
+    if (buildable == undefined || buildable.x < -1 || buildable.y < -2 ||
+        buildable.x > screenWidth + 2 || buildable.y > screenWidth + 2) return;
 
-    // Check visibility.
+    // Check buildable type.
     if (buildable.t == 'r' || buildable.t == 'b') {
         drawEdge(buildable)
     } else {
