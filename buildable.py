@@ -71,4 +71,4 @@ class BuildType:
 
     settlement, city, road, ship = range(4)
     tToJSON = ['s', 'c', 'r', 'b']
-    LOSVision = [15, 25, 8, 10]
+    LOSVision = [15, 18, 8, 8]

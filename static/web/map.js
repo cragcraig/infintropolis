@@ -136,6 +136,7 @@ function JSONCallback(json)
 /* Parses a Capitol JSON object. */
 function parseCapitol(json)
 {
+    if (!json.nation) return;
     if (!capitol || (json.number != capitol.number)) {
         var xoff = 0;
         var yoff = 0;
@@ -770,8 +771,12 @@ function loading()
     // create UI buttons
     UIAddButton(UIButton(-60, 50, loadImg('/img/ui/settlement.png'), 0,
                          function () {BuildModeEnable('s');}));
-    UIAddButton(UIButton(-60, 110, loadImg('/img/ui/road.png'), 0,
+    UIAddButton(UIButton(-60, 110, loadImg('/img/ui/settlement.png'), 0,
+                         function () {BuildModeEnable('c');}));
+    UIAddButton(UIButton(-60, 170, loadImg('/img/ui/road.png'), 0,
                          function () {BuildModeEnable('r');}));
+    UIAddButton(UIButton(-60, 230, loadImg('/img/ui/road.png'), 0,
+                         function () {BuildModeEnable('b');}));
     UIAddButton(UIButton(-60, 50, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel));
     UIGroupVisible(0, true);
@@ -939,11 +944,21 @@ function drawVertex(v)
     ctx.strokeStyle = "#" + v.c1;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(px+10, py+10);
-    ctx.lineTo(px-10, py+10);
-    ctx.lineTo(px-10, py-5);
-    ctx.lineTo(px, py-13);
-    ctx.lineTo(px+10, py-5);
+    if (v.t == 's') {
+        ctx.moveTo(px+10, py+10);
+        ctx.lineTo(px-10, py+10);
+        ctx.lineTo(px-10, py-5);
+        ctx.lineTo(px, py-13);
+        ctx.lineTo(px+10, py-5);
+    } else {
+        ctx.moveTo(px+15, py+13);
+        ctx.lineTo(px-14, py+13);
+        ctx.lineTo(px-14, py-4);
+        ctx.lineTo(px-4, py-14);
+        ctx.lineTo(px+6, py-4);
+        ctx.lineTo(px+6, py-2);
+        ctx.lineTo(px+15, py-2);
+    }
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -960,27 +975,32 @@ function drawEdge(e)
     var py = outputy(e.x, e.y);
 
     var dx1, dx2, dy1, dy2;
+
+    var rlf1 = 20;
+    var rlf2 = 16;
+    var rlf3 = 12;
+    var rlf4 = rlf1 - rlf2;
     
     switch (e.d) {
         case 't':
-            dx1 = px + (TileVerts[3].x - TileVerts[4].x)/5 + TileVerts[4].x;
-            dx2 = px + (TileVerts[3].x - TileVerts[4].x)*4/5 + TileVerts[4].x;
-            dy1 = py + (TileVerts[3].y - TileVerts[4].y)/5 + TileVerts[4].y;
-            dy2 = py + (TileVerts[3].y - TileVerts[4].y)*4/5 + TileVerts[4].y;
+            dx1 = px + (TileVerts[3].x - TileVerts[4].x)*rlf4/rlf1 + TileVerts[4].x;
+            dx2 = px + (TileVerts[3].x - TileVerts[4].x)*rlf2/rlf1 + TileVerts[4].x;
+            dy1 = py + (TileVerts[3].y - TileVerts[4].y)*rlf4/rlf1 + TileVerts[4].y;
+            dy2 = py + (TileVerts[3].y - TileVerts[4].y)*rlf2/rlf1 + TileVerts[4].y;
         break;
 
         case 'c':
             dx1 = px - TileWidth/2;
-            dy1 = py - (TileEdge*3/5)/2;
+            dy1 = py - (TileEdge*rlf3/rlf1)/2;
             dx2 = px - TileWidth/2;
-            dy2 = py + (TileEdge*3/5)/2;
+            dy2 = py + (TileEdge*rlf3/rlf1)/2;
         break;
         
         case 'b':
-            dx1 = px + (TileVerts[5].x - TileVerts[0].x)/5 + TileVerts[0].x;
-            dx2 = px + (TileVerts[5].x - TileVerts[0].x)*4/5 + TileVerts[0].x;
-            dy1 = py + (TileVerts[5].y - TileVerts[0].y)/5 + TileVerts[0].y;
-            dy2 = py + (TileVerts[5].y - TileVerts[0].y)*4/5 + TileVerts[0].y;
+            dx1 = px + (TileVerts[5].x - TileVerts[0].x)*rlf4/rlf1 + TileVerts[0].x;
+            dx2 = px + (TileVerts[5].x - TileVerts[0].x)*rlf2/rlf1 + TileVerts[0].x;
+            dy1 = py + (TileVerts[5].y - TileVerts[0].y)*rlf4/rlf1 + TileVerts[0].y;
+            dy2 = py + (TileVerts[5].y - TileVerts[0].y)*rlf2/rlf1 + TileVerts[0].y;
         break;
     }
 
@@ -1158,7 +1178,8 @@ function getVertex()
 
     if (selected < 0) return null;
     
-    var v = {x : 0, y : 0, d : 't', alpha: 0.65, c1: "000", c2: "fff"};
+    var v = {x : 0, y : 0, d : 't', alpha: 0.65, c1: "000", c2: "fff",
+             t: globalBuildState};
     v.x = selectedTile.x;
     v.y = selectedTile.y;
     if (selected == 0 || selected == 3) {
@@ -1196,7 +1217,8 @@ function getEdge()
 
     if (selected < 0) return null;
     
-    var v = {x : 0, y : 0, d : 't', alpha: 0.65, c1: "000", c2: "fff"};
+    var v = {x : 0, y : 0, d : 't', alpha: 0.65, c1: "000", c2: "fff",
+             t: globalBuildState};
     v.x = selectedTile.x;
     v.y = selectedTile.y;
 

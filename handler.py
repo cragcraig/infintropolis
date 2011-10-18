@@ -109,7 +109,7 @@ class PostBuild(request.Handler):
         response = {}
         # Check arguments.
         if not self.inDict(request, 'type', 'capitol', 'x', 'y', 'd', 'bx',
-                           'by'):
+                           'by') or request['type'] not in BuildType.tToJSON:
             return
 
         # Construct parameters.
