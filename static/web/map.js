@@ -114,15 +114,15 @@ function JSONCallback(json)
                 if (json[id].token) {
                     tileMap[i].token = json[id].token;
                 }
+                /* buildable data */
+                if (json[id].buildableblock) {
+                    error = parseBuildableBlock(i, json[id].buildableblock);
+                }
                 /* map data */
                 if (json[id].mapblock) {
                     error = parseMapBlock(i, json[id].mapblock);
                     tileMap[i].valid = true;
                     tileMap[i].invalidLOS = false;
-                }
-                /* buildable data */
-                if (json[id].buildableblock) {
-                    error = parseBuildableBlock(i, json[id].buildableblock);
                 }
             }
         }
@@ -860,6 +860,15 @@ function render()
 {
     if (!initd) return;
 
+    /* Draw loading animation. */
+    if (isNoMapsLoaded()) {
+        loadingAnimationStart();
+        return;
+    } else {
+        loadingAnimationStop();
+    }
+
+    /* Render map. */
     renderTiles();
     renderBuildables();
 
@@ -892,22 +901,33 @@ function render()
     UIRenderButtons();
 
     if (!isAllMapsLoaded())
-        drawLoadingMapText();
+        drawLoadingMapText("loading map");
 }
 
 // Check if pending map requests.
 function isAllMapsLoaded()
 {
-    r = true;
-    for (i = 0; i < 4; i++) {
+    var r = true;
+    for (i = 0; i < tileMap.length; i++) {
         if (!tileMap[i].valid)
             r = false;
     }
     return r;
 }
 
+// Check if no maps are valid.
+function isNoMapsLoaded()
+{
+    var r = 0;
+    for (i = 0; i < tileMap.length; i++) {
+        if (!tileMap[i].valid)
+            r++;
+    }
+    return r == tileMap.length;
+}
+
 // Draw "Map Loading" text.
-function drawLoadingMapText()
+function drawLoadingMapText(str)
 {
     ctx.font = "18pt serif";
     ctx.fillStyle = "#fff";
@@ -915,8 +935,8 @@ function drawLoadingMapText()
     ctx.lineWidth = 2;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.strokeText("[ loading map ]", canvas.width/2, 10);
-    ctx.fillText("[ loading map ]", canvas.width/2, 10);
+    ctx.strokeText("[ " + str + " ]", canvas.width/2, 10);
+    ctx.fillText("[ " + str + " ]", canvas.width/2, 10);
 }
 
 // render highlight tile
@@ -1673,4 +1693,73 @@ function isBuildableVisable(i, bld)
             return true;
     }
     return false;
+}
+
+/* Loading Animation. */
+loadingAnimation = {"t1": 0, "t2": 0, "enabled": false, "lastX": 0, "lastY": 0,
+                    "hue": 0};
+function loadingAnimationStart()
+{
+    if (loadingAnimation.enabled == false) {
+        ctx.fillStyle = 'rgba(0,0,0,1)';
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        loadingAnimation.lastX = loadingAnimationRandomX();
+        loadingAnimation.lastY = loadingAnimationRandomY();
+        loadingAnimation.hue = 0;
+        loadingAnimation.t1 = setInterval(loadingAnimationDraw, 50);
+        loadingAnimation.t2 = setInterval(loadingAnimationFade, 40);
+        loadingAnimation.enabled = true;
+    }
+}
+
+function loadingAnimationStop()
+{
+    if (loadingAnimation.enabled == true) {
+        clearInterval(loadingAnimation.t1);
+        clearInterval(loadingAnimation.t2);
+        loadingAnimation.enabled = false;
+    }
+}
+
+function loadingAnimationDraw()
+{
+    ctx.save();
+    ctx.translate(ctx.canvas.width/2, ctx.canvas.height/2);
+    ctx.scale(0.9, 0.9);
+    ctx.translate(-ctx.canvas.width/2, -ctx.canvas.height/2);
+    ctx.beginPath();
+    ctx.lineWidth = 5 + Math.random() * 10;
+    ctx.moveTo(loadingAnimation.lastX, loadingAnimation.lastY);
+    loadingAnimation.lastX = loadingAnimationRandomX();
+    loadingAnimation.lastY = loadingAnimationRandomY();
+    ctx.bezierCurveTo(loadingAnimationRandomX(),
+                      loadingAnimationRandomY(),
+                      loadingAnimationRandomX(),
+                      loadingAnimationRandomY(),
+                      loadingAnimation.lastX, loadingAnimation.lastY);
+
+    //loadingAnimation.hue = loadingAnimation.hue + 0.1 * Math.random();
+    //ctx.strokeStyle = 'hsl(' + loadingAnimation.hue + ', 50%, 50%)';
+    ctx.strokeStyle = 'black';
+    ctx.shadowColor = 'white';
+    ctx.shadowBlur = 10;
+    ctx.stroke();
+    ctx.restore();
+}
+
+function loadingAnimationFade()
+{
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    drawLoadingMapText("loading world");
+}
+
+function loadingAnimationRandomX()
+{
+    return ctx.canvas.width/2 * Math.random() + ctx.canvas.width/4;
+}
+
+function loadingAnimationRandomY()
+{
+    return ctx.canvas.height/2 * Math.random() + ctx.canvas.height/4;
 }
