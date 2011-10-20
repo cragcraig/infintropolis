@@ -1741,8 +1741,8 @@ function loadingAnimationDraw()
     //loadingAnimation.hue = loadingAnimation.hue + 0.1 * Math.random();
     //ctx.strokeStyle = 'hsl(' + loadingAnimation.hue + ', 50%, 50%)';
     ctx.strokeStyle = 'black';
-    ctx.shadowColor = 'white';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#4ba4f8';//'white';
+    ctx.shadowBlur = 15;
     ctx.stroke();
     ctx.restore();
 }
