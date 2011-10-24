@@ -155,6 +155,21 @@ def tileDirMove(coord, d):
     return out
 
 
+def wrapCoordinates(block, pos):
+    if pos.x < 0:
+        block.x -= 1
+        pos.x += inf.BLOCK_SIZE
+    elif pos.x >= inf.BLOCK_SIZE:
+        block.x += 1
+        pos.x -= inf.BLOCK_SIZE
+    if pos.y < 0:
+        block.y -= 1
+        pos.y += inf.BLOCK_SIZE
+    elif pos.y >= inf.BLOCK_SIZE:
+        block.y += 1
+        pos.y -= inf.BLOCK_SIZE
+
+
 def listSurroundingTilePos(coord):
     """Returns a tuple of the tiles surrounding coord as (x,y) pair tuples."""
     x = coord.x

@@ -19,6 +19,43 @@ class WorldShard:
         self._toload.update(vect.getSurroundingBlocks()) 
         self._core.add(Vect(vect.x, vect.y))
 
+    def addSingleBlock(self, vect):
+        """Adds a block to the shard."""
+        self._toload.add(Vect(vect.x, vect.y))
+        self._core.add(Vect(vect.x, vect.y))
+
+    def loadSingleBlock(self, vect, isCore=True):
+        """Adds a block to the shard, loading immediately."""
+        self._toload.add(Vect(vect.x, vect.y))
+        if isCore:
+            self._core.add(Vect(vect.x, vect.y))
+        self.loadDependencies()
+
+    def addBlockWidthData(self, mapblock):
+        """Adds a block with associated MapBlock data directly."""
+        v = mapblock.getPos()
+        self._toload.discard(v)
+        self._core.add(v)
+        self._mapblocks[v] = mapblock
+
+    def hasBuildableAt(blockPos, pos, d, nation=None, level=-1):
+        """Checks if there is a buildable at the given location.
+
+        Any provided nation or level attributes will be enforced. Only x,y are
+        used from the pos Vect as d is a separate parameter to the method.
+        Wrapping of the pos vector and subsequent use of the corrected blockPos
+        is performed automatically.
+        """
+        if blockPos not in self._mapblocks:
+            self.loadSingleBlock(blockPos, isCore=False)
+        if blockPos not in self._mapblocks:
+            return False
+        p = pos.copy()
+        p.d = d
+        bp = blockPos.copy()
+        inf.wrapCoordinates(bp, p)
+        return self._mapblocks[bp].hasBuildableAt(p, nation, level)
+
     def loadDependencies(self):
         """Loads all dependencies for this shard."""
         self._loadCachedBlocks()
@@ -100,18 +137,7 @@ class WorldShard:
                 continue
             else:
                 bv = Vect(block._pos.x, block._pos.y)
-                if v.x < 0:
-                    bv.x -= 1
-                    v.x += inf.BLOCK_SIZE
-                elif v.x >= inf.BLOCK_SIZE:
-                    bv.x += 1
-                    v.x -= inf.BLOCK_SIZE
-                if v.y < 0:
-                    bv.y -= 1
-                    v.y += inf.BLOCK_SIZE
-                elif v.y >= inf.BLOCK_SIZE:
-                    bv.y += 1
-                    v.y -= inf.BLOCK_SIZE
+                inf.wrapCoordinates(bv, v)
                 if bv in self._mapblocks:
                     self._recurseLOS(v, self._mapblocks[bv], newcount)
 

@@ -37,6 +37,29 @@ class Buildable:
         self.block = buildableblock.getPos().copy()
         buildableblock.atomicBuild(self, nation.getColors())
 
+    def checkBuild(self, worldshard):
+        """Checks if this buildable can be built."""
+        if self.level == BuildType.settlement:
+            self._checkBuildVertex(worldshard)
+        elif self.level == BuildType.road:
+            self._checkBuildRoad(worldshard)
+        elif self.level == BuildType.ship:
+            self._checkBuildShip(worldshard)
+        else:
+            self._checkBuildVertexUpgrade(worldshard)
+
+    def _checkBuildVertex(self, worldshard):
+        """Check if this buildable can be build at a vertex."""
+        if self.pos.d == BuildType.topVertex:
+            if worldshard.hasBuildableAt(self.pos, BuildType.topVertex)\
+                   or worldshard.hasBuildableAt(self.pos,
+                                                BuildType.bottomVertex)\
+                   or worldshard.hasBuildableAt(
+                       inf.tileDirMove(self.pos, 1), BuildType.bottomVertex)\
+                   or worldshard.hasBuildableAt(
+                       inf.tileDirMove(self.pos, 2), BuildType.bottomVertex):
+                return False
+
     def copy(self):
         return copy.copy(self)
 
@@ -68,6 +91,7 @@ class BuildType:
     """Enum for building types."""
     topEdge, centerEdge, bottomEdge, topVertex, bottomVertex = range(5)
     dToJSON = ['t', 'c', 'b', 't', 'b']
+    JSONtod = ['t', 'c', 'b', 't', 'b']
 
     settlement, city, road, ship = range(4)
     tToJSON = ['s', 'c', 'r', 'b']

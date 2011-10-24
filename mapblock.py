@@ -75,6 +75,7 @@ class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
     modelClass = BlockModel
     _pos = Vect(0,0)
+    _buildableslist = None
     los = None
     costmap = None
 
@@ -260,15 +261,30 @@ class MapBlock(inf.DatabaseObject):
         self.put()
         return True
  
-    def getBuildablesList(self):
-        return [Buildable(Vect(self._model.buildables[i],
-                               self._model.buildables[i+1],
-                               self._model.buildables[i+2]),
-                          self._model.buildables[i+3],
-                          self._model.nations[self._model.buildables[i+6]],
-                          self._model.buildables[i+7])
-                for i in xrange(0, len(self._model.buildables),
-                                BUILDABLE_LIST_SIZE)]
+    def getBuildablesList(self, refresh=False):
+        """Get a list of buildables."""
+        if not self._buildableslist or refresh:
+            self._buildableslist =\
+                [Buildable(Vect(self._model.buildables[i],
+                                self._model.buildables[i+1],
+                                self._model.buildables[i+2]),
+                           self._model.buildables[i+3],
+                           self._model.nations[self._model.buildables[i+6]],
+                           self._model.buildables[i+7])
+                 for i in xrange(0, len(self._model.buildables),
+                                 BUILDABLE_LIST_SIZE)]
+        return self._buildableslist
+
+    def hasBuildableAt(pos, nation=None, level=-1):
+        """Checks if there is a buildable at the given location.
+
+        Any provided nation or level attributes will be enforced.
+        """
+        for b in self.getBuildablesList():
+            if b.pos == pos and (not nation or b.nationName == nation) and\
+               (level == -1 or b.level == level):
+                return True
+        return False
 
     def _build(self, buildable, colors):
         """Builds the buildable. For use inside atomicBuild()."""

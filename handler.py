@@ -33,7 +33,8 @@ class GetBlock(request.Handler):
         # Retrieve MapBlocks.
         for reqblock in request:
             if self.inDict(reqblock, 'x', 'y'):
-                shard.addBlock(Vect(reqblock['x'], reqblock['y']))
+                v = Vect(reqblock['x'], reqblock['y'])
+                shard.addBlock(v);
 
         # WorldShard.
         shard.loadDependencies()

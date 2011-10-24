@@ -1705,7 +1705,7 @@ function loadingAnimationStart()
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         loadingAnimation.lastX = loadingAnimationRandomX();
         loadingAnimation.lastY = loadingAnimationRandomY();
-        loadingAnimation.hue = 0;
+        loadingAnimation.hue = Math.random() * 255;
         loadingAnimation.t1 = setInterval(loadingAnimationDraw, 50);
         loadingAnimation.t2 = setInterval(loadingAnimationFade, 40);
         loadingAnimation.enabled = true;
@@ -1738,10 +1738,10 @@ function loadingAnimationDraw()
                       loadingAnimationRandomY(),
                       loadingAnimation.lastX, loadingAnimation.lastY);
 
-    //loadingAnimation.hue = loadingAnimation.hue + 0.1 * Math.random();
-    //ctx.strokeStyle = 'hsl(' + loadingAnimation.hue + ', 50%, 50%)';
-    ctx.strokeStyle = 'black';
-    ctx.shadowColor = '#4ba4f8';//'white';
+    loadingAnimation.hue = loadingAnimation.hue + 10 * Math.random();
+    ctx.strokeStyle = 'hsl(' + loadingAnimation.hue + ', 50%, 50%)';
+    //ctx.strokeStyle = 'rgba(200, 0, 0, 1.0)';
+    ctx.shadowColor = 'white';
     ctx.shadowBlur = 15;
     ctx.stroke();
     ctx.restore();
