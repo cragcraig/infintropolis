@@ -7,6 +7,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 import request
 import inf
 import algorithms
+import buildable
 from session import Session
 from inf import Vect
 from worldshard import WorldShard
@@ -115,7 +116,7 @@ class PostBuild(request.Handler):
 
         # Construct parameters.
         pos = Vect(request['x'], request['y'],
-                   BuildType.dToJSON.index(request['d']))
+                   buildable.JSONtod(request['type'], request['d']))
         buildtype = BuildType.tToJSON.index(request['type'])
         blockVect = Vect(request['bx'], request['by'])
         if not inf.validBlockCoord(pos):
@@ -127,7 +128,8 @@ class PostBuild(request.Handler):
         #TODO(craig): Update capitol in a transaction (atomic).
         capitol = Capitol(self.getNation(), request['capitol'])
 
-        buildableblock = MapBlock(blockVect)
+        worldshard = WorldShard()
+        buildableblock = worldshard.loadBlock(blockVect)
         if not capitol or not buildableblock:
             return
 

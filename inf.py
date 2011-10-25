@@ -138,6 +138,8 @@ def isGoodStartType(tiletype):
 def tileDirMove(coord, d):
     """Get the first tile coordinate in direction d from the given coord."""
     out = Vect(coord.x, coord.y)
+    if d < 0:
+        return out
     if d == 0:
         out.x += 1
         return out
@@ -158,16 +160,16 @@ def tileDirMove(coord, d):
 def wrapCoordinates(block, pos):
     if pos.x < 0:
         block.x -= 1
-        pos.x += inf.BLOCK_SIZE
-    elif pos.x >= inf.BLOCK_SIZE:
+        pos.x += BLOCK_SIZE
+    elif pos.x >= BLOCK_SIZE:
         block.x += 1
-        pos.x -= inf.BLOCK_SIZE
+        pos.x -= BLOCK_SIZE
     if pos.y < 0:
         block.y -= 1
-        pos.y += inf.BLOCK_SIZE
-    elif pos.y >= inf.BLOCK_SIZE:
+        pos.y += BLOCK_SIZE
+    elif pos.y >= BLOCK_SIZE:
         block.y += 1
-        pos.y -= inf.BLOCK_SIZE
+        pos.y -= BLOCK_SIZE
 
 
 def listSurroundingTilePos(coord):

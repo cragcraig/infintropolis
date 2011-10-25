@@ -40,25 +40,38 @@ class Buildable:
     def checkBuild(self, worldshard):
         """Checks if this buildable can be built."""
         if self.level == BuildType.settlement:
-            self._checkBuildVertex(worldshard)
+            return self._checkBuildVertex(worldshard)
         elif self.level == BuildType.road:
-            self._checkBuildRoad(worldshard)
+            return self._checkBuildRoad(worldshard)
         elif self.level == BuildType.ship:
-            self._checkBuildShip(worldshard)
+            return self._checkBuildShip(worldshard)
         else:
-            self._checkBuildVertexUpgrade(worldshard)
+            return self._checkBuildVertexUpgrade(worldshard)
 
     def _checkBuildVertex(self, worldshard):
         """Check if this buildable can be build at a vertex."""
         if self.pos.d == BuildType.topVertex:
-            if worldshard.hasBuildableAt(self.pos, BuildType.topVertex)\
-                   or worldshard.hasBuildableAt(self.pos,
-                                                BuildType.bottomVertex)\
-                   or worldshard.hasBuildableAt(
-                       inf.tileDirMove(self.pos, 1), BuildType.bottomVertex)\
-                   or worldshard.hasBuildableAt(
-                       inf.tileDirMove(self.pos, 2), BuildType.bottomVertex):
-                return False
+            return worldshard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.centerEdge, self.nationName),
+                 (-1, BuildType.topEdge, self.nationName),
+                 (2, BuildType.bottomEdge, self.nationName)),
+                ((-1, BuildType.topVertex),
+                 (-1, BuildType.bottomVertex),
+                 (1, BuildType.bottomVertex),
+                 (2, BuildType.bottomVertex)),
+                 requireLand=True)
+        elif self.pos.d == BuildType.bottomVertex:
+            return worldshard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.centerEdge, self.nationName),
+                 (-1, BuildType.bottomEdge, self.nationName),
+                 (4, BuildType.topEdge, self.nationName)),
+                ((-1, BuildType.topVertex),
+                 (-1, BuildType.bottomVertex),
+                 (4, BuildType.topVertex),
+                 (5, BuildType.topVertex)),
+                 requireLand=True)
+        else:
+            return False
 
     def copy(self):
         return copy.copy(self)
@@ -88,11 +101,24 @@ class Buildable:
 
 
 class BuildType:
-    """Enum for building types."""
+    """Enum for buildable types."""
     topEdge, centerEdge, bottomEdge, topVertex, bottomVertex = range(5)
     dToJSON = ['t', 'c', 'b', 't', 'b']
-    JSONtod = ['t', 'c', 'b', 't', 'b']
+    JSONtod = ['t', 'c', 'b', 'tv', 'bv']
 
     settlement, city, road, ship = range(4)
+    empty = -1
     tToJSON = ['s', 'c', 'r', 'b']
     LOSVision = [15, 18, 8, 8]
+
+
+def JSONtod(jsont, jsond):
+    """Get the correct d value from a json d value."""
+    v = jsond
+    if isJSONVertex(jsont):
+        v += 'v'
+    return BuildType.JSONtod.index(v)
+
+
+def isJSONVertex(jsont):
+    return not jsont == 'r' and not jsont =='b'

@@ -24,21 +24,50 @@ class WorldShard:
         self._toload.add(Vect(vect.x, vect.y))
         self._core.add(Vect(vect.x, vect.y))
 
-    def loadSingleBlock(self, vect, isCore=True):
+    def loadBlock(self, vect, isCore=True):
         """Adds a block to the shard, loading immediately."""
-        self._toload.add(Vect(vect.x, vect.y))
+        v = Vect(vect.x, vect.y)
+        self._toload.add(v)
         if isCore:
-            self._core.add(Vect(vect.x, vect.y))
+            self._core.add(v)
         self.loadDependencies()
+        if v in self._mapblocks:
+            return self._mapblocks[v]
+        return None
 
-    def addBlockWidthData(self, mapblock):
+    def addBlockData(self, mapblock):
         """Adds a block with associated MapBlock data directly."""
         v = mapblock.getPos()
         self._toload.discard(v)
         self._core.add(v)
         self._mapblocks[v] = mapblock
 
-    def hasBuildableAt(blockPos, pos, d, nation=None, level=-1):
+    def clear(self):
+        """Clears all data in the shard."""
+        self._toload = set()
+        self._core = set()
+        self._mapblocks = dict()
+
+    def checkBuildableRequirements(self, blockPos, pos, truelist, falselist,
+                                   requireLand=False, requireWater=False):
+        """Check a list of buildable requirements."""
+        istrue = False
+        # Check truelist.
+        for i in truelist:
+            if self.hasBuildableAt(blockPos,
+                                   inf.tileDirMove(pos, i[0]), *i[1:]):
+                istrue = True
+                break
+        if not istrue:
+            return False
+        # Check falselist.
+        for i in falselist:
+            if self.hasBuildableAt(blockPos,
+                                   inf.tileDirMove(pos, i[0]), *i[1:]):
+                return False
+        return True
+
+    def hasBuildableAt(self, blockPos, pos, d, nation=None, level=-1):
         """Checks if there is a buildable at the given location.
 
         Any provided nation or level attributes will be enforced. Only x,y are
@@ -47,7 +76,7 @@ class WorldShard:
         is performed automatically.
         """
         if blockPos not in self._mapblocks:
-            self.loadSingleBlock(blockPos, isCore=False)
+            self.loadBlock(blockPos, isCore=False)
         if blockPos not in self._mapblocks:
             return False
         p = pos.copy()
@@ -63,7 +92,7 @@ class WorldShard:
         # Generate non-existent core MapBlocks.
         for n in self._toload:
             if n in self._core:
-                m = MapBlock(n, load=False)
+                m = MapBlock(n, load=False, worldshard=self)
                 m.generate(self)
                 self._mapblocks[n] = m
 
@@ -80,7 +109,7 @@ class WorldShard:
         for n in models.values():
             if n:
                 v = Vect(n.x, n.y)
-                m = MapBlock(v, load=False)
+                m = MapBlock(v, load=False, worldshard=self)
                 m.setModel(n)
                 self._mapblocks[v] = m
                 self._toload.discard(v)
@@ -98,7 +127,7 @@ class WorldShard:
         models = mapblock.BlockModel.get_by_key_name(keys)
         for n in zip(vects, models):
             if n[1]:
-                m = MapBlock(n[0], load=False)
+                m = MapBlock(n[0], load=False, worldshard=self)
                 m.setModel(n[1])
                 m.cache()
                 self._mapblocks[n[0]] = m

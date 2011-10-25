@@ -78,18 +78,22 @@ class MapBlock(inf.DatabaseObject):
     _buildableslist = None
     los = None
     costmap = None
+    worldshard = None
 
-    def __init__(self, pos, load=True, generate_nonexist=True):
+    def __init__(self, pos, load=True, generate_nonexist=True, worldshard=None):
         """Load BlockModel from cache/database.
 
         By default a BlockModel will be generated and stored to the database
         if one does not exist.
         """
         self._pos = pos.copy()
+        self.worldshard = worldshard
         if load:
             self.load()
             if not self.exists() and generate_nonexist:
                 self.generate()
+            if self.worldshard:
+                self.worldshard.addBlockData(self)
 
     def initLOS(self):
         """Create data structures required for LOS."""
@@ -241,6 +245,8 @@ class MapBlock(inf.DatabaseObject):
 
     def atomicBuild(self, buildable, colors):
         """Builds the buildable in an atomic database transaction."""
+        if not self.worldshard:
+            return
         if db.run_in_transaction(MapBlock._build, self, buildable,
                                  colors):
             self.cache()
@@ -275,7 +281,7 @@ class MapBlock(inf.DatabaseObject):
                                  BUILDABLE_LIST_SIZE)]
         return self._buildableslist
 
-    def hasBuildableAt(pos, nation=None, level=-1):
+    def hasBuildableAt(self, pos, nation=None, level=-1):
         """Checks if there is a buildable at the given location.
 
         Any provided nation or level attributes will be enforced.
@@ -289,8 +295,11 @@ class MapBlock(inf.DatabaseObject):
     def _build(self, buildable, colors):
         """Builds the buildable. For use inside atomicBuild()."""
         self.dbGet()
-        self._addBuildable(buildable, colors)
-        self.put()
+        self.worldshard.clear()
+        self.worldshard.addBlockData(self)
+        if buildable.checkBuild(self.worldshard):
+            self._addBuildable(buildable, colors)
+            self.put()
         return True
 
     def _addBuildable(self, buildable, colors):
