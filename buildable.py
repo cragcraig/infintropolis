@@ -23,24 +23,36 @@ class Buildable:
     block = None
     nationName = None
     capitolNum = None
+    validate = False
 
-    def __init__(self, pos, level, nationName=None, capitolNum=None):
+    def __init__(self, blockPos, pos, level, nationName=None, capitolNum=None,
+                 validate=True):
         self.pos = pos.copy()
+        self.block = blockPos.copy()
         self.level = int(level)
         self.nationName = nationName
         self.capitolNum = capitolNum
+        self.validate = validate
 
-    def build(self, nation, capitol, buildableblock):
+    def build(self, worldshard, nation, capitol):
         """Adds this buildable in all necessary database models."""
         self.nationName = nation.getName()
         self.capitolNum = capitol.getNumber()
-        self.block = buildableblock.getPos().copy()
-        buildableblock.atomicBuild(self, nation.getColors())
+        block = worldshard.getBlock(self.block)
+        if block:
+            block.atomicBuild(self, nation.getColors())
 
     def checkBuild(self, worldshard):
         """Checks if this buildable can be built."""
+        if not self.validate:
+            return True
+        # Perform type-specific validation.
         if self.level == BuildType.settlement:
             return self._checkBuildVertex(worldshard)
+        else:
+            return True
+        if True:
+            pass
         elif self.level == BuildType.road:
             return self._checkBuildRoad(worldshard)
         elif self.level == BuildType.ship:

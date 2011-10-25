@@ -5,6 +5,7 @@ import algorithms
 from inf import Vect
 from buildable import Buildable, BuildType
 from mapblock import MapBlock
+from worldshard import WorldShard
 
 BUILDABLE_LIST_SIZE = 6
 
@@ -89,13 +90,12 @@ class Capitol(inf.DatabaseObject):
                 self.atomicSetLocation(blockVect, pos)
         if self.hasLocation(): #TODO(craig): and not settlementExists()
             #TODO(craig): Check that build can actually occur.
-            block = MapBlock(Vect(self._model.location[0],
-                                  self._model.location[1]))
-            build = Buildable(Vect(self._model.location[2],
-                                   self._model.location[3],
-                                   self._model.location[4]),
-                              BuildType.settlement)
-            build.build(self._nation, self, block)
+            worldshard = WorldShard()
+            bv = Vect(self._model.location[0], self._model.location[1])
+            v = Vect(self._model.location[2], self._model.location[3],
+                     self._model.location[4])
+            build = Buildable(bv, v, BuildType.settlement, validate=False)
+            build.build(worldshard, self._nation, self)
         if not self.hasSetLocation(): #TODO(craig) and settlementExists()
             self.atomicSetHasLocation()
 

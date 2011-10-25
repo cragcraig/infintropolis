@@ -271,7 +271,8 @@ class MapBlock(inf.DatabaseObject):
         """Get a list of buildables."""
         if not self._buildableslist or refresh:
             self._buildableslist =\
-                [Buildable(Vect(self._model.buildables[i],
+                [Buildable(self._pos,
+                           Vect(self._model.buildables[i],
                                 self._model.buildables[i+1],
                                 self._model.buildables[i+2]),
                            self._model.buildables[i+3],
@@ -297,7 +298,7 @@ class MapBlock(inf.DatabaseObject):
         self.dbGet()
         self.worldshard.clear()
         self.worldshard.addBlockData(self)
-        if buildable.checkBuild(self.worldshard):
+        if buildable.checkBuild(self.worldshard) and self.exists():
             self._addBuildable(buildable, colors)
             self.put()
         return True

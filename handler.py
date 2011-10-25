@@ -127,19 +127,16 @@ class PostBuild(request.Handler):
         #TODO(craig): Don't use memcache.
         #TODO(craig): Update capitol in a transaction (atomic).
         capitol = Capitol(self.getNation(), request['capitol'])
-
-        worldshard = WorldShard()
-        buildableblock = worldshard.loadBlock(blockVect)
-        if not capitol or not buildableblock:
+        if not capitol.exists():
             return
 
         # Build.
-        build = Buildable(pos, buildtype)
-        build.build(self.getNation(), capitol, buildableblock)
+        worldshard = WorldShard()
+        build = Buildable(blockVect, pos, buildtype)
+        build.build(worldshard, self.getNation(), capitol)
 
         # Return updated BuildableBlock.
-        r = {'buildableblock': buildableblock.getBuildablesJSON()}
-        self.writeJSON({buildableblock.getPos().getBlockJSONId(): r})
+        self.writeJSON(worldshard.getJSONBuildablesDict())
 
 
 class GetDebug(request.Handler):

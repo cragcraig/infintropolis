@@ -48,6 +48,13 @@ class WorldShard:
         self._core = set()
         self._mapblocks = dict()
 
+    def getBlock(self, vect, isCore=True):
+        """Returns a block if it is in the shard, loading it otherwise."""
+        if vect in self._mapblocks:
+            return self._mapblocks[vect]
+        else:
+            return self.loadBlock(vect, isCore=isCore)
+
     def checkBuildableRequirements(self, blockPos, pos, truelist, falselist,
                                    requireLand=False, requireWater=False):
         """Check a list of buildable requirements."""
@@ -182,4 +189,16 @@ class WorldShard:
                     'mapblock': block.getString(),
                     'buildableblock': block.getBuildablesJSON(),
                     'token': block.getToken()}
+        return r
+
+    def getJSONBuildablesDict(self):
+        """Return a JSON dictionary for the core MapBlocks."""
+        r = {}
+        for v in self._core:
+            if v not in self._mapblocks:
+                continue
+            block = self._mapblocks[v]
+            if block.exists():
+                r[v.getBlockJSONId()] = {
+                    'buildableblock': block.getBuildablesJSON()}
         return r
