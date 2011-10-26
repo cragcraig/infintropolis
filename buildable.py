@@ -122,7 +122,7 @@ class Buildable:
                  (-1, BuildType.centerEdge, self.nationName, level),
                  (4, BuildType.topEdge, self.nationName, level),
                  (5, BuildType.centerEdge, self.nationName, level),
-                 (4, BuildType.topEdge, self.nationName, level)),
+                 (5, BuildType.topEdge, self.nationName, level)),
                 ((-1, BuildType.bottomEdge),),
                 requireLand=rland, requireWater=rwater)
         else:
