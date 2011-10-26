@@ -1495,10 +1495,11 @@ function BuildModeEnable(buildType)
 {
     globalState = (UIBuildablesTypeMap[buildType] ? 2 : 3);
     globalBuildState = buildType;
+    selectedVertex = null
+    selectedEdge = null
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
     render();
-
 }
 
 /* End Build Mode. */

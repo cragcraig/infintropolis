@@ -3,7 +3,7 @@ from google.appengine.api import memcache
 import algorithms
 import inf
 import mapblock
-from inf import Vect, TileType
+from inf import Vect, TileType, Tile
 from buildable import Buildable, BuildType
 from mapblock import MapBlock
 
@@ -55,14 +55,15 @@ class WorldShard:
         else:
             return self.loadBlock(vect, isCore=isCore)
 
-    def checkBuildableRequirements(self, blockPos, pos, truelist, falselist,
-                                   requireLand=False, requireWater=False):
+    def checkBuildableRequirements(self, blockPos, buildPos, truelist,
+                                   falselist, requireLand=False,
+                                   requireWater=False):
         """Check a list of buildable requirements."""
         istrue = False
         # Check truelist.
         for i in truelist:
             if self.hasBuildableAt(blockPos,
-                                   inf.tileDirMove(pos, i[0]), *i[1:]):
+                                   inf.tileDirMove(buildPos, i[0]), *i[1:]):
                 istrue = True
                 break
         if not istrue:
@@ -70,8 +71,15 @@ class WorldShard:
         # Check falselist.
         for i in falselist:
             if self.hasBuildableAt(blockPos,
-                                   inf.tileDirMove(pos, i[0]), *i[1:]):
+                                   inf.tileDirMove(buildPos, i[0]), *i[1:]):
                 return False
+        # Check tile type requirements.
+        if requireLand and not self._checkForTile(blockPos, buildPos,
+                                                  Tile.isLand):
+            return False
+        if requireWater and not self._checkForTile(blockPos, buildPos,
+                                                   Tile.isWater):
+            return False
         return True
 
     def hasBuildableAt(self, blockPos, pos, d, nation=None, level=-1):
@@ -82,15 +90,31 @@ class WorldShard:
         Wrapping of the pos vector and subsequent use of the corrected blockPos
         is performed automatically.
         """
-        if blockPos not in self._mapblocks:
-            self.loadBlock(blockPos, isCore=False)
-        if blockPos not in self._mapblocks:
-            return False
         p = pos.copy()
         p.d = d
         bp = blockPos.copy()
         inf.wrapCoordinates(bp, p)
+        if bp not in self._mapblocks:
+            self.loadBlock(bp, isCore=False)
+        if bp not in self._mapblocks:
+            return False
         return self._mapblocks[bp].hasBuildableAt(p, nation, level)
+
+    def _checkForTile(self, blockPos, buildPos, tileMethod):
+        """True if tileMethod evaluates True for a tile adjacent to buildPos."""
+        for v in buildPos.getSurroundingTiles():
+            t = self.getTile(blockPos, v)
+            if t and tileMethod(t):
+                return True
+        return False
+
+    def getTile(self, blockPos, pos):
+        """Returns the Tile at the specificed location."""
+        bp, p = inf.getWrappedCoordinates(blockPos, pos)
+        b = self.getBlock(bp, isCore=False)
+        if b:
+            return b.get(p)
+        return None
 
     def loadDependencies(self):
         """Loads all dependencies for this shard."""
@@ -148,7 +172,7 @@ class WorldShard:
             blist = m.getBuildablesList()
             for b in blist:
                 if b.nationName == nationName:
-                    for v in b.getSurroundingTiles():
+                    for v in b.pos.getSurroundingTiles():
                         self._recurseLOS(v, m, BuildType.LOSVision[b.level])
 
     def _recurseLOS(self, pos, block, count):

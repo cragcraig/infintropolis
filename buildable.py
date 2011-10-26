@@ -94,23 +94,6 @@ class Buildable:
         l.append(self.level)
         return l
 
-    def getSurroundingTiles(self):
-        """Returns a list of the surrounding tile positions."""
-        if self.pos.d == BuildType.topEdge:
-            return [self.pos, inf.tileDirMove(self.pos, 2)]
-        elif self.pos.d == BuildType.centerEdge:
-            return [self.pos, inf.tileDirMove(self.pos, 3)]
-        elif self.pos.d == BuildType.bottomEdge:
-            return [self.pos, inf.tileDirMove(self.pos, 4)]
-        elif self.pos.d == BuildType.topVertex:
-            return [self.pos, inf.tileDirMove(self.pos, 2),
-                    inf.tileDirMove(self.pos, 3)]
-        elif self.pos.d == BuildType.bottomVertex:
-            return [self.pos, inf.tileDirMove(self.pos, 4),
-                    inf.tileDirMove(self.pos, 3)]
-        else:
-            return []
-
 
 class BuildType:
     """Enum for buildable types."""
@@ -133,4 +116,4 @@ def JSONtod(jsont, jsond):
 
 
 def isJSONVertex(jsont):
-    return not jsont == 'r' and not jsont =='b'
+    return jsont != 'r' and jsont != 'b'

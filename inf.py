@@ -6,6 +6,7 @@ import os
 from google.appengine.ext import db
 from google.appengine.api import memcache
 
+import buildable
 
 # Block size.
 BLOCK_SIZE = 50
@@ -70,6 +71,23 @@ class Vect:
                 Vect(x, y-1), Vect(x+1, y+1), Vect(x-1, y-1), Vect(x+1, y-1),
                 Vect(x-1, y+1))
 
+    def getSurroundingTiles(self):
+        """Returns a list of the surrounding tile positions."""
+        if self.d == buildable.BuildType.topEdge:
+            return [self, tileDirMove(self, 2)]
+        elif self.d == buildable.BuildType.centerEdge:
+            return [self, tileDirMove(self, 3)]
+        elif self.d == buildable.BuildType.bottomEdge:
+            return [self, tileDirMove(self, 4)]
+        elif self.d == buildable.BuildType.topVertex:
+            return [self, tileDirMove(self, 2),
+                    tileDirMove(self, 3)]
+        elif self.d == buildable.BuildType.bottomVertex:
+            return [self, tileDirMove(self, 4),
+                    tileDirMove(self, 3)]
+        else:
+            return []
+
 
 class Tile:
     """An individual resource tile."""
@@ -84,11 +102,14 @@ class Tile:
         return copy.copy(self)
 
     def isWater(self):
-        return self.tiletype is not None and self.tiletype == TileType.water
+        return self.tiletype is not None and\
+               (self.tiletype == TileType.water or\
+               self.tiletype == TileType.fish)
 
     def isLand(self):
-        return (self.tiletype is not None and
-                self.tiletype != TileType.water)
+        return self.tiletype is not None and\
+               self.tiletype != TileType.water and\
+               self.tiletype != TileType.fish
 
     def isDesert(self):
         return self.tiletype == TileType.desert
@@ -170,6 +191,13 @@ def wrapCoordinates(block, pos):
     elif pos.y >= BLOCK_SIZE:
         block.y += 1
         pos.y -= BLOCK_SIZE
+
+
+def getWrappedCoordinates(block, pos):
+    rb = Vect(block.x, block.y)
+    rp = Vect(pos.x, pos.y, pos.d)
+    wrapCoordinates(rb, rp)
+    return (rb, rp)
 
 
 def listSurroundingTilePos(coord):
