@@ -185,9 +185,9 @@ function parseMapBlock(i, str)
 function parseBuildableBlock(i, list)
 {
     /* Count nations's buildables. */
-    var count = -1;
+    var count = null;
     if (tileMap[i].buildables.length > 0) {
-        count = countBuildables(i);
+        count = hashBuildables(i);
     }
 
     /* Use new data and start autoupdate. */
@@ -195,30 +195,27 @@ function parseBuildableBlock(i, list)
     launchAutoUpdate();
 
     /* Re-count buildables and issue LOS update if needed. */
-    if (count != -1) {
-        if (count != countBuildables(i)) {
+    if (count != null) {
+        if (count != hashBuildables(i)) {
             tileMap[i].invalidLOS = true;
         }
     }
 }
 
-/* Counts the number of buildables owned by the nation in tileMap[i].
- *
- * TODO(craig): This method will have to change once volcanoes and knights are
- * implemented as they can change the LOS without changing the buildables count.
- * */
-function countBuildables(i)
+/* Constructs a hash of the buildables owned by the nation in tileMap[i]. */
+function hashBuildables(i)
 {
     if (!capitol || !tileMap[i].valid) {
-        return 0;
+        return "";
     }
-    var count = 0;
+    var hash = "";
     for (var j=0; j < tileMap[i].buildables.length; j++) {
-        if (tileMap[i].buildables[j].n == capitol.nation) {
-            count++;
+        var b = tileMap[i].buildables[j];
+        if (b.n == capitol.nation) {
+            hash += b.x + "," + b.y + "," + b.t + ":";
         }
     }
-    return count;
+    return hash;
 }
 
 /* Request updated MapBlock data if LOS changes. */
