@@ -559,6 +559,7 @@ function initMouseScroll()
 function mouseCallback()
 {
     reportUserActivity();
+    hideBuildOverlay();
 
     /* UI click */
     if (UIHandleClick(pureMouseX, pureMouseY))
@@ -774,13 +775,13 @@ function loading()
     }
     // create UI buttons
     UIAddButton(UIButton(-60, 50, loadImg('/img/ui/settlement.png'), 0,
-                         function () {BuildModeEnable('s');}));
+                         BuildModeLauncher('s')));
     UIAddButton(UIButton(-60, 110, loadImg('/img/ui/settlement.png'), 0,
-                         function () {BuildModeEnable('c');}));
+                         BuildModeLauncher('c')));
     UIAddButton(UIButton(-60, 170, loadImg('/img/ui/road.png'), 0,
-                         function () {BuildModeEnable('r');}));
+                         BuildModeLauncher('r')));
     UIAddButton(UIButton(-60, 230, loadImg('/img/ui/road.png'), 0,
-                         function () {BuildModeEnable('b');}));
+                         BuildModeLauncher('b')));
     UIAddButton(UIButton(-60, 50, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel));
     UIGroupVisible(0, true);
@@ -1500,6 +1501,11 @@ function BuildModeEnable(buildType)
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
     render();
+}
+
+function BuildModeLauncher(buildType)
+{
+    return function () {BuildModeEnable(buildType);};
 }
 
 /* End Build Mode. */

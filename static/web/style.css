@@ -18,3 +18,22 @@ h2 {
     font-weight: normal;
     font-size: 20pt;
 }
+
+#build_overlay {
+    display: none;
+    width: 400px;
+    border:10px solid #666;
+    border:10px solid rgba(82, 82, 82, 0.698);
+    -moz-border-radius:8px;
+    -webkit-border-radius:8px;
+}
+
+#build_overlay div {
+    padding:10px;
+    border:1px solid #fff;
+    background-color:#fff;
+}
+
+#build_overlay h2 {
+    color: #000;
+}

@@ -11,6 +11,7 @@
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <!-- <script type="text/javascript" src="static/jquery.js"></script> -->
 <script type="text/javascript" src="/static/map.js"></script>
+<script type="text/javascript" src="/static/jquery.tools.min.js"></script>
 </head>
 
 <!-- BODY -->
@@ -32,26 +33,39 @@
   </canvas>
 </div>
 
-
-<!-- bar
-<div style="width: 80%; height: 60px;">
-  <div style="float: left; width: 30%px;">
-    <form>
-      <input type="checkbox" checked="true" onClick="toggleRollTokens();"> Tokens<br>
-    </form>
-  </div>
-  <div style="float: center; width: 20%px;">
-  </div>
-  <div style="float: right; width: 30%px;">
-  </div>
+<!-- build overlay -->
+<div id="build_overlay">
+    <div>
+        <h2>Build Overlay</h2>
+        <p>Content is here!</p>
+    </div>
 </div>
--->
 
+<script>
+$(document).ready(function() {
 
-<!--
-<a href="javascript: alert('Browser error, sorry')" onClick="this.href=canvas.toDataURL()" target="_blank">Screenshot</a>
--->
+$("#build_overlay").overlay({
+    loadSpeed: 100,
+    load: false,
+    closeOnClick: true
+});
 
+});
+
+function showBuildOverlay()
+{
+    var api = $("#build_overlay").data("overlay");
+    api.load()
+}
+
+function hideBuildOverlay()
+{
+    var api = $("#build_overlay").data("overlay");
+    api.close()
+}
+</script>
+
+<!-- BODY END -->
 </body>
 
 </html>
