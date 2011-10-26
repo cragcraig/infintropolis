@@ -42,6 +42,10 @@ class Buildable:
         if block:
             block.atomicBuild(self, nation.getColors())
 
+    def isUpgrade(self):
+        """Returns True if this buildable type is an upgrade."""
+        return self.level == BuildType.city
+
     def checkBuild(self, worldshard):
         """Checks if this buildable can be built."""
         if not self.validate:
@@ -49,19 +53,15 @@ class Buildable:
         # Perform type-specific validation.
         if self.level == BuildType.settlement:
             return self._checkBuildVertex(worldshard)
-        else:
-            return True
-        if True:
-            pass
         elif self.level == BuildType.road:
-            return self._checkBuildRoad(worldshard)
+            return self._checkBuildEdge(worldshard, BuildType.road)
         elif self.level == BuildType.ship:
-            return self._checkBuildShip(worldshard)
+            return self._checkBuildEdge(worldshard, BuildType.ship)
         else:
-            return self._checkBuildVertexUpgrade(worldshard)
+            return self._checkUpgradeCity(worldshard)
 
     def _checkBuildVertex(self, worldshard):
-        """Check if this buildable can be build at a vertex."""
+        """Check if this buildable can be built at a vertex."""
         if self.pos.d == BuildType.topVertex:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.centerEdge, self.nationName),
@@ -84,6 +84,55 @@ class Buildable:
                  requireLand=True)
         else:
             return False
+
+    def _checkBuildEdge(self, worldshard, level):
+        """Check if this buildable can be built at an edge."""
+        # Determine land/water requirements.
+        rland = False
+        rwater = False
+        if level == BuildType.road:
+            rland = True
+        if level == BuildType.ship:
+            rwater = True
+        # Perform verification.
+        if self.pos.d == BuildType.topEdge:
+            return worldshard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.topVertex, self.nationName),
+                 (1, BuildType.bottomVertex, self.nationName),
+                 (-1, BuildType.centerEdge, self.nationName, level),
+                 (2, BuildType.bottomEdge, self.nationName, level),
+                 (1, BuildType.centerEdge, self.nationName, level),
+                 (1, BuildType.bottomEdge, self.nationName, level)),
+                ((-1, BuildType.topEdge),),
+                requireLand=rland, requireWater=rwater)
+        elif self.pos.d == BuildType.centerEdge:
+            return worldshard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.topVertex, self.nationName),
+                 (-1, BuildType.bottomVertex, self.nationName),
+                 (-1, BuildType.topEdge, self.nationName, level),
+                 (-1, BuildType.bottomEdge, self.nationName, level),
+                 (2, BuildType.bottomEdge, self.nationName, level),
+                 (4, BuildType.topEdge, self.nationName, level)),
+                ((-1, BuildType.centerEdge),),
+                requireLand=rland, requireWater=rwater)
+        elif self.pos.d == BuildType.bottomEdge:
+            return worldshard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.bottomVertex, self.nationName),
+                 (5, BuildType.topVertex, self.nationName),
+                 (-1, BuildType.centerEdge, self.nationName, level),
+                 (4, BuildType.topEdge, self.nationName, level),
+                 (5, BuildType.centerEdge, self.nationName, level),
+                 (4, BuildType.topEdge, self.nationName, level)),
+                ((-1, BuildType.bottomEdge),),
+                requireLand=rland, requireWater=rwater)
+        else:
+            return False
+            
+    def _checkUpgradeCity(self, worldshard):
+        """Check if this buildable can upgrade the current location."""
+        return worldshard.checkBuildableRequirements(self.block, self.pos,
+            ((-1, self.pos.d, self.nationName, BuildType.settlement),),
+            ())
 
     def copy(self):
         return copy.copy(self)

@@ -299,6 +299,8 @@ class MapBlock(inf.DatabaseObject):
         self.worldshard.clear()
         self.worldshard.addBlockData(self)
         if buildable.checkBuild(self.worldshard) and self.exists():
+            if buildable.isUpgrade():
+                self._delBuildable(buildable.pos)
             self._addBuildable(buildable, colors)
             self.put()
         return True
