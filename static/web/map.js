@@ -678,6 +678,7 @@ var TileSine = [Math.sin(-Math.PI/6), Math.sin(-Math.PI/2), Math.sin(Math.PI/6)]
 var tileSpriteSize = 11;
 var tileSprite;
 var highlightedTile;
+var LogoLoading;
 var tokens = [];
 var specialTokens = [];
 
@@ -766,6 +767,7 @@ function loading()
     // load tiles
     tileSprite = loadImg('/img/tiles.png');
     highlightedTile = loadImg('/img/high.png');
+    LogoLoading = loadImg('/img/logo.png');
     // load tokens
     for (i=0; i<11; i++) {
         tokens[i] = loadImg('/img/tokens/' + (i+2) + '.png');
@@ -1740,18 +1742,13 @@ function isBuildableVisable(i, bld)
 }
 
 /* Loading Animation. */
-loadingAnimation = {"t1": 0, "t2": 0, "enabled": false, "lastX": 0, "lastY": 0,
-                    "hue": 0};
+loadingAnimation = {"t1": 0, "enabled": false, "hue": 0};
+
 function loadingAnimationStart()
 {
     if (loadingAnimation.enabled == false) {
-        ctx.fillStyle = 'rgba(0,0,0,1)';
-        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        loadingAnimation.lastX = loadingAnimationRandomX();
-        loadingAnimation.lastY = loadingAnimationRandomY();
         loadingAnimation.hue = Math.random() * 255;
-        loadingAnimation.t1 = setInterval(loadingAnimationDraw, 50);
-        loadingAnimation.t2 = setInterval(loadingAnimationFade, 40);
+        loadingAnimation.t1 = setInterval(loadingAnimationDraw, 30);
         loadingAnimation.enabled = true;
     }
 }
@@ -1760,41 +1757,20 @@ function loadingAnimationStop()
 {
     if (loadingAnimation.enabled == true) {
         clearInterval(loadingAnimation.t1);
-        clearInterval(loadingAnimation.t2);
         loadingAnimation.enabled = false;
     }
 }
 
+
 function loadingAnimationDraw()
 {
-    ctx.save();
-    ctx.translate(ctx.canvas.width/2, ctx.canvas.height/2);
-    ctx.scale(0.9, 0.9);
-    ctx.translate(-ctx.canvas.width/2, -ctx.canvas.height/2);
-    ctx.beginPath();
-    ctx.lineWidth = 5 + Math.random() * 10;
-    ctx.moveTo(loadingAnimation.lastX, loadingAnimation.lastY);
-    loadingAnimation.lastX = loadingAnimationRandomX();
-    loadingAnimation.lastY = loadingAnimationRandomY();
-    ctx.bezierCurveTo(loadingAnimationRandomX(),
-                      loadingAnimationRandomY(),
-                      loadingAnimationRandomX(),
-                      loadingAnimationRandomY(),
-                      loadingAnimation.lastX, loadingAnimation.lastY);
-
-    loadingAnimation.hue = loadingAnimation.hue + 10 * Math.random();
-    ctx.strokeStyle = 'hsl(' + loadingAnimation.hue + ', 50%, 50%)';
-    //ctx.strokeStyle = 'rgba(200, 0, 0, 1.0)';
-    ctx.shadowColor = 'white';
-    ctx.shadowBlur = 15;
-    ctx.stroke();
+    ctx.save()
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.rotate(loadingAnimation.hue)
+    loadingAnimation.hue += Math.PI/20;
+    ctx.drawImage(LogoLoading, -LogoLoading.width/2, -LogoLoading.height/2);
     ctx.restore();
-}
-
-function loadingAnimationFade()
-{
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     drawLoadingMapText("loading world");
 }
 
