@@ -556,11 +556,13 @@ function initMouseScroll()
 function mouseCallback()
 {
     reportUserActivity();
-    hideBuildOverlay();
 
     /* UI click */
     if (UIHandleClick(pureMouseX, pureMouseY))
         return;
+
+    /* Hide overlays */
+    hideBuildOverlay();
 
     /* build click */
     if (globalBuildState) {
@@ -771,8 +773,9 @@ function loading()
         specialTokens[i] = loadImg('/img/tokens/s' + i + '.png');
     }
     // create UI buttons
-    UIAddButton(UIButton(-60, 50, loadImg('/img/ui/settlement.png'), 0,
-                         BuildModeLauncher('s')));
+    UIAddButton(UIButton(-200, 20, loadImg('/img/ui/build.png'), 0,
+                         showBuildOverlay));
+    /*
     UIAddButton(UIButton(-60, 110, loadImg('/img/ui/settlement.png'), 0,
                          BuildModeLauncher('c')));
     UIAddButton(UIButton(-60, 170, loadImg('/img/ui/road.png'), 0,
@@ -781,6 +784,7 @@ function loading()
                          BuildModeLauncher('b')));
     UIAddButton(UIButton(-60, 50, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel));
+    */
     UIGroupVisible(0, true);
 
     // load all images

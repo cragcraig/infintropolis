@@ -56,12 +56,16 @@ function showBuildOverlay()
 {
     var api = $("#build_overlay").data("overlay");
     api.load()
+    UIGroupVisible(0, false);
+    render();
 }
 
 function hideBuildOverlay()
 {
     var api = $("#build_overlay").data("overlay");
     api.close()
+    UIGroupVisible(0, true);
+    render();
 }
 </script>
 
