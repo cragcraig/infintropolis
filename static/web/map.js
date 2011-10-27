@@ -774,7 +774,7 @@ function loading()
     }
     // create UI buttons
     UIAddButton(UIButton(-200, 20, loadImg('/img/ui/build.png'), 0,
-                         showBuildOverlay));
+                         showBuildOverlay, true));
     /*
     UIAddButton(UIButton(-60, 110, loadImg('/img/ui/settlement.png'), 0,
                          BuildModeLauncher('c')));
@@ -782,9 +782,9 @@ function loading()
                          BuildModeLauncher('r')));
     UIAddButton(UIButton(-60, 230, loadImg('/img/ui/road.png'), 0,
                          BuildModeLauncher('b')));
+    */
     UIAddButton(UIButton(-60, 50, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel));
-    */
     UIGroupVisible(0, true);
 
     // load all images
@@ -900,7 +900,7 @@ function render()
         break;
     }
 
-    UIRenderButtons();
+    UIRenderButtons(pureMouseX, pureMouseY);
 
     if (!isAllMapsLoaded())
         drawLoadingMapText("loading map");
@@ -1427,10 +1427,12 @@ UIBuildablesTypeMap = {s: true, c: true, r: false, b: false};
  * x: Screen position. Negative values are relative to the right edge.
  * y: Screen position. Negative values are relative to the bottom edge.
  */
-function UIButton(x, y, img, group, callback)
+function UIButton(x, y, img, group, callback, hasMouseover)
 {
+    if (!hasMouseover)
+        var hasMouseover = false;
     var o = {x: x, y: y, img: img, callback: callback, group: group,
-             enabled: false}
+             enabled: false, hasMouseover: hasMouseover}
 
     return o;
 }
@@ -1463,6 +1465,7 @@ function UIHandleClick(clickx, clicky)
 {
     var x;
     var y;
+    var d = 1;
     for (i=0; i<UIButtons.length; i++) {
         if (!UIButtons[i].enabled) continue;
         x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
@@ -1477,15 +1480,24 @@ function UIHandleClick(clickx, clicky)
 }
 
 /* Renders visible UIButton objects to the canvas. */
-function UIRenderButtons()
+function UIRenderButtons(mousex, mousey)
 {
     var x;
     var y;
+    var offset;
     for (i=0; i<UIButtons.length; i++) {
         if (!UIButtons[i].enabled) continue;
         x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
         y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
+        if (UIButtons[i].hasMouseover && mousex > x &&
+            mousex < x + UIButtons[i].img.width && mousey > y &&
+            mousey < y + UIButtons[i].img.height) {
+            ctx.shadowBlur = 3;
+            ctx.shadowColor = 'white';
+        }
         ctx.drawImage(UIButtons[i].img, x, y);
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'rgba(0,0,0,0)';
     }
 }
 
@@ -1499,6 +1511,7 @@ function BuildModeEnable(buildType)
     globalBuildState = buildType;
     selectedVertex = null
     selectedEdge = null
+    hideBuildOverlay();
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
     render();

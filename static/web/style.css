@@ -22,18 +22,73 @@ h2 {
 #build_overlay {
     display: none;
     width: 400px;
-    border:10px solid #666;
-    border:10px solid rgba(82, 82, 82, 0.698);
-    -moz-border-radius:8px;
-    -webkit-border-radius:8px;
-}
-
-#build_overlay div {
-    padding:10px;
+    box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.5);
     border:1px solid #fff;
-    background-color:#fff;
+    color:#fff;
+    background-color:#000;
+    padding: 10px;
+    vertical-align: middle;
 }
 
-#build_overlay h2 {
-    color: #000;
+#build_title {
+    vertical-align: middle;
+    text-align: center;
+    color: #fff;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 22;
+    padding-top: 15px;
+    padding-bottom: 2px;
+}
+
+#build_overlay table {
+    border-collapse: collapse;
+    width: 90%;
+    text-align: center;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#build_overlay table, th, td {
+    padding: 2px;
+    border-width: 1px;
+    border-color: white;
+    border: 0px solid white;
+    vertical-align: middle;
+}
+
+#build_item {
+    text-center: left;
+}
+
+#build_item a {
+    display: block;
+    color: #fff;
+    text-decoration: none;
+    font-style: normal;
+    font-weight: normal;
+    font-family: infbasic;
+    box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.4);
+    border: 1px solid #5f8fdb;
+    border-radius: 3px;
+    background-color: #2e4f8c;
+    width: 80%;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+#build_item a:hover {
+    border-color: #6e9ce8;
+    background-color: #395b9a;
+}
+
+#build_item a:active {
+    background-color: #294985;
+    border-color: #5683cd;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+#build_cost {
+    text-align: center;
+    width: 60%;
 }

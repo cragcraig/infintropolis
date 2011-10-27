@@ -35,10 +35,38 @@
 
 <!-- build overlay -->
 <div id="build_overlay">
-    <div>
-        <h2>Build Overlay</h2>
-        <p>Content is here!</p>
-    </div>
+    <table>
+        <tr id="build_title">
+            <td colspan="2">Build</td>
+        </tr>
+        <tr>
+            <td id="build_item">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('s');">Settlement</a>
+            </td>
+            <td id="build_cost">Cost</td>
+        </tr>
+        <tr>
+            <td id="build_item">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('r');">Road</a>
+            </td>
+            <td id="build_cost">Cost</td>
+        </tr>
+        <tr>
+            <td id="build_item">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('b');">Ship</a>
+            </td>
+            <td id="build_cost">Cost</td>
+        </tr>
+        <tr id="build_title">
+            <td colspan="2">Upgrade</td>
+        </tr>
+        <tr>
+            <td id="build_item">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('c');">City</a>
+            </td>
+            <td id="build_cost">Cost</td>
+        </tr>
+    </table>
 </div>
 
 <script>
