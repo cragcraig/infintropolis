@@ -492,6 +492,7 @@ function updateMouse(e)
     mouseX += screenOffsetX;
     mouseY += screenOffsetY;
 
+    UICheckState(pureMouseX, pureMouseY);
     updateSelection();
 }
 
@@ -773,8 +774,8 @@ function loading()
         specialTokens[i] = loadImg('/img/tokens/s' + i + '.png');
     }
     // create UI buttons
-    UIAddButton(UIButton(-200, 20, loadImg('/img/ui/build.png'), 0,
-                         showBuildOverlay, true));
+    UIAddButton(UIButton(-160, 20, loadImg('/img/ui/build.png'), 0,
+                         showBuildOverlay, 2));
     /*
     UIAddButton(UIButton(-60, 110, loadImg('/img/ui/settlement.png'), 0,
                          BuildModeLauncher('c')));
@@ -783,8 +784,8 @@ function loading()
     UIAddButton(UIButton(-60, 230, loadImg('/img/ui/road.png'), 0,
                          BuildModeLauncher('b')));
     */
-    UIAddButton(UIButton(-60, 50, loadImg('/img/ui/cancel.png'), 1,
-                         BuildModeCancel));
+    UIAddButton(UIButton(-160, 20, loadImg('/img/ui/cancel.png'), 1,
+                         BuildModeCancel, 2));
     UIGroupVisible(0, true);
 
     // load all images
@@ -1427,12 +1428,12 @@ UIBuildablesTypeMap = {s: true, c: true, r: false, b: false};
  * x: Screen position. Negative values are relative to the right edge.
  * y: Screen position. Negative values are relative to the bottom edge.
  */
-function UIButton(x, y, img, group, callback, hasMouseover)
+function UIButton(x, y, img, group, callback, frames)
 {
-    if (!hasMouseover)
-        var hasMouseover = false;
+    if (!frames)
+        var frames = 1;
     var o = {x: x, y: y, img: img, callback: callback, group: group,
-             enabled: false, hasMouseover: hasMouseover}
+             enabled: false, active: false, frames: frames}
 
     return o;
 }
@@ -1468,15 +1469,41 @@ function UIHandleClick(clickx, clicky)
     var d = 1;
     for (i=0; i<UIButtons.length; i++) {
         if (!UIButtons[i].enabled) continue;
-        x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
-        y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
-        if (clickx > x && clickx < x + UIButtons[i].img.width &&
-            clicky > y && clicky < y + UIButtons[i].img.height) {
+        if (UIButtons[i].active) {
             UIButtons[i].callback();
             return true;
         }
     }
     return false;
+}
+
+/* Check if UIButton state has changed. */
+function UICheckState(mousex, mousey)
+{
+    var x;
+    var y;
+    var d = 1;
+    var rerender = false;
+    /* Update state. */
+    for (i=0; i<UIButtons.length; i++) {
+        x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
+        y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
+        if (mousex > x &&
+            mousex < x + UIButtons[i].img.width/UIButtons[i].frames &&
+            mousey > y && mousey < y + UIButtons[i].img.height) {
+            if (UIButtons[i].enabled && UIButtons[i].active != true)
+                rerender = true;
+            UIButtons[i].active = true;
+        } else {
+            if (UIButtons[i].enabled && UIButtons[i].active != false)
+                rerender = true;
+            UIButtons[i].active = false;
+        }
+    }
+    /* rerender on state changes. */
+    if (rerender)
+        render();
+    return rerender;
 }
 
 /* Renders visible UIButton objects to the canvas. */
@@ -1485,19 +1512,15 @@ function UIRenderButtons(mousex, mousey)
     var x;
     var y;
     var offset;
+    var w;
     for (i=0; i<UIButtons.length; i++) {
         if (!UIButtons[i].enabled) continue;
         x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
         y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
-        if (UIButtons[i].hasMouseover && mousex > x &&
-            mousex < x + UIButtons[i].img.width && mousey > y &&
-            mousey < y + UIButtons[i].img.height) {
-            ctx.shadowBlur = 3;
-            ctx.shadowColor = 'white';
-        }
-        ctx.drawImage(UIButtons[i].img, x, y);
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'rgba(0,0,0,0)';
+        w = UIButtons[i].img.width/UIButtons[i].frames;
+        offset = (UIButtons[i].active && UIButtons[i].frames > 1) ? w : 0;
+        ctx.drawImage(UIButtons[i].img, offset, 0, w, UIButtons[i].img.height,
+                      x, y, w, UIButtons[i].img.height);
     }
 }
 

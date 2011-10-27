@@ -22,8 +22,8 @@ h2 {
 #build_overlay {
     display: none;
     width: 400px;
-    box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.5);
-    border:1px solid #fff;
+    box-shadow: 0px 0px 20px #000;
+    border:1px solid #ddd;
     color:#fff;
     background-color:#000;
     padding: 10px;
