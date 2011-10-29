@@ -30,21 +30,6 @@ h2 {
     vertical-align: middle;
 }
 
-#build_title {
-    vertical-align: middle;
-    text-align: center;
-    color: #fff;
-    font-style: normal;
-    font-weight: normal;
-    font-size: 22;
-    padding-top: 15px;
-    padding-bottom: 2px;
-}
-
-#build_spacer {
-    height: 10px;
-}
-
 #build_overlay table {
     border-collapse: collapse;
     width: 90%;
@@ -61,44 +46,72 @@ h2 {
     vertical-align: middle;
 }
 
-#build_item {
-    text-center: left;
+.build_title {
+    vertical-align: middle;
+    text-align: center;
+    color: #fff;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 22;
+    padding-top: 15px;
+    padding-bottom: 2px;
 }
 
-#build_item a {
+.build_spacer {
+    height: 10px;
+}
+
+.build_item {
+}
+
+.build_item a {
     display: block;
     color: #fff;
     text-decoration: none;
     font-style: normal;
     font-weight: normal;
     font-family: infbasic;
+    vertical-align: middle;
+    text-align: center;
     box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.4);
     border: 1px solid #5f8fdb;
     border-radius: 3px;
     background-color: #2e4f8c;
-    width: 80%;
     margin-left: auto;
     margin-right: auto;
 }
 
-#build_item a:hover {
+.build_item a:hover {
     border-color: #6e9ce8;
     background-color: #395b9a;
 }
 
-#build_item a:active {
+.build_item a:active {
     background-color: #294985;
     border-color: #5683cd;
     color: rgba(255, 255, 255, 0.9);
 }
 
-#build_cost {
+.build_item_normal a {
+    width: 80px;
+}
+
+.build_item_upgrade a {
+    width: 110px;
+}
+
+.build_item img {
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+.build_cost {
     text-align: center;
     width: 60%;
     vertical-align: middle;
 }
 
-#build_cost img {
+.build_cost img {
     margin-left: auto;
     margin-right: auto;
     padding-left: 3px;

@@ -36,15 +36,17 @@
 <!-- build overlay -->
 <div id="build_overlay">
     <table>
-        <tr id="build_title">
+        <tr class="build_title">
             <td>Construct</td>
             <td>Cost</td>
         </tr>
         <tr>
-            <td id="build_item">
-                <a href="javascript:void(0);" onclick="BuildModeEnable('s');">Settlement</a>
+            <td class="build_item build_item_normal">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('s');">
+                    <img src="/img/ui/settlement.png" alt="settlement"\>
+                </a>
             </td>
-            <td id="build_cost">
+            <td class="build_cost">
                 <img src="/img/res/brick2.png" alt="brick"\>
                 <img src="/img/res/wheat.png" alt="wheat"\>
                 <img src="/img/res/wool_dark.png" alt="wool"\>
@@ -52,35 +54,41 @@
             </td>
         </tr>
         <tr>
-            <td id="build_item">
-                <a href="javascript:void(0);" onclick="BuildModeEnable('r');">Road</a>
+            <td class="build_item build_item_normal">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('r');">
+                    <img src="/img/ui/road.png" alt="road"\>
+                </a>
             </td>
-            <td id="build_cost">
+            <td class="build_cost">
                 <img src="/img/res/brick2.png" alt="brick"\>
                 <img src="/img/res/wood2.png" alt="wood"\>
             </td>
         </tr>
         <tr>
-            <td id="build_item">
-                <a href="javascript:void(0);" onclick="BuildModeEnable('b');">Ship</a>
+            <td class="build_item build_item_normal">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('b');">
+                    <img src="/img/ui/ship.png" alt="ship"\>
+                </a>
             </td>
-            <td id="build_cost">
+            <td class="build_cost">
                 <img src="/img/res/wool_dark.png" alt="wool"\>
                 <img src="/img/res/wood2.png" alt="wood"\>
             </td>
         </tr>
-        <tr id="build_spacer">
+        <tr class="build_spacer">
              <td colspan="2">&nbsp;</td>
         </tr>
-        <tr id="build_title">
+        <tr class="build_title">
             <td>Upgrade</td>
             <td>&nbsp;</td>
         </tr>
         <tr>
-            <td id="build_item">
-                <a href="javascript:void(0);" onclick="BuildModeEnable('c');">City</a>
+            <td class="build_item build_item_upgrade">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('c');">
+                    <img src="/img/ui/city_upgrade.png" alt="city"\>
+                </a>
             </td>
-            <td id="build_cost">
+            <td class="build_cost">
                 <img src="/img/res/wheat.png" alt="wheat"\>
                 <img src="/img/res/wheat.png" alt="wheat"\>
                 <img src="/img/res/ore.png" alt="ore"\>
