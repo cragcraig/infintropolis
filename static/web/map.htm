@@ -37,34 +37,56 @@
 <div id="build_overlay">
     <table>
         <tr id="build_title">
-            <td colspan="2">Build</td>
+            <td>Construct</td>
+            <td>Cost</td>
         </tr>
         <tr>
             <td id="build_item">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('s');">Settlement</a>
             </td>
-            <td id="build_cost">Cost</td>
+            <td id="build_cost">
+                <img src="/img/res/brick2.png" alt="brick"\>
+                <img src="/img/res/wheat.png" alt="wheat"\>
+                <img src="/img/res/wool_dark.png" alt="wool"\>
+                <img src="/img/res/wood2.png" alt="wood"\>
+            </td>
         </tr>
         <tr>
             <td id="build_item">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('r');">Road</a>
             </td>
-            <td id="build_cost">Cost</td>
+            <td id="build_cost">
+                <img src="/img/res/brick2.png" alt="brick"\>
+                <img src="/img/res/wood2.png" alt="wood"\>
+            </td>
         </tr>
         <tr>
             <td id="build_item">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('b');">Ship</a>
             </td>
-            <td id="build_cost">Cost</td>
+            <td id="build_cost">
+                <img src="/img/res/wool_dark.png" alt="wool"\>
+                <img src="/img/res/wood2.png" alt="wood"\>
+            </td>
+        </tr>
+        <tr id="build_spacer">
+             <td colspan="2">&nbsp;</td>
         </tr>
         <tr id="build_title">
-            <td colspan="2">Upgrade</td>
+            <td>Upgrade</td>
+            <td>&nbsp;</td>
         </tr>
         <tr>
             <td id="build_item">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('c');">City</a>
             </td>
-            <td id="build_cost">Cost</td>
+            <td id="build_cost">
+                <img src="/img/res/wheat.png" alt="wheat"\>
+                <img src="/img/res/wheat.png" alt="wheat"\>
+                <img src="/img/res/ore.png" alt="ore"\>
+                <img src="/img/res/ore.png" alt="ore"\>
+                <img src="/img/res/ore.png" alt="ore"\>
+            </td>
         </tr>
     </table>
 </div>
@@ -75,7 +97,8 @@ $(document).ready(function() {
 $("#build_overlay").overlay({
     loadSpeed: 100,
     load: false,
-    closeOnClick: true
+    closeOnClick: true,
+    closeOnEsc: false
 });
 
 });
