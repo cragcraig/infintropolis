@@ -64,9 +64,9 @@ class Buildable:
         """Check if this buildable can be built at a vertex."""
         if self.pos.d == BuildType.topVertex:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
-                ((-1, BuildType.centerEdge, self.nationName),
-                 (-1, BuildType.topEdge, self.nationName),
-                 (2, BuildType.bottomEdge, self.nationName)),
+                ((-1, BuildType.centerEdge, self.nationName, self.capitolNum),
+                 (-1, BuildType.topEdge, self.nationName, self.capitolNum),
+                 (2, BuildType.bottomEdge, self.nationName, self.capitolNum)),
                 ((-1, BuildType.topVertex),
                  (-1, BuildType.bottomVertex),
                  (1, BuildType.bottomVertex),
@@ -74,9 +74,9 @@ class Buildable:
                  requireLand=True)
         elif self.pos.d == BuildType.bottomVertex:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
-                ((-1, BuildType.centerEdge, self.nationName),
-                 (-1, BuildType.bottomEdge, self.nationName),
-                 (4, BuildType.topEdge, self.nationName)),
+                ((-1, BuildType.centerEdge, self.nationName, self.capitolNum),
+                 (-1, BuildType.bottomEdge, self.nationName, self.capitolNum),
+                 (4, BuildType.topEdge, self.nationName, self.capitolNum)),
                 ((-1, BuildType.topVertex),
                  (-1, BuildType.bottomVertex),
                  (4, BuildType.topVertex),
@@ -97,32 +97,44 @@ class Buildable:
         # Perform verification.
         if self.pos.d == BuildType.topEdge:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
-                ((-1, BuildType.topVertex, self.nationName),
-                 (1, BuildType.bottomVertex, self.nationName),
-                 (-1, BuildType.centerEdge, self.nationName, level),
-                 (2, BuildType.bottomEdge, self.nationName, level),
-                 (1, BuildType.centerEdge, self.nationName, level),
-                 (1, BuildType.bottomEdge, self.nationName, level)),
+                ((-1, BuildType.topVertex, self.nationName, self.capitolNum),
+                 (1, BuildType.bottomVertex, self.nationName, self.capitolNum),
+                 (-1, BuildType.centerEdge, self.nationName, self.capitolNum,
+                  level),
+                 (2, BuildType.bottomEdge, self.nationName, self.capitolNum,
+                  level),
+                 (1, BuildType.centerEdge, self.nationName, self.capitolNum,
+                  level),
+                 (1, BuildType.bottomEdge, self.nationName, self.capitolNum,
+                  level)),
                 ((-1, BuildType.topEdge),),
                 requireLand=rland, requireWater=rwater)
         elif self.pos.d == BuildType.centerEdge:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
-                ((-1, BuildType.topVertex, self.nationName),
-                 (-1, BuildType.bottomVertex, self.nationName),
-                 (-1, BuildType.topEdge, self.nationName, level),
-                 (-1, BuildType.bottomEdge, self.nationName, level),
-                 (2, BuildType.bottomEdge, self.nationName, level),
-                 (4, BuildType.topEdge, self.nationName, level)),
+                ((-1, BuildType.topVertex, self.nationName, self.capitolNum),
+                 (-1, BuildType.bottomVertex, self.nationName, self.capitolNum),
+                 (-1, BuildType.topEdge, self.nationName, self.capitolNum,
+                  level),
+                 (-1, BuildType.bottomEdge, self.nationName, self.capitolNum,
+                  level),
+                 (2, BuildType.bottomEdge, self.nationName, self.capitolNum,
+                  level),
+                 (4, BuildType.topEdge, self.nationName, self.capitolNum,
+                  level)),
                 ((-1, BuildType.centerEdge),),
                 requireLand=rland, requireWater=rwater)
         elif self.pos.d == BuildType.bottomEdge:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
-                ((-1, BuildType.bottomVertex, self.nationName),
-                 (5, BuildType.topVertex, self.nationName),
-                 (-1, BuildType.centerEdge, self.nationName, level),
-                 (4, BuildType.topEdge, self.nationName, level),
-                 (5, BuildType.centerEdge, self.nationName, level),
-                 (5, BuildType.topEdge, self.nationName, level)),
+                ((-1, BuildType.bottomVertex, self.nationName, self.capitolNum),
+                 (5, BuildType.topVertex, self.nationName, self.capitolNum),
+                 (-1, BuildType.centerEdge, self.nationName, self.capitolNum,
+                  level),
+                 (4, BuildType.topEdge, self.nationName, self.capitolNum,
+                  level),
+                 (5, BuildType.centerEdge, self.nationName, self.capitolNum,
+                  level),
+                 (5, BuildType.topEdge, self.nationName, self.capitolNum,
+                  level)),
                 ((-1, BuildType.bottomEdge),),
                 requireLand=rland, requireWater=rwater)
         else:
@@ -131,7 +143,8 @@ class Buildable:
     def _checkUpgradeCity(self, worldshard):
         """Check if this buildable can upgrade the current location."""
         return worldshard.checkBuildableRequirements(self.block, self.pos,
-            ((-1, self.pos.d, self.nationName, BuildType.settlement),),
+            ((-1, self.pos.d, self.nationName, self.capitolNum,
+              BuildType.settlement),),
             ())
 
     def copy(self):

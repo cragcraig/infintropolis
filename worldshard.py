@@ -82,7 +82,8 @@ class WorldShard:
             return False
         return True
 
-    def hasBuildableAt(self, blockPos, pos, d, nation=None, level=-1):
+    def hasBuildableAt(self, blockPos, pos, d, nation=None, capitol=None,
+                       level=-1):
         """Checks if there is a buildable at the given location.
 
         Any provided nation or level attributes will be enforced. Only x,y are
@@ -98,7 +99,7 @@ class WorldShard:
             self.loadBlock(bp, isCore=False)
         if bp not in self._mapblocks:
             return False
-        return self._mapblocks[bp].hasBuildableAt(p, nation, level)
+        return self._mapblocks[bp].hasBuildableAt(p, nation, capitol, level)
 
     def _checkForTile(self, blockPos, buildPos, tileMethod):
         """True if tileMethod evaluates True for a tile adjacent to buildPos."""
