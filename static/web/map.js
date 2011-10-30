@@ -681,6 +681,7 @@ var highlightedTile;
 var LogoLoading;
 var tokens = [];
 var specialTokens = [];
+var resourceIcons = [];
 
 // loaders
 var toload = 0;
@@ -754,7 +755,7 @@ function loading()
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.font = "50pt serif";
+    ctx.font = "50pt infbasic, serif";
     ctx.fillStyle = "#fff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -775,18 +776,17 @@ function loading()
     for (i=0; i<1; i++) {
         specialTokens[i] = loadImg('/img/tokens/s' + i + '.png');
     }
+    // load resource icons
+    resourceIcons[0] = loadImg('/img/res/wood2.png');
+    resourceIcons[1] = loadImg('/img/res/wool_dark.png');
+    resourceIcons[2] = loadImg('/img/res/brick2.png');
+    resourceIcons[3] = loadImg('/img/res/wheat.png');
+    resourceIcons[4] = loadImg('/img/res/ore.png');
+    resourceIcons[5] = loadImg('/img/res/gold.png');
     // create UI buttons
-    UIAddButton(UIButton(-160, 20, loadImg('/img/ui/build.png'), 0,
+    UIAddButton(UIButton(30, 20, loadImg('/img/ui/build.png'), 0,
                          showBuildOverlay, 2));
-    /*
-    UIAddButton(UIButton(-60, 110, loadImg('/img/ui/settlement.png'), 0,
-                         BuildModeLauncher('c')));
-    UIAddButton(UIButton(-60, 170, loadImg('/img/ui/road.png'), 0,
-                         BuildModeLauncher('r')));
-    UIAddButton(UIButton(-60, 230, loadImg('/img/ui/road.png'), 0,
-                         BuildModeLauncher('b')));
-    */
-    UIAddButton(UIButton(-160, 20, loadImg('/img/ui/cancel.png'), 1,
+    UIAddButton(UIButton(30, 20, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel, 2));
     UIGroupVisible(0, true);
 
@@ -904,9 +904,10 @@ function render()
     }
 
     UIRenderButtons(pureMouseX, pureMouseY);
+    drawResources();
 
     if (!isAllMapsLoaded())
-        drawLoadingMapText("loading map");
+        drawLoadingMapText("Loading Map");
 }
 
 // Check if pending map requests.
@@ -934,14 +935,14 @@ function isNoMapsLoaded()
 // Draw "Map Loading" text.
 function drawLoadingMapText(str)
 {
-    ctx.font = "18pt serif";
+    ctx.font = "18pt infbasic, serif";
     ctx.fillStyle = "#fff";
     ctx.strokeStyle = "#000";
     ctx.lineWidth = 2;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.strokeText("[ " + str + " ]", canvas.width/2, 10);
-    ctx.fillText("[ " + str + " ]", canvas.width/2, 10);
+    ctx.strokeText(str, canvas.width/2, 50);
+    ctx.fillText(str, canvas.width/2, 50);
 }
 
 // render highlight tile
@@ -1742,12 +1743,12 @@ function isBuildableVisable(i, bld)
 }
 
 /* Loading Animation. */
-loadingAnimation = {"t1": 0, "enabled": false, "hue": 0};
+loadingAnimation = {t1: 0, enabled: false, theta: 0};
 
 function loadingAnimationStart()
 {
     if (loadingAnimation.enabled == false) {
-        loadingAnimation.hue = Math.random() * 255;
+        loadingAnimation.theta = Math.random() * 255;
         loadingAnimation.t1 = setInterval(loadingAnimationDraw, 30);
         loadingAnimation.enabled = true;
     }
@@ -1767,11 +1768,11 @@ function loadingAnimationDraw()
     ctx.save()
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.translate(canvas.width/2, canvas.height/2);
-    ctx.rotate(loadingAnimation.hue)
-    loadingAnimation.hue += Math.PI/20;
+    ctx.rotate(loadingAnimation.theta)
+    loadingAnimation.theta += Math.PI/20;
     ctx.drawImage(LogoLoading, -LogoLoading.width/2, -LogoLoading.height/2);
     ctx.restore();
-    drawLoadingMapText("loading world");
+    drawLoadingMapText("Loading World");
 }
 
 function loadingAnimationRandomX()
@@ -1782,4 +1783,51 @@ function loadingAnimationRandomX()
 function loadingAnimationRandomY()
 {
     return ctx.canvas.height/2 * Math.random() + ctx.canvas.height/4;
+}
+
+/* Render resource bar. */
+function drawResources()
+{
+    if (!capitol || capitol.resources.length < 1) return;
+
+    /* Set font style. */
+    ctx.font = "16pt infnumbers, serif";
+    ctx.lineWidth = 1;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+
+    /* Settings. */
+    var w = 25;
+    var wPadding = 4;
+    var padding = 50;
+
+    /* Calculate width. */
+    var txtWidth = [];
+    var totalWidth = 0;
+    var totalHeight = 0;
+    for (var i=0; i<resourceIcons.length; i++) {
+        txtWidth[i] = ctx.measureText(capitol.resources[i]).width;
+        totalWidth += resourceIcons[i].width + txtWidth[i] + padding +
+                      2*wPadding;
+        if (resourceIcons[i].height > totalHeight)
+            totalHeight = resourceIcons[i].height;
+    }
+    totalWidth -= padding + wPadding*2;
+
+    /* Draw resources. */
+    var offset = canvas.width/2 - totalWidth/2;
+    ctx.fillStyle = "rgba(0, 0, 0, 1.0)";
+    ctx.strokeStyle = "#ddd";
+    ctx.lineWidth = 1;
+    ctx.fillRect(offset - wPadding*2, w - totalHeight/2 - wPadding,
+                 totalWidth + wPadding*4, totalHeight + wPadding*2);
+    ctx.strokeRect(offset - wPadding*2, w - totalHeight/2 - wPadding,
+                   totalWidth + wPadding*4, totalHeight + wPadding*2);
+    ctx.fillStyle = "#fff";
+    for (var i=0; i<resourceIcons.length; i++) {
+        ctx.drawImage(resourceIcons[i], offset, w - resourceIcons[i].height/2);
+        ctx.fillText(capitol.resources[i],
+                     offset + resourceIcons[i].width + wPadding*2, w);
+        offset += resourceIcons[i].width + txtWidth[i] + wPadding + padding;
+    }
 }

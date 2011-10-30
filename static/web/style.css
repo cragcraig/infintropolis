@@ -118,3 +118,15 @@ h2 {
     padding-right: 3px;
     vertical-align: middle;
 }
+
+.font_pull {
+    visibility: hidden;
+}
+
+.font_pull h1 {
+    font-family: infbasic;
+}
+
+.font_pull h2 {
+    font-family: infnumbers;
+}
