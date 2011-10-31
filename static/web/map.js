@@ -1808,7 +1808,7 @@ function drawResources()
 
     /* Settings. */
     var w = 25;
-    var wPadding = 4;
+    var wPadding = 6;
     var padding = 50;
 
     /* Calculate width. */
