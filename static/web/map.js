@@ -784,9 +784,11 @@ function loading()
     resourceIcons[4] = loadImg('/img/res/ore.png');
     resourceIcons[5] = loadImg('/img/res/gold.png');
     // create UI buttons
-    UIAddButton(UIButton(30, 20, loadImg('/img/ui/build.png'), 0,
+    UIAddButton(UIButton(-62, 5, loadImg('/img/ui/build.png'), 0,
                          showBuildOverlay, 2));
-    UIAddButton(UIButton(30, 20, loadImg('/img/ui/cancel.png'), 1,
+    UIAddButton(UIButton(16, 5, loadImg('/img/ui/nation.png'), 0,
+                         function() {}, 2));
+    UIAddButton(UIButton(-62, 5, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel, 2));
     UIGroupVisible(0, true);
 
@@ -935,7 +937,7 @@ function isNoMapsLoaded()
 // Draw "Map Loading" text.
 function drawLoadingMapText(str)
 {
-    ctx.font = "18pt infbasic, serif";
+    ctx.font = "22pt infbasic, serif";
     ctx.fillStyle = "#fff";
     ctx.strokeStyle = "#000";
     ctx.lineWidth = 2;
@@ -1436,7 +1438,7 @@ function UIButton(x, y, img, group, callback, frames)
     if (!frames)
         var frames = 1;
     var o = {x: x, y: y, img: img, callback: callback, group: group,
-             enabled: false, active: false, frames: frames}
+             enabled: false, active: false, frames: frames, drawx: 0, drawy: 0}
 
     return o;
 }
@@ -1489,8 +1491,8 @@ function UICheckState(mousex, mousey)
     var rerender = false;
     /* Update state. */
     for (i=0; i<UIButtons.length; i++) {
-        x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
-        y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
+        x = UIButtons[i].drawx + (UIButtons[i].drawx < 0 ? canvas.width : 0);
+        y = UIButtons[i].drawy + (UIButtons[i].drawy < 0 ? canvas.height : 0);
         if (mousex > x &&
             mousex < x + UIButtons[i].img.width/UIButtons[i].frames &&
             mousey > y && mousey < y + UIButtons[i].img.height) {
@@ -1516,10 +1518,17 @@ function UIRenderButtons(mousex, mousey)
     var y;
     var offset;
     var w;
+
+    var barWidth = drawResources();
+    var barLeft = Math.round((canvas.width - barWidth)/2);
+    var barRight = Math.round((canvas.width + barWidth)/2);
+
     for (i=0; i<UIButtons.length; i++) {
         if (!UIButtons[i].enabled) continue;
-        x = UIButtons[i].x + (UIButtons[i].x < 0 ? canvas.width : 0);
+        x = UIButtons[i].x + (UIButtons[i].x < 0 ? barLeft : barRight);
         y = UIButtons[i].y + (UIButtons[i].y < 0 ? canvas.height : 0);
+        UIButtons[i].drawx = x;
+        UIButtons[i].drawy = y;
         w = UIButtons[i].img.width/UIButtons[i].frames;
         offset = (UIButtons[i].active && UIButtons[i].frames > 1) ? w : 0;
         ctx.drawImage(UIButtons[i].img, offset, 0, w, UIButtons[i].img.height,
@@ -1788,7 +1797,8 @@ function loadingAnimationRandomY()
 /* Render resource bar. */
 function drawResources()
 {
-    if (!capitol || capitol.resources.length < 1) return;
+    if (!capitol || capitol.resources.length < 1)
+        return 0;
 
     /* Set font style. */
     ctx.font = "16pt infnumbers, serif";
@@ -1830,4 +1840,6 @@ function drawResources()
                      offset + resourceIcons[i].width + wPadding*2, w);
         offset += resourceIcons[i].width + txtWidth[i] + wPadding + padding;
     }
+
+    return totalWidth;
 }
