@@ -2,6 +2,7 @@ import random
 
 import google.appengine.ext.db as db
 
+import capitol
 import inf
 from inf import Vect, TileType
 from mapblock import MapBlock
@@ -27,7 +28,7 @@ def findOpenStart():
                         "ORDER BY x DESC")
     r = query.fetch(1)
     if len(r):
-        x = r[0].x
+        x = r[0].x + 1
 
     # Create new MapBlocks until space is found.
     while not startPos:
@@ -35,3 +36,18 @@ def findOpenStart():
         startPos = block.findOpenSpace()
         x += 1
     return startPos
+
+
+def performResourceGather(worldshard, roll, subroll):
+    """Performs a resource gather event for the entire world.
+    
+    roll: An integer indicating which hexes will produce resources.
+    subroll: An integer [0, 5] determining directional effects for volcanoes and
+             fishing grounds.
+    """
+    query = capitol.CapitolModel.all()
+    for model in query:
+        if not model.hasSet:
+            continue
+        c = capitol.Capitol(model=model)
+        c.gatherResources(worldshard, roll)

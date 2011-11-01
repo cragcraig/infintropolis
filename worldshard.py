@@ -1,6 +1,5 @@
 from google.appengine.api import memcache
 
-import algorithms
 import inf
 import mapblock
 from inf import Vect, TileType, Tile

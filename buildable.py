@@ -42,9 +42,18 @@ class Buildable:
         if block:
             block.atomicBuild(self, nation.getColors())
 
+    def gather(self, worldshard, roll):
+        """Return a list of resources gathered for this roll."""
+        pass
+
     def isUpgrade(self):
         """Returns True if this buildable type is an upgrade."""
         return self.level == BuildType.city
+
+    def isGatherer(self):
+        """Returns true if this buildable can gather resources."""
+        return self.level == BuildType.city or\
+               self.level == BuildType.settlement
 
     def checkBuild(self, worldshard):
         """Checks if this buildable can be built."""

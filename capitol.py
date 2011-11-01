@@ -28,17 +28,26 @@ class Capitol(inf.DatabaseObject):
     """Represents a connected group of buildables with a single origin."""
     modelClass = CapitolModel
     _nation = None
+    _nationName = None
     _number = None
 
-    def __init__(self, nation, number, load=True):
+    def __init__(self, nation=None, number=None, model=None, load=True):
         """Load CapitolModel from cache/database.
 
         If create is set to True and the origin Vect is supplied the capitol
         will be added to the database.
         """
         self._nation = nation
-        self._number = number
-        if load and self._number < self._nation.getCapitolCount():
+        if model:
+            self.setModel(model)
+            self._nationName = model.nation
+            self._number = model.number
+        else:
+            self._nationName = nation.getName()
+            self._number = number
+        # Load or create CapitolModel.
+        if not model and load and self._nation and\
+           self._number < self._nation.getCapitolCount():
             self.load()
             if not self.exists():
                 self.create()
@@ -52,11 +61,11 @@ class Capitol(inf.DatabaseObject):
 
     def getNationName(self):
         """Returns the name of the controlling nation."""
-        return self._nation.getName()
+        return self._nationName
 
     def getJSON(self):
         """Return JSON dictionary."""
-        return {'nation': self._nation.getName(),
+        return {'nation': self.getNationName(),
                 'number': self._number,
                 'bx': self._model.location[0],
                 'by': self._model.location[1],
@@ -80,6 +89,15 @@ class Capitol(inf.DatabaseObject):
         """Return whether this capitol location is permanent."""
         return self._model.hasSet
 
+    def getLocationBlockVect(self):
+        """Return the block where this Capitol originates."""
+        return Vect(self._model.location[0], self._model.location[1])
+
+    def getLocationVect(self):
+        """Return the position where this Capitol originates."""
+        return Vect(self._model.location[2], self._model.location[3],
+                    self._model.location[4])
+
     def updateLocationLogic(self):
         """Logic to update capitol origin location."""
         if self.hasSetLocation():
@@ -91,16 +109,15 @@ class Capitol(inf.DatabaseObject):
         if self.hasLocation(): #TODO(craig): and not settlementExists()
             #TODO(craig): Check that build can actually occur.
             worldshard = WorldShard()
-            bv = Vect(self._model.location[0], self._model.location[1])
-            v = Vect(self._model.location[2], self._model.location[3],
-                     self._model.location[4])
+            bv = self.getLocationBlockVect()
+            v = self.getLocationVect()
             build = Buildable(bv, v, BuildType.settlement, validate=False)
             build.build(worldshard, self._nation, self)
         if not self.hasSetLocation(): #TODO(craig) and settlementExists()
             self.atomicSetHasLocation()
 
     def atomicSetLocation(self, blockVect, pos):
-        """Atomic set location (not permanent)."""
+        """Atomic set location (not necessarily permanent)."""
         if db.run_in_transaction(Capitol._setLoc, self, blockVect, pos):
             self.cache()
         else:
@@ -124,6 +141,17 @@ class Capitol(inf.DatabaseObject):
         self._model.hasSet = True
         self.put()
         return True
+
+    def gatherResources(self, worldshard, roll):
+        """Perform a resource gather event for this capitol."""
+        gathered = [0]*len(self.getResourceList())
+        # this won't work, have to get buildables from mapblocks
+        # work outwards from the originating mapblock recursively
+        for b in self.getBuildablesList():
+            if b.isGatherer():
+                g = b.gather()
+                # add list to gathered
+        # add gathered list to model's resources and save atomically
 
     def getNumber(self):
         return self._number
