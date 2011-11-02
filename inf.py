@@ -64,6 +64,13 @@ class Vect:
         return Vect(self.x % BLOCK_SIZE, self.y % BLOCK_SIZE, self.d)
 
     def getSurroundingBlocks(self):
+        """Returns a tuple of the block's surrounding blocks."""
+        x = self.x
+        y = self.y
+        return (Vect(x+1, y), Vect(x-1, y), Vect(x, y+1), Vect(x, y-1),
+                Vect(x+1, y+1), Vect(x-1, y-1), Vect(x+1, y-1), Vect(x-1, y+1))
+
+    def getSurroundingBlocksAndSelf(self):
         """Returns a tuple of the block's dependency blocks."""
         x = self.x
         y = self.y

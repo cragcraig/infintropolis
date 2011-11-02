@@ -165,6 +165,10 @@ class Buildable:
         l.append(self.level)
         return l
 
+    def isInCapitol(nation, capitolNumber):
+        """Returns True if this buildable is in the given nation's capitol."""
+        return nation == self.nationName and capitolNumber == self.capitolNum
+
 
 class BuildType:
     """Enum for buildable types."""

@@ -144,14 +144,40 @@ class Capitol(inf.DatabaseObject):
 
     def gatherResources(self, worldshard, roll):
         """Perform a resource gather event for this capitol."""
+        if not self.exists() or not self.hasSetLocation():
+            return
         gathered = [0]*len(self.getResourceList())
+        visited = set()
+        worldshard.addBlock(self.getLocationBlockVect())
+        worldshard.loadDependencies()
+        self._gatherBlock(worldshard, self.getLocationBlockVect(), roll,
+                          gathered, visited)
         # this won't work, have to get buildables from mapblocks
         # work outwards from the originating mapblock recursively
-        for b in self.getBuildablesList():
-            if b.isGatherer():
-                g = b.gather()
-                # add list to gathered
         # add gathered list to model's resources and save atomically
+
+    def _gatherBlock(self, worldshard, block, roll, resources, visited):
+        """Perform a resource gather event for all buildables owned by this
+        capitol in a specific block.
+        """
+        if block in visited:
+            return
+        visited.add(block)
+        m = worldshard.getBlock(block, isCore=False)
+        if not m or not m.exists():
+            return
+        count = False
+        for b in m.getBuildablesList():
+            if b.isInCapitol(self.getNationName(), self.getNumber()):
+                count = True
+                if b.isGatherer():
+                    res, num = b.gather(worldshard, roll)
+                    resources[res] += num
+        # Recursively gather surrounding blocks.
+        if not count:
+            return
+        for v in block.getSurroundingBlocks():
+            self._gatherBlock(worldshard, v, roll, resources, visited)
 
     def getNumber(self):
         return self._number
