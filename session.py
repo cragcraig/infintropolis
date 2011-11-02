@@ -78,7 +78,7 @@ class Session(request.Handler):
             error = 'Bad password length.'
         elif password != confirm:
             error = 'Passwords do not match.'
-        elif not re.match("\w+@\w+\.\w{2,32}", email):
+        elif not re.match(".+@.+\..{2,32}", email):
             error = 'Bad email address.'
         elif not re.match("[\da-fA-F]{6}", color1) or\
              not re.match("[\da-fA-F]{6}", color2):
