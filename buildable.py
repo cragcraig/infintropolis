@@ -42,9 +42,14 @@ class Buildable:
         if block:
             block.atomicBuild(self, nation.getColors())
 
-    def gather(self, worldshard, roll):
-        """Return a list of resources gathered for this roll."""
-        pass
+    def gather(self, worldshard, roll, resources):
+        """Add resources gathered for this roll to the resource list."""
+        for v in self.pos.getSurroundingTiles():
+            t = worldshard.getTile(self.block, v)
+            if t and t.roll == roll:
+                i = inf.TileType.typeToResource(t.tiletype)
+                if i is not None:
+                    resource[i] += BuildType.gatherMult[self.level]
 
     def isUpgrade(self):
         """Returns True if this buildable type is an upgrade."""
@@ -180,6 +185,7 @@ class BuildType:
     empty = -1
     tToJSON = ['s', 'c', 'r', 'b']
     LOSVision = [15, 18, 8, 8]
+    gatherMult = [1, 1, 0, 0]
 
 
 def JSONtod(jsont, jsond):

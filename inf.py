@@ -155,6 +155,8 @@ class TileType:
     none, water, field, pasture, forest, hills, mountain, desert,\
         goldmine, volcano, fish = range(11)
     LOSCost = [None, 2.9, 5, 5, 7, 7, 9, 5, 5, 7, 2]
+    lumber, wool, brick, grain, ore, gold = range(6)
+    typeToResource = [None, None, 3, 1, 0, 2, 4, None, 5, 5, 5]
 
 
 def isGoodStartType(tiletype):
@@ -215,6 +217,20 @@ def listSurroundingTilePos(coord):
         return ((x+1, y), (x+1, y-1), (x, y-1), (x-1, y), (x, y+1), (x+1, y+1))
     else:
         return ((x+1, y), (x, y-1), (x-1, y-1), (x-1, y), (x-1, y+1), (x, y+1))
+
+
+def generateSingleRoll():
+    return random.randint(1, 6)
+
+
+def generateDoubleRoll():
+    return random.randint(1, 6) * random.randint(1, 6)
+
+def generateDoubleRollNotSeven():
+    r = 7
+    while r == 7:
+        r = generateDoubleRoll()
+    return r
 
 
 class DatabaseObject:

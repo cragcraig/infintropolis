@@ -1,5 +1,3 @@
-import random
-
 #import webapp2
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -139,6 +137,18 @@ class PostBuild(request.Handler):
         self.writeJSON(worldshard.getJSONBuildablesDict())
 
 
+class GetGather(request.Handler):
+    """Handle gather events."""
+
+    def get(self):
+        """Perform a single world-wide gather event."""
+        worldshard = WorldShard()
+        roll = inf.generateDoubleRollNotSeven()
+        subroll = inf.generateSingleRoll()
+        algorithms.performResourceGather(worldshard, roll, subroll)
+        self.writeJSON({'roll': roll, 'subroll': subroll})
+
+
 class GetDebug(request.Handler):
     """Handle Debug requests."""
 
@@ -168,6 +178,7 @@ app = webapp.WSGIApplication(
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
                               ('/session.*', Session)],
+                              ('/gather.*', GetGather)],
                              debug=True)
 
 

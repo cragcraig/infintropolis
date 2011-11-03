@@ -9,6 +9,7 @@ from mapblock import MapBlock
 
 class WorldShard:
     """Abstracts and optimizes operations involving multiple MapBlocks."""
+    #TODO(craig): Add optional max size option to __init__().
     _toload = set()
     _core = set()
     _mapblocks = dict()
@@ -108,10 +109,10 @@ class WorldShard:
                 return True
         return False
 
-    def getTile(self, blockPos, pos):
+    def getTile(self, blockPos, pos, isCore=False):
         """Returns the Tile at the specificed location."""
         bp, p = inf.getWrappedCoordinates(blockPos, pos)
-        b = self.getBlock(bp, isCore=False)
+        b = self.getBlock(bp, isCore=isCore)
         if b:
             return b.get(p)
         return None

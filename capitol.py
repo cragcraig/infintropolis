@@ -148,17 +148,20 @@ class Capitol(inf.DatabaseObject):
             return
         gathered = [0]*len(self.getResourceList())
         visited = set()
-        worldshard.addBlock(self.getLocationBlockVect())
-        worldshard.loadDependencies()
-        self._gatherBlock(worldshard, self.getLocationBlockVect(), roll,
-                          gathered, visited)
-        # this won't work, have to get buildables from mapblocks
-        # work outwards from the originating mapblock recursively
-        # add gathered list to model's resources and save atomically
+        self._recurseGather(worldshard, self.getLocationBlockVect(), roll,
+                              gathered, visited)
+        self._atomicResourceAdd(gathered)
 
-    def _gatherBlock(self, worldshard, block, roll, resources, visited):
+    def _recurseGather(self, worldshard, block, roll, resources, visited):
         """Perform a resource gather event for all buildables owned by this
-        capitol in a specific block.
+        capitol in a specific block. Then perform gather events in surrounding
+        blocks recursively.
+
+        worldshard: A worldshard object.
+        block: Vect object of the current MapBlock to be gathered.
+        roll: Roll value for the gather event.
+        resources: List of resources to be increased.
+        visited: Set of visited MapBlock positions.
         """
         if block in visited:
             return
@@ -177,7 +180,29 @@ class Capitol(inf.DatabaseObject):
         if not count:
             return
         for v in block.getSurroundingBlocks():
-            self._gatherBlock(worldshard, v, roll, resources, visited)
+            self._recurseGather(worldshard, v, roll, resources, visited)
+
+    def _atomicResourceAdd(self, resources):
+        """Atomically add a resource list to this capitol's resources."""
+        if db.run_in_transaction(Capitol._addResources, self, resources):
+            self.cache()
+        else:
+            self.load()
+
+    def _addResources(self, resources):
+        """Add a resource list to this capitol's resources.
+
+        Intended to be run as an atomic transaction.
+        """
+        self.dbGet()
+        self._model.lumber += resources[inf.TileType.lumber]
+        self._model.wool += resources[inf.TileType.wool]
+        self._model.brick += resources[inf.TileType.brick]
+        self._model.grain += resources[inf.TileType.grain]
+        self._model.ore += resources[inf.TileType.ore]
+        self._model.gold += resources[inf.TileType.gold]
+        self.put()
+        return True
 
     def getNumber(self):
         return self._number
