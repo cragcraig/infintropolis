@@ -158,9 +158,9 @@ class Capitol(inf.DatabaseObject):
         blocks recursively.
 
         worldshard: A worldshard object.
-        block: Vect object of the current MapBlock to be gathered.
+        block: Vect location of the current block to be gathered.
         roll: Roll value for the gather event.
-        resources: List of resources to be increased.
+        resources: List of resources for this Capitol gather event.
         visited: Set of visited MapBlock positions.
         """
         if block in visited:
@@ -169,16 +169,16 @@ class Capitol(inf.DatabaseObject):
         m = worldshard.getBlock(block, isCore=False)
         if not m or not m.exists():
             return
-        count = False
+        # Perform gather for this block.
+        bleedset = set()
         for b in m.getBuildablesList():
             if b.isInCapitol(self.getNationName(), self.getNumber()):
                 count = True
                 if b.isGatherer():
                     b.gather(worldshard, roll, resources)
+                    b.block.updateBleedSet(bleedset)
         # Recursively gather surrounding blocks.
-        if not count:
-            return
-        for v in block.getSurroundingBlocks():
+        for v in bleedset:
             self._recurseGather(worldshard, v, roll, resources, visited)
 
     def _atomicResourceAdd(self, resources):

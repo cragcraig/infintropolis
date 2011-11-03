@@ -95,6 +95,29 @@ class Vect:
         else:
             return []
 
+    def updateBleedSet(self, bleedset):
+        """Add possible bleedover blocks if this Vect is on an Block edge."""
+        if self.x == 0:
+            bleedset.add(Vect(self.x - 1, self.y))
+            if self.y == 0:
+                bleedset.add(Vect(self.x - 1, self.y - 1))
+                return
+            elif self.y == BLOCK_SIZE - 1:
+                bleedset.add(Vect(self.x - 1, self.y + 1))
+                return
+        elif self.x == BLOCK_SIZE - 1:
+            bleedset.add(Vect(self.x + 1, self.y))
+            if self.y == 0:
+                bleedset.add(Vect(self.x + 1, self.y - 1))
+                return
+            elif self.y == BLOCK_SIZE - 1:
+                bleedset.add(Vect(self.x + 1, self.y + 1))
+                return
+        if self.y == 0:
+            bleedset.add(Vect(self.x, self.y - 1))
+        if self.y == BLOCK_SIZE - 1:
+            bleedset.add(Vect(self.x, self.y + 1))
+
 
 class Tile:
     """An individual resource tile."""
