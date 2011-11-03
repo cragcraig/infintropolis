@@ -137,7 +137,12 @@ function JSONCallback(json)
 function parseCapitol(json)
 {
     if (!json.nation) return;
+    var capChange = false;
     if (!capitol || (json.number != capitol.number)) {
+        capChange = true;
+    }
+    capitol = json;
+    if (capChange) {
         var xoff = 0;
         var yoff = 0;
         if (json.x < mapSizes/2) xoff = 1;
@@ -147,7 +152,6 @@ function parseCapitol(json)
         screenY = Math.floor((json.y - Math.floor(screenHeight/2))/2)*2
                   + mapSizes*yoff;
     }
-    capitol = json;
 }
 
 /* Parses a MapBlock formatted string.
@@ -1356,6 +1360,9 @@ function RequestJSON(method, url, data)
     if (method != "GET" && method != "POST") return;
     req = new XMLHttpRequest();
     req.onreadystatechange = genRequestCallback(req, JSONCallback);
+    if (capitol) {
+        data['capitol'] = capitol.number;
+    }
     json = "request=" + JSON.stringify(data);
     if (method == "GET") {
         url += "?" + json;
@@ -1417,7 +1424,7 @@ function requestBlocks(blocks, include_maps)
     if (!blockList.length) return;
     /* Send request. */
     var url = include_maps ? "/get/map" : "/get/build";
-    RequestJSON("GET", url, blockList);
+    RequestJSON("GET", url, {maps: blockList});
 }
 
 /* The user interface data.

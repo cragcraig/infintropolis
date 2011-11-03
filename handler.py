@@ -30,7 +30,7 @@ class GetBlock(request.Handler):
         shard = WorldShard()
 
         # Retrieve MapBlocks.
-        for reqblock in request:
+        for reqblock in request['maps']:
             if self.inDict(reqblock, 'x', 'y'):
                 v = Vect(reqblock['x'], reqblock['y'])
                 shard.addBlock(v);
@@ -58,7 +58,7 @@ class GetBuildableBlock(request.Handler):
         response = {}
 
         # Retrieve BuildableBlocks.
-        for reqblock in request:
+        for reqblock in request['maps']:
             if self.inDict(reqblock, 'x', 'y', 'token'):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']),
                                  generate_nonexist=False)
@@ -88,10 +88,7 @@ class GetCapitol(request.Handler):
         response = {}
 
         # Get current Capitol number, if none use 0.
-        if self.inDict(request, 'capitol'):
-            capitolNum = request['capitol']
-        else:
-            capitolNum = self.getCapitolNum()
+        capitolNum = self.getCapitolNum()
 
         # Retrieve Capitol data.
         capitol = Capitol(self.getNation(), capitolNum)

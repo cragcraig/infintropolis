@@ -16,6 +16,7 @@ class Handler(webapp.RequestHandler):
     Provides methods covering cookies and browser redirects.
     """
     _nation = None
+    _jsonReq = None
     _encodeMap = string.maketrans(' \'', '+*')
     _decodeMap = string.maketrans('+*', ' \'')
 
@@ -84,12 +85,17 @@ class Handler(webapp.RequestHandler):
         self.response.out.write(j)
 
     def getJSONRequest(self):
-        return json.loads(self.request.get('request'))
+        if not self._jsonReq:
+            self._jsonReq = json.loads(self.request.get('request'))
+        return self._jsonReq
 
     def getNation(self):
         return self._nation
 
     def getCapitolNum(self):
+        req = self.getJSONRequest()
+        if 'capitol' in req:
+            return req['capitol']
         c = self.getCookie('capitol')
         if c is None:
             return 0
