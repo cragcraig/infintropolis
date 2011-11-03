@@ -134,7 +134,9 @@ class PostBuild(request.Handler):
         build.build(worldshard, self.getNation(), capitol)
 
         # Return updated BuildableBlock.
-        self.writeJSON(worldshard.getJSONBuildablesDict())
+        response = worldshard.getJSONBuildablesDict()
+        response['capitol'] = capitol.getJSON()
+        self.writeJSON(response)
 
 
 class GetGather(request.Handler):

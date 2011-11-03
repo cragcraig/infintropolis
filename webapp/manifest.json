@@ -1,0 +1,14 @@
+{
+  "name": "Infintropolis",
+  "description": "Explore an endless map as you build a civilization and battle opponents in the massively multiplayer world of Infintropolis.",
+  "version": "1",
+  "icons": { "128": "icon_128.png" },
+  "app": {
+    "urls": [
+      "*://*.infintropolis.com"
+    ],
+    "launch": {
+      "web_url": "http://infintropolis.com/"
+    }
+  }
+}
