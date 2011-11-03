@@ -828,7 +828,7 @@ function init()
     canvas.onmouseout = updateMouseOut;
 
     // request server data
-    RequestJSON("GET", "/get/capitol", {'capitol': 0});
+    RequestJSON("GET", "/get/capitol", {});
 
     // keypress
     document.onkeydown = keyPressCallback;
@@ -1589,7 +1589,7 @@ function BuildModeDo()
         /* Launch build request. */
         RequestJSON("POST", "/set/build",
                     {bx: block.x, by: block.y, x: selected.x, y: selected.y,
-                    d: selected.d, type: selected.t, capitol: 0});
+                     d: selected.d, type: selected.t});
     }
     launchAutoUpdate();
     BuildModeCancel();
@@ -1757,7 +1757,7 @@ loadingAnimation = {t1: 0, enabled: false, theta: 0};
 function loadingAnimationStart()
 {
     if (loadingAnimation.enabled == false) {
-        loadingAnimation.theta = Math.random() * 255;
+        loadingAnimation.theta = Math.random() * Math.PI * 2;
         loadingAnimation.t1 = setInterval(loadingAnimationDraw, 30);
         loadingAnimation.enabled = true;
     }

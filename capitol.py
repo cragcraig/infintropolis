@@ -46,7 +46,7 @@ class Capitol(inf.DatabaseObject):
             self._nationName = nation.getName()
             self._number = number
         # Load or create CapitolModel.
-        if not model and load and self._nation and\
+        if not model and load and self._nation and self._number is not None and\
            self._number < self._nation.getCapitolCount():
             self.load()
             if not self.exists():

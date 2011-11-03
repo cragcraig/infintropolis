@@ -63,6 +63,7 @@ class Session(request.Handler):
     def logout(self):
         """End a session."""
         self.deleteCookie('nation')
+        self.deleteCookie('capitol')
         self.deleteCookie('pwd')
 
     def create(self, nation, password, confirm, email, color1, color2):

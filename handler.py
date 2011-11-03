@@ -66,6 +66,10 @@ class GetBuildableBlock(request.Handler):
                     response[block.getPos().getBlockJSONId()] = {
                         'buildableblock': block.getBuildablesJSON()}
 
+        capitol = Capitol(self.getNation(), self.getCapitolNum())
+        if capitol.exists():
+            response['capitol'] = capitol.getJSON()
+
         self.writeJSON(response)
 
 
@@ -83,14 +87,19 @@ class GetCapitol(request.Handler):
         request = self.getJSONRequest()
         response = {}
 
-        # Retrieve Capitol data.
+        # Get current Capitol number, if none use 0.
         if self.inDict(request, 'capitol'):
             capitolNum = request['capitol']
-            capitol = Capitol(self.getNation(), capitolNum)
-            if not capitol.exists() or not capitol.hasSetLocation():
-                return
-            response['capitol'] = capitol.getJSON()
+        else:
+            capitolNum = self.getCapitolNum()
 
+        # Retrieve Capitol data.
+        capitol = Capitol(self.getNation(), capitolNum)
+        if not capitol.exists() or not capitol.hasSetLocation():
+            return
+        response['capitol'] = capitol.getJSON()
+
+        self.setCookie('capitol', capitolNum)
         self.writeJSON(response)
 
 
@@ -108,8 +117,8 @@ class PostBuild(request.Handler):
         request = self.getJSONRequest()
         response = {}
         # Check arguments.
-        if not self.inDict(request, 'type', 'capitol', 'x', 'y', 'd', 'bx',
-                           'by') or request['type'] not in BuildType.tToJSON:
+        if not self.inDict(request, 'type', 'x', 'y', 'd', 'bx', 'by')\
+           or request['type'] not in BuildType.tToJSON:
             return
 
         # Construct parameters.
@@ -124,7 +133,7 @@ class PostBuild(request.Handler):
 
         #TODO(craig): Don't use memcache.
         #TODO(craig): Update capitol in a transaction (atomic).
-        capitol = Capitol(self.getNation(), request['capitol'])
+        capitol = Capitol(self.getNation(), self.getCapitolNum())
         if not capitol.exists():
             return
 

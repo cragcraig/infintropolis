@@ -21,7 +21,7 @@ class Handler(webapp.RequestHandler):
 
     def setCookie(self, key, value, timeout=999999):
         """Add a cookie to the header."""
-        value = value.encode('ascii').translate(self._encodeMap)
+        value = str(value).encode('ascii').translate(self._encodeMap)
         self.response.headers.add_header('Set-Cookie',
                                          key + '=' + value + '; '
                                          'max-age=' + str(timeout) + '; '
@@ -30,10 +30,10 @@ class Handler(webapp.RequestHandler):
     def getCookie(self, key):
         """Read the contents of a cookie."""
         value = self.request.cookies.get(key)
-        if value:
-            return value.encode('ascii').translate(self._decodeMap)
+        if value is not None:
+            return str(value).encode('ascii').translate(self._decodeMap)
         else:
-            return value
+            return None
 
     def deleteCookie(self, key):
         """Delete a cookie from the client browser."""
@@ -88,3 +88,10 @@ class Handler(webapp.RequestHandler):
 
     def getNation(self):
         return self._nation
+
+    def getCapitolNum(self):
+        c = self.getCookie('capitol')
+        if c is None:
+            return 0
+        else:
+            return int(c)
