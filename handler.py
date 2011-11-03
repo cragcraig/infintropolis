@@ -177,7 +177,7 @@ app = webapp.WSGIApplication(
                               ('/get/map.*', GetBlock),
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
-                              ('/session.*', Session)],
+                              ('/session.*', Session),
                               ('/gather.*', GetGather)],
                              debug=True)
 

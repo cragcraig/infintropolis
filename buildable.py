@@ -47,9 +47,9 @@ class Buildable:
         for v in self.pos.getSurroundingTiles():
             t = worldshard.getTile(self.block, v)
             if t and t.roll == roll:
-                i = inf.TileType.typeToResource(t.tiletype)
+                i = inf.TileType.typeToResource[t.tiletype]
                 if i is not None:
-                    resource[i] += BuildType.gatherMult[self.level]
+                    resources[i] += BuildType.gatherMult[self.level]
 
     def isUpgrade(self):
         """Returns True if this buildable type is an upgrade."""
@@ -170,7 +170,7 @@ class Buildable:
         l.append(self.level)
         return l
 
-    def isInCapitol(nation, capitolNumber):
+    def isInCapitol(self, nation, capitolNumber):
         """Returns True if this buildable is in the given nation's capitol."""
         return nation == self.nationName and capitolNumber == self.capitolNum
 
@@ -185,7 +185,7 @@ class BuildType:
     empty = -1
     tToJSON = ['s', 'c', 'r', 'b']
     LOSVision = [15, 18, 8, 8]
-    gatherMult = [1, 1, 0, 0]
+    gatherMult = [1, 2, 0, 0]
 
 
 def JSONtod(jsont, jsond):

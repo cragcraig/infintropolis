@@ -174,8 +174,7 @@ class Capitol(inf.DatabaseObject):
             if b.isInCapitol(self.getNationName(), self.getNumber()):
                 count = True
                 if b.isGatherer():
-                    res, num = b.gather(worldshard, roll)
-                    resources[res] += num
+                    b.gather(worldshard, roll, resources)
         # Recursively gather surrounding blocks.
         if not count:
             return

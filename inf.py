@@ -224,7 +224,7 @@ def generateSingleRoll():
 
 
 def generateDoubleRoll():
-    return random.randint(1, 6) * random.randint(1, 6)
+    return random.randint(1, 6) + random.randint(1, 6)
 
 def generateDoubleRollNotSeven():
     r = 7
