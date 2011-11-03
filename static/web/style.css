@@ -19,6 +19,10 @@ h2 {
     font-size: 20pt;
 }
 
+.hidden_canvas {
+    visibility: hidden;
+}
+
 #build_overlay {
     display: none;
     width: 450px;

@@ -687,6 +687,11 @@ var tokens = [];
 var specialTokens = [];
 var resourceIcons = [];
 
+// Minimap
+var mCanvas;
+var mCtx;
+var mTileImg;
+
 // loaders
 var toload = 0;
 var toloadtotal = 0;
@@ -787,6 +792,8 @@ function loading()
     resourceIcons[3] = loadImg('/img/res/wheat.png');
     resourceIcons[4] = loadImg('/img/res/ore.png');
     resourceIcons[5] = loadImg('/img/res/gold.png');
+    // Minimap tile image
+    mTileImg = loadImg('/img/mtiles.png');
     // create UI buttons
     UIAddButton(UIButton(-62, 5, loadImg('/img/ui/build.png'), 0,
                          showBuildOverlay, 2));
@@ -840,6 +847,9 @@ function init()
 
     // mouse scroll
     initMouseScroll();
+
+    // init minimap
+    minimapInit();
 
     // inited
     initd = true;
@@ -911,6 +921,7 @@ function render()
 
     UIRenderButtons(pureMouseX, pureMouseY);
     drawResources();
+    //minimapDrawOverlay();
 
     if (!isAllMapsLoaded())
         drawLoadingMapText("Loading Map");
@@ -1849,4 +1860,40 @@ function drawResources()
     }
 
     return totalWidth;
+}
+
+/* Init Minimap. */
+function minimapInit()
+{
+    mCanvas = document.getElementById('minimap');
+    mCtx = canvas.getContext("2d");
+    mCanvas.width = Math.ceil(2*mapSizes*10 + 5);
+    mCanvas.height = Math.ceil(2*mapSizes*6 + 3);
+}
+
+/* Render Minimap. */
+function minimapRender()
+{
+    mCtx.fillStyle = "rgba(0, 0, 0, 0.0)";
+    mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+
+    for (var i=0; i<2*mapSizes; i++) {
+        for (var j=0; j<2*mapSizes; j++) {
+            var tile = getTile(i, j);
+            ctx.drawImage(mTileImg, 10 * tile.type,
+                  (tile.roll == -1 ? 9 : 0), 10, 9,
+                  i*10 + (j%2 ? 5 : 0), j*6, 10, 9);
+        }
+    }
+    mCtx.strokeStyle = "#fff";
+    mCtx.strokeRect(screenX*10 + (screenY%2 ? 5 : 0), screenY*6,
+                   screenWidth*10, screenHeight*6);
+}
+
+/* Overlay Minimap on Screen. */
+function minimapDrawOverlay()
+{
+    minimapRender();
+    ctx.drawImage(mCanvas, canvas.width/2, canvas.height/2,
+                  300, 300);
 }
