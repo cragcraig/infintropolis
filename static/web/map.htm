@@ -97,6 +97,7 @@
             </td>
         </tr>
     </table>
+
 </div>
 
 <!-- Overlay Scripts -->
@@ -128,6 +129,11 @@ function hideOverlay(id)
     UIGroupVisible(0, true);
     render();
 }
+
+function hideText()
+{
+    document.getElementById("font_pull").setAttribute("class", "fonts_hide");
+}
 </script>
 
 <!-- Hidden Minimap -->
@@ -135,9 +141,9 @@ function hideOverlay(id)
 </canvas>
 
 <!-- To pull font dependencies. -->
-<div class="font_pull">
-    <h1>Hi</h1>
-    <h2>Hi</h2>
+<div id="font_pull" class="fonts_load">
+    <h1>infbasic</h1>
+    <h2>infnumbers</h2>
 </div>
 
 <!-- BODY END -->

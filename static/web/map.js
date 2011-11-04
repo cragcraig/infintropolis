@@ -858,6 +858,7 @@ function init()
     canvas.onmousemove = updateMouse;
     canvas.onmouseover = updateMouseOver;
     canvas.onmouseout = updateMouseOut;
+    hideText();
 
     // request server data
     RequestJSON("GET", "/get/capitol", {});
@@ -1890,15 +1891,16 @@ function minimapInit()
 {
     mCanvas = document.getElementById('minimap');
     mCtx = mCanvas.getContext("2d");
-    mCanvas.width = Math.ceil(2*mapSizes*10 + 5);
-    mCanvas.height = Math.ceil(2*mapSizes*6 + 3);
+    mCanvas.width = Math.ceil(2*mapSizes*10 + 5 + 6);
+    mCanvas.height = Math.ceil(2*mapSizes*7 + 4 + 6);
 }
 
 /* Render Minimap. */
 function minimapRender()
 {
-    mCtx.fillStyle = "rgba(0, 0, 0, 0.0)";
-    mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+    mCtx.fillStyle = "rgba(0, 0, 0, 1.0)";
+    //mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+    mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
 
     for (var i=0; i<2*mapSizes; i++) {
         for (var j=0; j<2*mapSizes; j++) {
@@ -1906,8 +1908,8 @@ function minimapRender()
             if (!tile.type)
                 continue;
             mCtx.drawImage(mTileImg, 10 * tile.type,
-                  (tile.roll == -1 ? 9 : 0), 10, 9,
-                  i*10 + (j%2 ? 5 : 0), j*6, 10, 9);
+                  (tile.roll == -1 ? 11 : 0), 10, 11,
+                  i*10 + (j%2 ? 5 : 0) + 3, j*7 + 3, 10, 11);
         }
     }
 }
@@ -1915,25 +1917,25 @@ function minimapRender()
 /* Overlay Minimap on Screen. */
 function minimapDraw()
 {
-    var width = canvas.width / 2;
-    var height = mCanvas.height / mCanvas.width * width;
+    var width = Math.round(canvas.width / 2);
+    var height = Math.round(mCanvas.height / mCanvas.width * width);
     var scale = width / mCanvas.width;
     if (width > mCanvas.width) {
         width = mCanvas.width;
         height = mCanvas.height;
         scale = 1;
     }
-    var x = canvas.width/2 - width/2;
-    var y = canvas.height/2 - height/2;
+    var x = Math.round(canvas.width/2 - width/2);
+    var y = Math.round(canvas.height/2 - height/2);
     ctx.drawImage(mCanvas, x, y, width, height);
-    ctx.strokeStyle = "#fff";
+    ctx.strokeStyle = "#000";
     ctx.lineWidth = 1;
     ctx.strokeRect(
         Math.round(
         x+((screenX+screenOffsetX/TileWidth)*10 + (screenY%2 ? 5 : 0))*scale),
-        Math.round(y+(screenY+screenOffsetY/TileOffset)*6*scale),
+        Math.round(y+(screenY+screenOffsetY/TileOffset)*7*scale),
         Math.round(screenWidth*10*scale),
-        Math.round(screenHeight*6*scale));
+        Math.round(screenHeight*7*scale));
 }
 
 function minimapOn()

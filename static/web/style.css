@@ -124,15 +124,19 @@ h2 {
     vertical-align: middle;
 }
 
-.font_pull {
+.fonts_hide {
     display: none;
     visibility: hidden;
 }
 
-.font_pull h1 {
+.fonts_load {
+    visibility: hidden;
+}
+
+.fonts_load h1 {
     font-family: infbasic;
 }
 
-.font_pull h2 {
+.fonts_load h2 {
     font-family: infnumbers;
 }
