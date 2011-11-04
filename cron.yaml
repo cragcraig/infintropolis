@@ -1,0 +1,4 @@
+cron:
+- description: gather event
+  url: /gather
+  schedule: every 30 minutes

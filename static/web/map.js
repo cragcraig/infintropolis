@@ -808,8 +808,8 @@ function loading()
     // create UI buttons
     UIAddButton(UIButton(-62, 5, loadImg('/img/ui/build.png'), 0,
                          showBuildOverlay, 2));
-    //UIAddButton(UIButton(16, 5, loadImg('/img/ui/nation.png'), 0,
-    //                     minimapOn, 2));
+    //UIAddButton(UIButton(-62, 5, loadImg('/img/ui/nation.png'), 4,
+    //                     function() {}, 2));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_off.png'), 2,
                          minimapOn, 1));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_on.png'), 3,
@@ -818,6 +818,7 @@ function loading()
                          BuildModeCancel, 2));
     UIGroupVisible(0, true);
     UIGroupVisible(2, true);
+    UIGroupVisible(4, true);
 
     // load all images
     loadNext();
@@ -826,6 +827,7 @@ function loading()
 function showBuildOverlay()
 {
     showOverlay('#build_overlay');
+    minimapOff();
 }
 
 function loadImg(url)
