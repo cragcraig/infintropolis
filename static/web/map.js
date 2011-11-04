@@ -26,6 +26,7 @@ var screenHeight;
 
 // state
 var globalState = 0;
+var globalMinimapState = false;
 var globalBuildState = false;
 var globalDebug = false;
 var selectedTile;
@@ -106,6 +107,7 @@ function JSONCallback(json)
         }
 
         /* parse block data */
+        var mapUpdated = false;
         for (i=0; i<tileMap.length; i++) {
             var pos = getWorldPos(i);
             var id = pos.x + '_' + pos.y;
@@ -123,12 +125,17 @@ function JSONCallback(json)
                     error = parseMapBlock(i, json[id].mapblock);
                     tileMap[i].valid = true;
                     tileMap[i].invalidLOS = false;
+                    mapUpdated = true;
                 }
             }
         }
 
         /* Update LOS on an as-needed basis. */
         updateLOSAsNeeded();
+
+        /* Update Minimap if visible. */
+        if (mapUpdated && globalMinimapState)
+            minimapRender();
     }
     render();
 }
@@ -298,6 +305,10 @@ function goMap(worldX, worldY)
         }
     }
     requestBlocks(req, true);
+
+    /* Update Minimap if visible. */
+    if (globalMinimapState)
+        minimapRender();
 }
 
 function moveWest()
@@ -567,7 +578,7 @@ function mouseCallback()
         return;
 
     /* Hide overlays */
-    hideBuildOverlay();
+    hideOverlay('#build_overlay');
 
     /* build click */
     if (globalBuildState) {
@@ -797,14 +808,24 @@ function loading()
     // create UI buttons
     UIAddButton(UIButton(-62, 5, loadImg('/img/ui/build.png'), 0,
                          showBuildOverlay, 2));
-    UIAddButton(UIButton(16, 5, loadImg('/img/ui/nation.png'), 0,
-                         function() {}, 2));
+    //UIAddButton(UIButton(16, 5, loadImg('/img/ui/nation.png'), 0,
+    //                     minimapOn, 2));
+    UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_off.png'), 2,
+                         minimapOn, 1));
+    UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_on.png'), 3,
+                         minimapOff, 1));
     UIAddButton(UIButton(-62, 5, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel, 2));
     UIGroupVisible(0, true);
+    UIGroupVisible(2, true);
 
     // load all images
     loadNext();
+}
+
+function showBuildOverlay()
+{
+    showOverlay('#build_overlay');
 }
 
 function loadImg(url)
@@ -921,7 +942,9 @@ function render()
 
     UIRenderButtons(pureMouseX, pureMouseY);
     drawResources();
-    //minimapDrawOverlay();
+    if (globalMinimapState == true) {
+        minimapDraw();
+    }
 
     if (!isAllMapsLoaded())
         drawLoadingMapText("Loading Map");
@@ -1564,7 +1587,7 @@ function BuildModeEnable(buildType)
     globalBuildState = buildType;
     selectedVertex = null
     selectedEdge = null
-    hideBuildOverlay();
+    hideOverlay('#build_overlay');
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
     render();
@@ -1866,7 +1889,7 @@ function drawResources()
 function minimapInit()
 {
     mCanvas = document.getElementById('minimap');
-    mCtx = canvas.getContext("2d");
+    mCtx = mCanvas.getContext("2d");
     mCanvas.width = Math.ceil(2*mapSizes*10 + 5);
     mCanvas.height = Math.ceil(2*mapSizes*6 + 3);
 }
@@ -1875,25 +1898,57 @@ function minimapInit()
 function minimapRender()
 {
     mCtx.fillStyle = "rgba(0, 0, 0, 0.0)";
-    mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+    mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
 
     for (var i=0; i<2*mapSizes; i++) {
         for (var j=0; j<2*mapSizes; j++) {
             var tile = getTile(i, j);
-            ctx.drawImage(mTileImg, 10 * tile.type,
+            if (!tile.type)
+                continue;
+            mCtx.drawImage(mTileImg, 10 * tile.type,
                   (tile.roll == -1 ? 9 : 0), 10, 9,
                   i*10 + (j%2 ? 5 : 0), j*6, 10, 9);
         }
     }
-    mCtx.strokeStyle = "#fff";
-    mCtx.strokeRect(screenX*10 + (screenY%2 ? 5 : 0), screenY*6,
-                   screenWidth*10, screenHeight*6);
 }
 
 /* Overlay Minimap on Screen. */
-function minimapDrawOverlay()
+function minimapDraw()
 {
+    var width = canvas.width / 2;
+    var height = mCanvas.height / mCanvas.width * width;
+    var scale = width / mCanvas.width;
+    if (width > mCanvas.width) {
+        width = mCanvas.width;
+        height = mCanvas.height;
+        scale = 1;
+    }
+    var x = canvas.width/2 - width/2;
+    var y = canvas.height/2 - height/2;
+    ctx.drawImage(mCanvas, x, y, width, height);
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+        Math.round(
+        x+((screenX+screenOffsetX/TileWidth)*10 + (screenY%2 ? 5 : 0))*scale),
+        Math.round(y+(screenY+screenOffsetY/TileOffset)*6*scale),
+        Math.round(screenWidth*10*scale),
+        Math.round(screenHeight*6*scale));
+}
+
+function minimapOn()
+{
+    UIGroupVisible(2, false);
+    UIGroupVisible(3, true);
+    globalMinimapState = true;
     minimapRender();
-    ctx.drawImage(mCanvas, canvas.width/2, canvas.height/2,
-                  300, 300);
+    render();
+}
+
+function minimapOff()
+{
+    UIGroupVisible(3, false);
+    UIGroupVisible(2, true);
+    globalMinimapState = false;
+    render();
 }

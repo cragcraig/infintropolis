@@ -99,6 +99,7 @@
     </table>
 </div>
 
+<!-- Overlay Scripts -->
 <script>
 $(document).ready(function() {
 
@@ -112,17 +113,17 @@ $("#build_overlay").overlay({
 
 });
 
-function showBuildOverlay()
+function showOverlay(id)
 {
-    var api = $("#build_overlay").data("overlay");
+    var api = $(id).data("overlay");
     api.load()
     UIGroupVisible(0, false);
     render();
 }
 
-function hideBuildOverlay()
+function hideOverlay(id)
 {
-    var api = $("#build_overlay").data("overlay");
+    var api = $(id).data("overlay");
     api.close()
     UIGroupVisible(0, true);
     render();
