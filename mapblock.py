@@ -52,23 +52,28 @@ class SurroundingMapBlocks:
         ve = Vect(pos.x + 1, pos.y)
         # Get preloaded MapBlocks from WorldShard.
         if worldshard:
-            if vn in worldshard._mapblocks:
-                self.north = worldshard._mapblocks[vn]
-            if vs in worldshard._mapblocks:
-                self.south = worldshard._mapblocks[vs]
-            if vw in worldshard._mapblocks:
-                self.west = worldshard._mapblocks[vw]
-            if ve in worldshard._mapblocks:
-                self.east = worldshard._mapblocks[ve]
+            self.north = worldshard.getBlockOnly(vn)
+            self.south = worldshard.getBlockOnly(vs)
+            self.west = worldshard.getBlockOnly(vw)
+            self.east = worldshard.getBlockOnly(ve)
         # Load unloaded MapBlocks.
-        if not self.north:
-            self.north = MapBlock(vn, generate_nonexist=False)
-        if not self.south:
-            self.south = MapBlock(vs, generate_nonexist=False)
-        if not self.west:
-            self.west = MapBlock(vw, generate_nonexist=False)
-        if not self.east:
-            self.east = MapBlock(ve, generate_nonexist=False)
+        else:
+            if not self.north:
+                self.north = MapBlock(vn, generate_nonexist=False)
+                if not self.north.exists():
+                    self.north = None
+            if not self.south:
+                self.south = MapBlock(vs, generate_nonexist=False)
+                if not self.south.exists():
+                    self.south = None
+            if not self.west:
+                self.west = MapBlock(vw, generate_nonexist=False)
+                if not self.west.exists():
+                    self.west = None
+            if not self.east:
+                self.east = MapBlock(ve, generate_nonexist=False)
+                if not self.east.exists():
+                    self.east = None
 
 
 class MapBlock(inf.DatabaseObject):
@@ -79,6 +84,7 @@ class MapBlock(inf.DatabaseObject):
     los = None
     costmap = None
     worldshard = None
+    time = None
 
     def __init__(self, pos, load=True, generate_nonexist=True, worldshard=None):
         """Load BlockModel from cache/database.
@@ -136,16 +142,17 @@ class MapBlock(inf.DatabaseObject):
         surrounding = SurroundingMapBlocks(self._pos, worldshard)
         for t in xrange(len(prob_map)):
             i = inf.BLOCK_SIZE
+            f = (t == len(prob_map) - 1)
             for j in xrange(inf.BLOCK_SIZE):
                 i -= 1
                 for k in xrange(j, i):
-                    self._generateTile(Vect(j, k), surrounding, prob_map[t])
+                    self._generateTile(Vect(j, k), surrounding, prob_map[t], f)
                 for k in xrange(j, i):
-                    self._generateTile(Vect(k, i), surrounding, prob_map[t])
+                    self._generateTile(Vect(k, i), surrounding, prob_map[t], f)
                 for k in xrange(i, j, -1):
-                    self._generateTile(Vect(i, k), surrounding, prob_map[t])
+                    self._generateTile(Vect(i, k), surrounding, prob_map[t], f)
                 for k in xrange(i, j, -1):
-                    self._generateTile(Vect(k, j), surrounding, prob_map[t])
+                    self._generateTile(Vect(k, j), surrounding, prob_map[t], f)
         tk = random.randint(1, 90000000)
         self.loadOrCreate(x=self._pos.x, y=self._pos.y, token=tk,
                           tiletype=self._model.tiletype,
@@ -213,19 +220,19 @@ class MapBlock(inf.DatabaseObject):
             elif not surrounding_blocks:
                 t = TileType.water
             elif (x < 0 and y < inf.BLOCK_SIZE and y >= 0 and
-                  surrounding_blocks.west.exists()):
+                  surrounding_blocks.west):
                 t = surrounding_blocks.west.fastGetTileType(
                     x + inf.BLOCK_SIZE, y)
             elif (x >= inf.BLOCK_SIZE and y < inf.BLOCK_SIZE and
-                  y >= 0 and surrounding_blocks.east.exists()):
+                  y >= 0 and surrounding_blocks.east):
                 t = surrounding_blocks.east.fastGetTileType(
                     x - inf.BLOCK_SIZE, y)
             elif (y < 0 and x < inf.BLOCK_SIZE and x >= 0 and
-                  surrounding_blocks.north.exists()):
+                  surrounding_blocks.north):
                 t = surrounding_blocks.north.fastGetTileType(
                     x, y + inf.BLOCK_SIZE)
             elif (y >= inf.BLOCK_SIZE and x < inf.BLOCK_SIZE and
-                  x >= 0 and surrounding_blocks.south.exists()):
+                  x >= 0 and surrounding_blocks.south):
                 t = surrounding_blocks.south.fastGetTileType(
                     x, y - inf.BLOCK_SIZE)
             else:
@@ -234,13 +241,15 @@ class MapBlock(inf.DatabaseObject):
                 sum += 1
         return sum
 
-    def _generateTile(self, coord, surrounding_blocks, probabilities):
+    def _generateTile(self, coord, surrounding_blocks, probabilities, final):
         """Generate a random tile, taking surrounding tiles into account."""
         sum = self._sumLand(coord, surrounding_blocks)
         t = self.get(coord)
         # Land tile.
         if random.randint(0, 99) < probabilities[sum]:
             t.randomize()
+        if final and sum == 0:
+            t.setWater()
         self.set(coord, t)
 
     def atomicBuild(self, buildable, colors):

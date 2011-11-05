@@ -1930,14 +1930,16 @@ function minimapDraw()
     var x = Math.round(canvas.width/2 - width/2);
     var y = Math.round(canvas.height/2 - height/2);
     ctx.drawImage(mCanvas, x, y, width, height);
-    ctx.strokeStyle = "#000";
+    var mx = Math.round(x+((screenX+screenOffsetX/TileWidth)*10
+             + (screenY%2 ? 5 : 0))*scale) + 0.5;
+    var my = Math.round(y+(screenY+screenOffsetY/TileOffset)*7*scale) + 0.5;
+    var mw = Math.round(screenWidth*10*scale) + 2;
+    var mh = Math.round(screenHeight*7*scale) + 2;
     ctx.lineWidth = 1;
-    ctx.strokeRect(
-        Math.round(
-        x+((screenX+screenOffsetX/TileWidth)*10 + (screenY%2 ? 5 : 0))*scale),
-        Math.round(y+(screenY+screenOffsetY/TileOffset)*7*scale),
-        Math.round(screenWidth*10*scale),
-        Math.round(screenHeight*7*scale));
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(mx + 1, my + 1, mw, mh);
+    ctx.strokeStyle = "#fff";
+    ctx.strokeRect(mx, my, mw, mh);
 }
 
 function minimapOn()

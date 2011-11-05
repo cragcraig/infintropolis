@@ -136,6 +136,10 @@ class Tile:
                (self.tiletype == TileType.water or\
                self.tiletype == TileType.fish)
 
+    def setWater(self):
+        self.tiletype = TileType.water
+        self.roll = 0
+
     def isLand(self):
         return self.tiletype is not None and\
                self.tiletype != TileType.water and\

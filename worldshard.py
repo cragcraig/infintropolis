@@ -13,6 +13,7 @@ class WorldShard:
     _toload = set()
     _core = set()
     _mapblocks = dict()
+    _maxsize = 1024
 
     def addBlock(self, vect):
         """Adds a block and its dependencies to the shard."""
@@ -30,7 +31,7 @@ class WorldShard:
         self._toload.add(v)
         if isCore:
             self._core.add(v)
-        self.loadDependencies()
+        self.loadDependencies(generate=isCore)
         if v in self._mapblocks:
             return self._mapblocks[v]
         return None
@@ -51,9 +52,30 @@ class WorldShard:
     def getBlock(self, vect, isCore=True):
         """Returns a block if it is in the shard, loading it otherwise."""
         if vect in self._mapblocks:
-            return self._mapblocks[vect]
+            r = self._mapblocks[vect]
         else:
-            return self.loadBlock(vect, isCore=isCore)
+            self.guillotineSize()
+            r = self.loadBlock(vect, isCore=isCore)
+        if not r or not r.exists():
+            return None
+        return r
+
+    def getBlockOnly(self, vect):
+        """Returns a block if it is already loaded in the shard."""
+        if vect in self._mapblocks:
+            r = self._mapblocks[vect]
+            if not r.exists():
+                return None
+            return r
+        return None
+
+    def guillotineSize(self):
+        """Reduce the stored MapBlocks to no more than self._maxsize."""
+        if len(self._mapblocks) > self._maxsize:
+            d = random.sample(self._mapblocks,
+                              len(self._mapblocks) - self._maxsize)
+            for k in d:
+                del self._mapblocks[k]
 
     def checkBuildableRequirements(self, blockPos, buildPos, truelist,
                                    falselist, requireLand=False,
@@ -117,16 +139,17 @@ class WorldShard:
             return b.get(p)
         return None
 
-    def loadDependencies(self):
+    def loadDependencies(self, generate=True):
         """Loads all dependencies for this shard."""
         self._loadCachedBlocks()
         self._loadDbBlocks()
         # Generate non-existent core MapBlocks.
         for n in self._toload:
-            if n in self._core:
+            if n in self._core and n not in self._mapblocks:
                 m = MapBlock(n, load=False, worldshard=self)
-                m.generate(self)
                 self._mapblocks[n] = m
+                m.generate(self)
+        self._toload = set()
 
     def _loadCachedBlocks(self):
         """Attempts to load shard dependencies from memcache.
