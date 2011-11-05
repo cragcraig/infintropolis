@@ -150,7 +150,8 @@ class Capitol(inf.DatabaseObject):
         visited = set()
         self._recurseGather(worldshard, self.getLocationBlockVect(), roll,
                               gathered, visited)
-        self._atomicResourceAdd(gathered, async=True)
+        if any(gathered):
+            self._atomicResourceAdd(gathered, async=True)
 
     def _recurseGather(self, worldshard, block, roll, resources, visited):
         """Perform a resource gather event for all buildables owned by this
