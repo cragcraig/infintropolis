@@ -150,7 +150,7 @@ class Capitol(inf.DatabaseObject):
         visited = set()
         self._recurseGather(worldshard, self.getLocationBlockVect(), roll,
                               gathered, visited)
-        self._atomicResourceAdd(gathered)
+        self._atomicResourceAdd(gathered, async=True)
 
     def _recurseGather(self, worldshard, block, roll, resources, visited):
         """Perform a resource gather event for all buildables owned by this
@@ -181,14 +181,15 @@ class Capitol(inf.DatabaseObject):
         for v in bleedset:
             self._recurseGather(worldshard, v, roll, resources, visited)
 
-    def _atomicResourceAdd(self, resources):
+    def _atomicResourceAdd(self, resources, async=False):
         """Atomically add a resource list to this capitol's resources."""
-        if db.run_in_transaction(Capitol._addResources, self, resources):
+        if db.run_in_transaction(Capitol._addResources, self, resources,
+                                 async=async):
             self.cache()
         else:
             self.load()
 
-    def _addResources(self, resources):
+    def _addResources(self, resources, async=False):
         """Add a resource list to this capitol's resources.
 
         Intended to be run as an atomic transaction.
@@ -200,7 +201,10 @@ class Capitol(inf.DatabaseObject):
         self._model.grain += resources[inf.TileType.grain]
         self._model.ore += resources[inf.TileType.ore]
         self._model.gold += resources[inf.TileType.gold]
-        self.put()
+        if async:
+            self.put_async()
+        else:
+            self.put()
         return True
 
     def getNumber(self):

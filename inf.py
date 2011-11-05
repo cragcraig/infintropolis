@@ -289,6 +289,9 @@ class DatabaseObject:
     def put(self):
         db.put(self._model)
 
+    def put_async(self):
+        db.put_async(self._model)
+
     def cache(self, timeout=60):
         """Store Model state to cache."""
         if (self.exists()):
