@@ -57,7 +57,7 @@ class Capitol(inf.DatabaseObject):
         """Creates a new Capitol model."""
         self.loadOrCreate(nation=self.getNationName(), number=self._number,
                           hasSet=False, location=[],
-                          lumber=0, wool=0, brick=0, grain=0, ore=0, gold=0)
+                          lumber=4, wool=4, brick=4, grain=2, ore=3, gold=6)
 
     def getNationName(self):
         """Returns the name of the controlling nation."""

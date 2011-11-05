@@ -1879,7 +1879,8 @@ function drawResources()
                    totalWidth + wPadding*4, totalHeight + wPadding*2);
     ctx.fillStyle = "#fff";
     for (var i=0; i<resourceIcons.length; i++) {
-        ctx.drawImage(resourceIcons[i], offset, w - resourceIcons[i].height/2);
+        ctx.drawImage(resourceIcons[i], Math.round(offset),
+                      Math.round(w - resourceIcons[i].height/2));
         ctx.fillText(capitol.resources[i],
                      offset + resourceIcons[i].width + wPadding*2, w);
         offset += resourceIcons[i].width + txtWidth[i] + wPadding + padding;
