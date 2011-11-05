@@ -1901,9 +1901,9 @@ function minimapInit()
 function minimapRender()
 {
     mCtx.fillStyle = "rgba(0, 0, 0, 1.0)";
-    //mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
     mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
 
+    /* Draw tiles. */
     for (var i=0; i<2*mapSizes; i++) {
         for (var j=0; j<2*mapSizes; j++) {
             var tile = getTile(i, j);
@@ -1912,6 +1912,49 @@ function minimapRender()
             mCtx.drawImage(mTileImg, 10 * tile.type,
                   (tile.roll == -1 ? 11 : 0), 10, 11,
                   i*10 + (j%2 ? 5 : 0) + 3, j*7 + 3, 10, 11);
+        }
+    }
+    /* Draw buildables. */
+    for (var s=0; s<2; s++) {
+        for (var i=0; i<tileMap.length; i++) {
+            if (!tileMap[i].valid) continue;
+            for (var j=0; j<tileMap[i].buildables.length; j++) {
+                var build = tileMap[i].buildables[j];
+                if ((s && (build.t == 'r' || build.t == 'b')) ||
+                    (!s && (build.t != 'r' && build.t != 'b')) ||
+                    !isBuildableVisable(i, build))
+                    continue;
+                var v = getPosFromi(i, build.x, build.y);
+                var x = v.x*10 + (v.y%2 ? 5 : 0) + 3;
+                var y = v.y*7 + 3;
+                if (build.t == 'r' || build.t == 'b') {
+                    mCtx.beginPath();
+                    if (build.d == 't') {
+                        mCtx.moveTo(x + 4, y);
+                        mCtx.lineTo(x, y + 2);
+                    } else if (build.d == 'c') {
+                        mCtx.moveTo(x, y + 3);
+                        mCtx.lineTo(x, y + 7);
+                    } else {
+                        mCtx.moveTo(x, y + 8);
+                        mCtx.lineTo(x + 4, y + 10);
+                    }
+                    mCtx.closePath();
+                    mCtx.lineWidth = 4;
+                    mCtx.strokeStyle = "#" + build.c1;
+                    mCtx.stroke();
+                    mCtx.strokeStyle = "#" + build.c2;
+                    mCtx.lineWidth = 1;
+                    mCtx.stroke();
+                } else {
+                    var yoff = (build.d == 't' ? 3 : 7);
+                    mCtx.fillStyle = "#" + build.c2;
+                    mCtx.strokeStyle = "#" + build.c1;
+                    mCtx.lineWidth = 2;
+                    mCtx.fillRect(x - 2, y - 2 + yoff, 4, 4);
+                    mCtx.strokeRect(x - 2, y - 2 + yoff, 4, 4);
+                }
+            }
         }
     }
 }
