@@ -185,7 +185,7 @@ class MapBlock(inf.DatabaseObject):
                      self.getTileType(inf.tileDirMove(pos, 3)),
                      self.getTileType(inf.tileDirMove(pos, 4))]
             # Ensure enough surrounding blocks are land.
-            if len(filter(inf.isGoodStartType, tiles)) == 4:
+            if len(filter(inf.isGoodStartType, tiles)) >= 3:
                 # Check distance to all buildables.
                 clear = True
                 if blist:
