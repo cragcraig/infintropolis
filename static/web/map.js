@@ -806,19 +806,22 @@ function loading()
     // Minimap tile image
     mTileImg = loadImg('/img/mtiles.png');
     // create UI buttons
-    UIAddButton(UIButton(-62, 5, loadImg('/img/ui/build.png'), 0,
+    UIAddButton(UIButton(-134, 5, loadImg('/img/ui/build.png'), 0,
                          showBuildOverlay, 2));
-    //UIAddButton(UIButton(-62, 5, loadImg('/img/ui/nation.png'), 4,
-    //                     function() {}, 2));
+    UIAddButton(UIButton(-88, 5, loadImg('/img/ui/trade.png'), 5,
+                         function() {}, 2));
+    UIAddButton(UIButton(90, 2, loadImg('/img/ui/nation.png'), 4,
+                         function() {}, 2));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_off.png'), 2,
                          minimapOn, 1));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_on.png'), 3,
                          minimapOff, 1));
-    UIAddButton(UIButton(-62, 5, loadImg('/img/ui/cancel.png'), 1,
+    UIAddButton(UIButton(-134, 5, loadImg('/img/ui/cancel.png'), 1,
                          BuildModeCancel, 2));
     UIGroupVisible(0, true);
     UIGroupVisible(2, true);
     UIGroupVisible(4, true);
+    UIGroupVisible(5, true);
 
     // load all images
     loadNext();
