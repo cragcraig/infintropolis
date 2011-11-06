@@ -255,12 +255,33 @@ class MapBlock(inf.DatabaseObject):
     def atomicBuild(self, buildable, colors):
         """Builds the buildable in an atomic database transaction."""
         if not self.worldshard:
-            return
+            return False
         if db.run_in_transaction(MapBlock._build, self, buildable,
                                  colors):
             self.cache()
+            return True
         else:
             self.load()
+            return False
+
+    def atomicBuildCost(self, buildable, colors, capitol):
+        """Builds the buildable in an atomic database XG transaction.
+        
+        Removes cost resources from the Capitol. If they are not avaliable the
+        build will fail.
+        """
+        if not self.worldshard:
+            return False
+        xg_on = db.create_transaction_options(xg=True)
+        if db.run_in_transaction_options(xg_on, MapBlock._buildcost,
+                                         self, buildable, colors, capitol):
+            self.cache()
+            capitol.cache()
+            return True
+        else:
+            self.load()
+            capitol.load()
+            return False
 
     def atomicSetFullOfCapitols(self):
         """Builds the buildable in an atomic database transaction."""
@@ -313,6 +334,15 @@ class MapBlock(inf.DatabaseObject):
                 self._delBuildable(buildable.pos)
             self._addBuildable(buildable, colors)
             self.put()
+            return True
+        return False
+
+    def _buildcost(self, buildable, colors, capitol):
+        """Builds the buildable. For use inside atomicBuildCost()."""
+        if not capitol.addResources(buildable.getCost()):
+            return False
+        if not self._build(buildable, colors):
+            return False
         return True
 
     def _addBuildable(self, buildable, colors):

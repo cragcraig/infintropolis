@@ -146,12 +146,11 @@ class Capitol(inf.DatabaseObject):
         """Perform a resource gather event for this capitol."""
         if not self.exists() or not self.hasSetLocation():
             return
-        gathered = [0]*len(self.getResourceList())
+        gathered = [0]*6
         visited = set()
         self._recurseGather(worldshard, self.getLocationBlockVect(), roll,
                               gathered, visited)
-        if any(gathered):
-            self._atomicResourceAdd(gathered, async=True)
+        self.atomicResourceAdd(gathered, async=True)
 
     def _recurseGather(self, worldshard, block, roll, resources, visited):
         """Perform a resource gather event for all buildables owned by this
@@ -182,26 +181,36 @@ class Capitol(inf.DatabaseObject):
         for v in bleedset:
             self._recurseGather(worldshard, v, roll, resources, visited)
 
-    def _atomicResourceAdd(self, resources, async=False):
+    def atomicResourceAdd(self, resources, async=False):
         """Atomically add a resource list to this capitol's resources."""
-        if db.run_in_transaction(Capitol._addResources, self, resources,
+        if not any(resources):
+            return True
+        if db.run_in_transaction(Capitol.addResources, self, resources,
                                  async=async):
             self.cache()
+            return True
         else:
             self.load()
+            return False
 
-    def _addResources(self, resources, async=False):
+    def addResources(self, resources, async=False):
         """Add a resource list to this capitol's resources.
 
         Intended to be run as an atomic transaction.
         """
+        if not any(resources):
+            return True
         self.dbGet()
-        self._model.lumber += resources[inf.TileType.lumber]
-        self._model.wool += resources[inf.TileType.wool]
-        self._model.brick += resources[inf.TileType.brick]
-        self._model.grain += resources[inf.TileType.grain]
-        self._model.ore += resources[inf.TileType.ore]
-        self._model.gold += resources[inf.TileType.gold]
+        res = self.getResourceList()
+        final = [res[i] + resources[i] for i in xrange(len(res))]
+        if any(map(lambda x: x < 0, final)):
+            return False
+        self._model.lumber = final[inf.TileType.lumber]
+        self._model.wool = final[inf.TileType.wool]
+        self._model.brick = final[inf.TileType.brick]
+        self._model.grain = final[inf.TileType.grain]
+        self._model.ore = final[inf.TileType.ore]
+        self._model.gold = final[inf.TileType.gold]
         if async:
             self.put_async()
         else:

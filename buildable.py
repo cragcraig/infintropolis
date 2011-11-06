@@ -39,8 +39,8 @@ class Buildable:
         self.nationName = nation.getName()
         self.capitolNum = capitol.getNumber()
         block = worldshard.getBlock(self.block)
-        if block:
-            block.atomicBuild(self, nation.getColors())
+        if block and self.checkBuild(worldshard):
+            block.atomicBuildCost(self, nation.getColors(), capitol)
 
     def gather(self, worldshard, roll, resources):
         """Add resources gathered for this roll to the resource list."""
@@ -59,6 +59,13 @@ class Buildable:
         """Returns true if this buildable can gather resources."""
         return self.level == BuildType.city or\
                self.level == BuildType.settlement
+
+    def getCost(self):
+        """Returns the cost of this buildable as a list."""
+        if not self.validate:
+            return [0, 0, 0, 0, 0, 0]
+        else:
+            return BuildType.costList[self.level]
 
     def checkBuild(self, worldshard):
         """Checks if this buildable can be built."""
@@ -181,11 +188,16 @@ class BuildType:
     dToJSON = ['t', 'c', 'b', 't', 'b']
     JSONtod = ['t', 'c', 'b', 'tv', 'bv']
 
-    settlement, city, road, ship = range(4)
     empty = -1
+    settlement, city, road, ship = range(4)
     tToJSON = ['s', 'c', 'r', 'b']
     LOSVision = [15, 18, 8, 8]
     gatherMult = [1, 2, 0, 0]
+
+    costList = [ [-1, -1, -1, -1,  0,  0],
+                 [ 0,  0,  0, -2, -3,  0],
+                 [-1,  0, -1,  0,  0,  0],
+                 [-1, -1,  0,  0,  0,  0] ]
 
 
 def JSONtod(jsont, jsond):
