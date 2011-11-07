@@ -33,6 +33,7 @@ var selectedTile;
 var selectedVertex;
 var selectedEdge;
 var tDrawRollTokens = true;
+var isOverlayShown = false;
 
 // nation
 var capitol = null;
@@ -578,7 +579,8 @@ function mouseCallback()
         return;
 
     /* Hide overlays */
-    hideOverlay('#build_overlay');
+    if (isOverlayShown)
+        hideOverlays();
 
     /* build click */
     if (globalBuildState) {
@@ -807,9 +809,9 @@ function loading()
     mTileImg = loadImg('/img/mtiles.png');
     // create UI buttons
     UIAddButton(UIButton(-134, 5, loadImg('/img/ui/build.png'), 0,
-                         showBuildOverlay, 2));
+                         function() {showOverlay('#build_overlay');}, 2));
     UIAddButton(UIButton(-88, 5, loadImg('/img/ui/trade.png'), 5,
-                         function() {}, 2));
+                         function() {showOverlay('#trade_overlay');}, 2));
     UIAddButton(UIButton(90, 2, loadImg('/img/ui/nation.png'), 4,
                          function() {}, 2));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_off.png'), 2,
@@ -825,12 +827,6 @@ function loading()
 
     // load all images
     loadNext();
-}
-
-function showBuildOverlay()
-{
-    showOverlay('#build_overlay');
-    minimapOff();
 }
 
 function loadImg(url)
@@ -1593,9 +1589,9 @@ function BuildModeEnable(buildType)
     globalBuildState = buildType;
     selectedVertex = null
     selectedEdge = null
-    hideOverlay('#build_overlay');
     UIGroupVisible(0, false);
     UIGroupVisible(1, true);
+    hideOverlays();
     render();
 }
 

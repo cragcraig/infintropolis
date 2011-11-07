@@ -24,7 +24,7 @@ h2 {
     visibility: hidden;
 }
 
-#build_overlay {
+.overlay {
     display: none;
     width: 450px;
     box-shadow: 0px 0px 20px #000;
@@ -35,7 +35,7 @@ h2 {
     vertical-align: middle;
 }
 
-#build_overlay table {
+.overlay table {
     border-collapse: collapse;
     width: 90%;
     text-align: center;
@@ -43,7 +43,7 @@ h2 {
     margin-right:auto;
 }
 
-#build_overlay table, th, td {
+.overlay table, th, td {
     padding: 2px;
     border-width: 1px;
     border-color: white;
@@ -51,15 +51,22 @@ h2 {
     vertical-align: middle;
 }
 
-.build_title {
+.overlay h2 {
     vertical-align: middle;
     text-align: center;
     color: #fff;
     font-style: normal;
     font-weight: normal;
     font-size: 22;
+}
+
+.build_title {
     padding-top: 15px;
     padding-bottom: 2px;
+}
+
+.build_title h2 {
+    display: inline;
 }
 
 .build_spacer {
@@ -139,4 +146,80 @@ h2 {
 
 .fonts_load h2 {
     font-family: infnumbers;
+}
+
+.trade_list {
+    position: absolute;
+    top: 0;
+    vertical-align: middle;
+    text-align: left;
+}
+
+#trade_left {
+    float: left;
+    text-align: left;
+    padding-left: 30px;
+}
+
+#trade_right {
+    float: right;
+    text-align: left;
+    padding-right: 30px;
+}
+
+#trade_center {
+    position: absolute;
+    float: center;
+    text-align: center;
+    width: 70px;
+    left: 50%;
+    top: 45%;
+    margin-left: -35px;
+}
+
+#trade_center a {
+}
+
+.trade_item {
+    text-align: right;
+    font-size: 16px;
+    font-family: infbasic;
+    font-color: #fff;
+}
+
+.trade_item img, input {
+    display: inline;
+    vertical-align: middle;
+}
+
+.trade_item h3 {
+    font-size: 24px;
+    font-family: infnumbers;
+    display: inline;
+    vertical-align: middle;
+}
+
+.trade_item input {
+    display: none;
+    background: #000;
+    color: #999;
+}
+
+.trade_item label {
+    display: block;
+    border: 1px solid transparent;
+    background-color: transparent;
+    padding-left: 5px;
+}
+
+.trade_item input:checked + label {
+    border: 1px solid #5f8fdb;
+    border-radius: 3px;
+    background-color: #294985;
+}
+
+.resource_icon {
+    display: inline-block;
+    width: 50px;
+    text-align: center;
 }

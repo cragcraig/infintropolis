@@ -34,100 +34,233 @@
 </div>
 
 <!-- build overlay -->
-<div id="build_overlay">
+<div id="build_overlay" class="overlay">
     <table>
         <tr class="build_title">
-            <td>Construct</td>
-            <td>Cost</td>
+            <td><h2>Build</h2></td>
+            <td><h2>Cost</h2></td>
         </tr>
         <tr>
             <td class="build_item build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('s');">
-                    <img src="/img/ui/settlement.png" alt="settlement"\>
+                    <img src="/img/ui/settlement.png" alt="settlement"/>
                 </a>
             </td>
             <td class="build_cost">
-                <img src="/img/res/brick2.png" alt="brick"\>
-                <img src="/img/res/wheat.png" alt="wheat"\>
-                <img src="/img/res/wool_dark.png" alt="wool"\>
-                <img src="/img/res/wood2.png" alt="wood"\>
+                <img src="/img/res/brick2.png" alt="brick"/>
+                <img src="/img/res/wheat.png" alt="grain"/>
+                <img src="/img/res/wool_dark.png" alt="wool"/>
+                <img src="/img/res/wood2.png" alt="lumber"/>
             </td>
         </tr>
         <tr>
             <td class="build_item build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('r');">
-                    <img src="/img/ui/road.png" alt="road"\>
+                    <img src="/img/ui/road.png" alt="road"/>
                 </a>
             </td>
             <td class="build_cost">
-                <img src="/img/res/brick2.png" alt="brick"\>
-                <img src="/img/res/wood2.png" alt="wood"\>
+                <img src="/img/res/brick2.png" alt="brick"/>
+                <img src="/img/res/wood2.png" alt="lumber"/>
             </td>
         </tr>
         <tr>
             <td class="build_item build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('b');">
-                    <img src="/img/ui/ship.png" alt="ship"\>
+                    <img src="/img/ui/ship.png" alt="ship"/>
                 </a>
             </td>
             <td class="build_cost">
-                <img src="/img/res/wool_dark.png" alt="wool"\>
-                <img src="/img/res/wood2.png" alt="wood"\>
+                <img src="/img/res/wool_dark.png" alt="wool"/>
+                <img src="/img/res/wood2.png" alt="lumber"/>
             </td>
         </tr>
         <tr class="build_spacer">
              <td colspan="2">&nbsp;</td>
         </tr>
         <tr class="build_title">
-            <td>Upgrade</td>
+            <td><h2>Upgrade</h2></td>
             <td>&nbsp;</td>
         </tr>
         <tr>
             <td class="build_item build_item_upgrade">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('c');">
-                    <img src="/img/ui/city_upgrade.png" alt="city"\>
+                    <img src="/img/ui/city_upgrade.png" alt="city"/>
                 </a>
             </td>
             <td class="build_cost">
-                <img src="/img/res/wheat.png" alt="wheat"\>
-                <img src="/img/res/wheat.png" alt="wheat"\>
-                <img src="/img/res/ore.png" alt="ore"\>
-                <img src="/img/res/ore.png" alt="ore"\>
-                <img src="/img/res/ore.png" alt="ore"\>
+                <img src="/img/res/wheat.png" alt="grain"/>
+                <img src="/img/res/wheat.png" alt="grain"/>
+                <img src="/img/res/ore.png" alt="ore"/>
+                <img src="/img/res/ore.png" alt="ore"/>
+                <img src="/img/res/ore.png" alt="ore"/>
             </td>
         </tr>
     </table>
 
 </div>
 
+<!-- trade overlay -->
+<div id="trade_overlay" class="overlay">
+    <div id="trade_left">
+        <h2>Trade</h2>
+    <form action="#" method="get">
+        <!-- gold -->
+        <div class="trade_item">
+            <input type="radio" id="tgold1" name="trade" value="gold" checked/>
+            <label for="tgold1">
+                <h3>1</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/gold.png" alt="gold"/>
+                </div>
+            </label>
+        </div>
+        <!-- lumber -->
+        <div class="trade_item">
+            <input type="radio" id="tlumber1" name="trade" value="lumber"/>
+            <label for="tlumber1">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/wood2.png" alt="lumber"/>
+                </div>
+            </label>
+        </div>
+        <!-- wool -->
+        <div class="trade_item">
+            <input type="radio" id="twool1" name="trade" value="wool"/>
+            <label for="twool1">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/wool_dark.png" alt="wool"/>
+                </div>
+            </label>
+        </div>
+        <!-- brick -->
+        <div class="trade_item">
+            <input type="radio" id="tbrick1" name="trade" value="brick"/>
+            <label for="tbrick1">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/brick2.png" alt="brick"/>
+                </div>
+            </label>
+        </div>
+        <!-- grain -->
+        <div class="trade_item">
+            <input type="radio" id="tgrain1" name="trade" value="grain"/>
+            <label for="tgrain1">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/wheat.png" alt="grain"/>
+                </div>
+            </label>
+        </div>
+        <!-- ore -->
+        <div class="trade_item">
+            <input type="radio" id="tore1" name="trade" value="ore"/>
+            <label for="tore1">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/ore.png" alt="ore"/>
+                </div>
+            </label>
+        </div>
+    </form>
+    </div>
+    <div id="trade_center" class="build_item">
+        <a href="javascript:void(0);" onclick="">
+            <img src="/img/ui/arrow.png" alt="->"/>
+        </a>
+    </div>
+    <div id="trade_right">
+        <h2>Receive</h2>
+    <form action="#" method="get">
+        <!-- lumber -->
+        <div class="trade_item">
+            <input type="radio" id="tlumber2" name="receive" value="lumber" checked/>
+            <label for="tlumber2">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/wood2.png" alt="lumber"/>
+                </div>
+            </label>
+        </div>
+        <!-- wool -->
+        <div class="trade_item">
+            <input type="radio" id="twool2" name="receive" value="wool"/>
+            <label for="twool2">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/wool_dark.png" alt="wool"/>
+                </div>
+            </label>
+        </div>
+        <!-- brick -->
+        <div class="trade_item">
+            <input type="radio" id="tbrick2" name="receive" value="brick"/>
+            <label for="tbrick2">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/brick2.png" alt="brick"/>
+                </div>
+            </label>
+        </div>
+        <!-- grain -->
+        <div class="trade_item">
+            <input type="radio" id="tgrain2" name="receive" value="grain"/>
+            <label for="tgrain2">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/wheat.png" alt="grain"/>
+                </div>
+            </label>
+        </div>
+        <!-- ore -->
+        <div class="trade_item">
+            <input type="radio" id="tore2" name="receive" value="ore"/>
+            <label for="tore2">
+                <h3>4</h3>&nbsp;x
+                <div class="resource_icon">
+                    <img src="/img/res/ore.png" alt="ore"/>
+                </div>
+            </label>
+        </div>
+    </form>
+    </div>
+</div>
+
 <!-- Overlay Scripts -->
 <script>
 $(document).ready(function() {
 
-$("#build_overlay").overlay({
+var settings = {
     speed: 'fast',
     load: false,
     closeOnClick: false,
     closeOnEsc: false,
-    top: '15%'
-});
+    top: '15%',
+    api: true
+};
+
+$.each($(".overlay"), function(i, v){$(v).overlay(settings);})
 
 });
 
 function showOverlay(id)
 {
-    var api = $(id).data("overlay");
-    api.load()
-    UIGroupVisible(0, false);
-    render();
+    var api = $(id).overlay();
+    if (api.isOpened()) {
+        hideOverlays();
+    } else {
+        api.load();
+        isOverlayShown = true;
+    }
 }
 
-function hideOverlay(id)
+function hideOverlays()
 {
-    var api = $(id).data("overlay");
-    api.close()
-    UIGroupVisible(0, true);
-    render();
+    $.each($(".overlay"), function(i, v){$(v).overlay().close();})
+    isOverlayShown = false;
 }
 
 function hideText()
