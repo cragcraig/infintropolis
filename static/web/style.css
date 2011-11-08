@@ -7,6 +7,7 @@ body { height: 100%; margin: 0px; padding: 0px; background-color: #000; color: #
     src: url("/img/webfont.woff") format("woff"),
     url("/img/webfont.ttf") format("truetype");
 }
+
 @font-face {
     font-family: "infnumbers";
     src: url("/img/shrewsbury.woff") format("woff"),
@@ -57,7 +58,7 @@ h2 {
     color: #fff;
     font-style: normal;
     font-weight: normal;
-    font-size: 22;
+    font-size: 22px;
 }
 
 .build_title {
@@ -173,11 +174,17 @@ h2 {
     text-align: center;
     width: 70px;
     left: 50%;
-    top: 45%;
+    top: 30%;
     margin-left: -35px;
 }
 
-#trade_center a {
+#trade_center h2 {
+    display: inline;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 22px;
+    font-family: infbasic;
+    font-color: #fff;
 }
 
 .trade_item {
@@ -215,7 +222,8 @@ h2 {
 .trade_item input:checked + label {
     border: 1px solid #5f8fdb;
     border-radius: 3px;
-    background-color: #294985;
+    background-color: #192a49;
+    text-shadow: 1px 0px black, -1px 0px black, 0px 1px black, 0px -1px black;
 }
 
 .resource_icon {
