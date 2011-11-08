@@ -158,7 +158,9 @@ class PostTrade(request.Handler):
         response = {}
         # Check arguments.
         if not self.inDict(request, 'from', 'for')\
-           or request['from'] == request['for'] or request['for'] == 'gold':
+           or request['from'] == request['for'] or request['for'] == 'gold'\
+           or request['from'] not in inf.TileType.resources\
+           or request['for'] not in inf.TileType.resources:
             return
 
         # Construct parameters.
