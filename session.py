@@ -30,6 +30,10 @@ class Session(request.Handler):
                 self.redirectToLogin()
             # Create.
             elif action == 'create':
+                # Check for pre-alpha key.
+                if self.request.get('key') != '/':
+                    self.errorPage('A valid Pre-Alpha key is required.')
+                    return
                 self.create(self.request.get('nation'), self.request.get('pwd'),
                             self.request.get('confirm'),
                             self.request.get('email'),
