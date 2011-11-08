@@ -21,12 +21,12 @@
 <center>
 
 <!-- HEADER -->
-<h1>Infintropolis</h1>
+<h1>Infintropolis Developer Login</h1>
 <p>Explore an endless map as you build a civilization and battle opponents in the massively multiplayer world of Infintropolis.</p>
 
-
+<div style="text-align: left; float: center; width: 400px;">
 <!-- LOGIN -->
-<h3>Login</h3>
+<h3 style="text-align: center;">Login</h3>
 <form name="login" action="/session" method="post">
     <input type="hidden" name="action" value="login" />
     Nation:&nbsp;
@@ -39,7 +39,7 @@
 <br>
 
 <!-- CREATE -->
-<h3>Create a Nation</h3>
+<h3 style="text-align: center;">Create a Civilization</h3>
 <form name="login" action="/session" method="post">
     <input type="hidden" name="action" value="create" />
     Nation:&nbsp;
@@ -54,10 +54,11 @@
     <input class="color {pickerFaceColor:'transparent',pickerFace:3,pickerBorder:0,pickerInsetColor:'black'}" value="000000" name="color1" /><br>
     Core Color:&nbsp;
     <input class="color {pickerFaceColor:'transparent',pickerFace:3,pickerBorder:0,pickerInsetColor:'black'}" value="000000" name="color2" /><br>
-    <input type="submit" value="Create" />
     Pre-Alpha Key:&nbsp;
     <input type="text" name="key" /><br>
+    <input type="submit" value="Create" />
 </form>
+</div>
 
 </center>
 </div>
