@@ -183,6 +183,7 @@ class TileType:
         goldmine, volcano, fish = range(11)
     LOSCost = [None, 2.9, 5, 5, 7, 7, 9, 5, 5, 7, 2]
     lumber, wool, brick, grain, ore, gold = range(6)
+    resources = ['lumber', 'wool', 'brick', 'grain', 'ore', 'gold']
     typeToResource = [None, None, 3, 1, 0, 2, 4, None, 5, 5, 5]
 
 

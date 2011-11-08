@@ -2001,3 +2001,29 @@ function minimapOff()
     globalMinimapState = false;
     render();
 }
+
+/* Perform trade. */
+function performTrade()
+{
+    var radioFrom = document.getElementById('trade_from').trade;
+    var radioFor = document.getElementById('trade_for').trade;
+    var tradeFrom = getSelectedRadioButton(radioFrom);
+    var tradeFor = getSelectedRadioButton(radioFor);
+
+    hideOverlays();
+    if (tradeFor && tradeFrom) {
+        RequestJSON("POST", "/set/trade",
+                    {"from": tradeFrom, "for": tradeFor});
+    }
+}
+
+/* Get the selected radio button from an HTML form input. */
+function getSelectedRadioButton(group)
+{
+    for (var i=0; i<group.length; i++) {
+        if (group[i].checked) {
+            return group[i].value;
+        }
+    }
+    return null;
+}

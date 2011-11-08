@@ -125,11 +125,9 @@ class PostBuild(request.Handler):
         blockVect = Vect(request['bx'], request['by'])
         if not inf.validBlockCoord(pos):
             return
-        # Load from database.
-        nationName = self.getNation().getName()
 
-        #TODO(craig): Don't use memcache.
-        #TODO(craig): Update capitol in a transaction (atomic).
+        # Load Capitol.
+        nationName = self.getNation().getName()
         capitol = Capitol(self.getNation(), self.getCapitolNum())
         if not capitol.exists():
             return
@@ -141,6 +139,48 @@ class PostBuild(request.Handler):
 
         # Return updated BuildableBlock.
         response = worldshard.getJSONBuildablesDict()
+        response['capitol'] = capitol.getJSON()
+        self.writeJSON(response)
+
+
+class PostTrade(request.Handler):
+    """Handle trade requests."""
+
+    def post(self):
+        """Perform trade and return updated Capitol data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Setup.
+        request = self.getJSONRequest()
+        response = {}
+        # Check arguments.
+        if not self.inDict(request, 'from', 'for')\
+           or request['from'] == request['for'] or request['for'] == 'gold':
+            return
+
+        # Construct parameters.
+        tradeFrom = inf.TileType.resources.index(request['from'])
+        tradeFor = inf.TileType.resources.index(request['for'])
+
+        fromMult = -4
+        if request['from'] == 'gold':
+            fromMult = -1
+
+        # Load Capitol.
+        capitol = Capitol(self.getNation(), self.getCapitolNum())
+        if not capitol.exists():
+            return
+
+        # Trade.
+        trade = [0]*6
+        trade[tradeFrom] = fromMult
+        trade[tradeFor] = 1
+        capitol.atomicResourceAdd(trade)
+
+        # Return updated Capitol.
         response['capitol'] = capitol.getJSON()
         self.writeJSON(response)
 
@@ -185,6 +225,7 @@ app = webapp.WSGIApplication(
                               ('/get/map.*', GetBlock),
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
+                              ('/set/trade.*', PostTrade),
                               ('/session.*', Session),
                               ('/gather.*', GetGather)],
                              debug=True)

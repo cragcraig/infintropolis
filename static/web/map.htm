@@ -27,7 +27,7 @@
     </p>
     <p>
     This browser does not fully support HTML5.<br>
-    Please use a recent version of Chrome, Firefox, Safari, or IE9 that supports the HTML5 standard.
+    Use a recent version of Chrome or Firefox that supports the HTML5 standard.
     </p>
     <a href="http://google.com/chrome">Google Chrome</a> | <a href="http://firefox.com">Firefox</a>
   </canvas>
@@ -104,7 +104,7 @@
 <div id="trade_overlay" class="overlay">
     <!-- left list -->
     <div id="trade_left">
-    <form action="#" method="get">
+    <form id="trade_from" action="#" method="get">
         <!-- gold -->
         <div class="trade_item">
             <input type="radio" id="tgold1" name="trade" value="gold" checked/>
@@ -170,17 +170,17 @@
     <!-- trade -->
     <div id="trade_center" class="build_item">
         <h2>Trade</h2>
-        <a href="javascript:void(0);" onclick="">
+        <a href="javascript:void(0);" onclick="performTrade();">
             <img src="/img/ui/arrow.png" alt="->"/>
         </a>
     </div>
     <!-- right list -->
     <div id="trade_right">
     <span style="font-size: 10px;">&nbsp;</span>
-    <form action="#" method="get">
+    <form id="trade_for" action="#" method="get">
         <!-- lumber -->
         <div class="trade_item">
-            <input type="radio" id="tlumber2" name="receive" value="lumber" checked/>
+            <input type="radio" id="tlumber2" name="trade" value="lumber" checked/>
             <label for="tlumber2">
                 <h3>1</h3>&nbsp;x
                 <div class="resource_icon">
@@ -190,7 +190,7 @@
         </div>
         <!-- wool -->
         <div class="trade_item">
-            <input type="radio" id="twool2" name="receive" value="wool"/>
+            <input type="radio" id="twool2" name="trade" value="wool"/>
             <label for="twool2">
                 <h3>1</h3>&nbsp;x
                 <div class="resource_icon">
@@ -200,7 +200,7 @@
         </div>
         <!-- brick -->
         <div class="trade_item">
-            <input type="radio" id="tbrick2" name="receive" value="brick"/>
+            <input type="radio" id="tbrick2" name="trade" value="brick"/>
             <label for="tbrick2">
                 <h3>1</h3>&nbsp;x
                 <div class="resource_icon">
@@ -210,7 +210,7 @@
         </div>
         <!-- grain -->
         <div class="trade_item">
-            <input type="radio" id="tgrain2" name="receive" value="grain"/>
+            <input type="radio" id="tgrain2" name="trade" value="grain"/>
             <label for="tgrain2">
                 <h3>1</h3>&nbsp;x
                 <div class="resource_icon">
@@ -220,7 +220,7 @@
         </div>
         <!-- ore -->
         <div class="trade_item">
-            <input type="radio" id="tore2" name="receive" value="ore"/>
+            <input type="radio" id="tore2" name="trade" value="ore"/>
             <label for="tore2">
                 <h3>1</h3>&nbsp;x
                 <div class="resource_icon">
