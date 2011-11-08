@@ -106,17 +106,18 @@
     <div id="trade_left">
     <form id="trade_from" action="#" method="get">
         <!-- gold -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_single">
             <input type="radio" id="tgold1" name="trade" value="gold" checked/>
             <label for="tgold1">
-                <h3>1</h3>&nbsp;x
+                &nbsp;
                 <div class="resource_icon">
                     <img src="/img/res/gold.png" alt="gold"/>
                 </div>
+                &nbsp;
             </label>
         </div>
         <!-- lumber -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_multi">
             <input type="radio" id="tlumber1" name="trade" value="lumber"/>
             <label for="tlumber1">
                 <h3>4</h3>&nbsp;x
@@ -126,7 +127,7 @@
             </label>
         </div>
         <!-- wool -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_multi">
             <input type="radio" id="twool1" name="trade" value="wool"/>
             <label for="twool1">
                 <h3>4</h3>&nbsp;x
@@ -136,7 +137,7 @@
             </label>
         </div>
         <!-- brick -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_multi">
             <input type="radio" id="tbrick1" name="trade" value="brick"/>
             <label for="tbrick1">
                 <h3>4</h3>&nbsp;x
@@ -146,7 +147,7 @@
             </label>
         </div>
         <!-- grain -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_multi">
             <input type="radio" id="tgrain1" name="trade" value="grain"/>
             <label for="tgrain1">
                 <h3>4</h3>&nbsp;x
@@ -156,7 +157,7 @@
             </label>
         </div>
         <!-- ore -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_multi">
             <input type="radio" id="tore1" name="trade" value="ore"/>
             <label for="tore1">
                 <h3>4</h3>&nbsp;x
@@ -179,53 +180,58 @@
     <span style="font-size: 10px;">&nbsp;</span>
     <form id="trade_for" action="#" method="get">
         <!-- lumber -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_single" style="text-align: center;">
             <input type="radio" id="tlumber2" name="trade" value="lumber" checked/>
             <label for="tlumber2">
-                <h3>1</h3>&nbsp;x
+                &nbsp;
                 <div class="resource_icon">
                     <img src="/img/res/wood2.png" alt="lumber"/>
                 </div>
+                &nbsp;
             </label>
         </div>
         <!-- wool -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_single">
             <input type="radio" id="twool2" name="trade" value="wool"/>
             <label for="twool2">
-                <h3>1</h3>&nbsp;x
+                &nbsp;
                 <div class="resource_icon">
                     <img src="/img/res/wool_dark.png" alt="wool"/>
                 </div>
+                &nbsp;
             </label>
         </div>
         <!-- brick -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_single">
             <input type="radio" id="tbrick2" name="trade" value="brick"/>
             <label for="tbrick2">
-                <h3>1</h3>&nbsp;x
+                &nbsp;
                 <div class="resource_icon">
                     <img src="/img/res/brick2.png" alt="brick"/>
                 </div>
+                &nbsp;
             </label>
         </div>
         <!-- grain -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_single">
             <input type="radio" id="tgrain2" name="trade" value="grain"/>
             <label for="tgrain2">
-                <h3>1</h3>&nbsp;x
+                &nbsp;
                 <div class="resource_icon">
                     <img src="/img/res/wheat.png" alt="grain"/>
                 </div>
+                &nbsp;
             </label>
         </div>
         <!-- ore -->
-        <div class="trade_item">
+        <div class="trade_item trade_item_single">
             <input type="radio" id="tore2" name="trade" value="ore"/>
             <label for="tore2">
-                <h3>1</h3>&nbsp;x
+                &nbsp;
                 <div class="resource_icon">
                     <img src="/img/res/ore.png" alt="ore"/>
                 </div>
+                &nbsp;
             </label>
         </div>
     </form>

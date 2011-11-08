@@ -188,7 +188,6 @@ h2 {
 }
 
 .trade_item {
-    text-align: right;
     font-size: 16px;
     font-family: infbasic;
     font-color: #fff;
@@ -202,6 +201,8 @@ h2 {
 .trade_item h3 {
     font-size: 24px;
     font-family: infnumbers;
+    font-style: normal;
+    font-weight: normal;
     display: inline;
     vertical-align: middle;
 }
@@ -224,6 +225,14 @@ h2 {
     border-radius: 3px;
     background-color: #192a49;
     text-shadow: 1px 0px black, -1px 0px black, 0px 1px black, 0px -1px black;
+}
+
+.trade_item_multi {
+    text-align: right;
+}
+
+.trade_item_single {
+    text-align: center;
 }
 
 .resource_icon {
