@@ -112,10 +112,11 @@ class PostBuild(request.Handler):
 
         # Setup.
         request = self.getJSONRequest()
-        response = {}
+        response = {'isBuildResult': True}
         # Check arguments.
         if not self.inDict(request, 'type', 'x', 'y', 'd', 'bx', 'by')\
            or request['type'] not in BuildType.tToJSON:
+            self.writeJSON(response)
             return
 
         # Construct parameters.
@@ -124,12 +125,14 @@ class PostBuild(request.Handler):
         buildtype = BuildType.tToJSON.index(request['type'])
         blockVect = Vect(request['bx'], request['by'])
         if not inf.validBlockCoord(pos):
+            self.writeJSON(response)
             return
 
         # Load Capitol.
         nationName = self.getNation().getName()
         capitol = Capitol(self.getNation(), self.getCapitolNum())
         if not capitol.exists():
+            self.writeJSON(response)
             return
 
         # Build.
@@ -138,7 +141,7 @@ class PostBuild(request.Handler):
         build.build(worldshard, self.getNation(), capitol)
 
         # Return updated BuildableBlock.
-        response = worldshard.getJSONBuildablesDict()
+        response.update(worldshard.getJSONBuildablesDict())
         response['capitol'] = capitol.getJSON()
         self.writeJSON(response)
 
@@ -155,12 +158,13 @@ class PostTrade(request.Handler):
 
         # Setup.
         request = self.getJSONRequest()
-        response = {}
+        response = {'isTradeResult': True}
         # Check arguments.
         if not self.inDict(request, 'from', 'for')\
            or request['from'] == request['for'] or request['for'] == 'gold'\
            or request['from'] not in inf.TileType.resources\
            or request['for'] not in inf.TileType.resources:
+            self.writeJSON(response)
             return
 
         # Construct parameters.
@@ -174,6 +178,7 @@ class PostTrade(request.Handler):
         # Load Capitol.
         capitol = Capitol(self.getNation(), self.getCapitolNum())
         if not capitol.exists():
+            self.writeJSON(response)
             return
 
         # Trade.

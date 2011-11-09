@@ -170,12 +170,15 @@ h2 {
 
 #trade_center {
     position: absolute;
-    float: center;
     text-align: center;
-    width: 70px;
+    width: 150px;
     left: 50%;
     top: 30%;
-    margin-left: -35px;
+    margin-left: -75px;
+}
+
+#trade_center a {
+    width: 70px;
 }
 
 #trade_center h2 {
@@ -246,4 +249,34 @@ h2 {
     display: inline-block;
     width: 50px;
     text-align: center;
+}
+
+.trade_toggle {
+    text-align: center;
+    color: white;
+    padding-top: 10px;
+}
+
+.trade_toggle input {
+    display: none;
+    background: #000;
+    color: #999;
+}
+
+.trade_toggle label {
+    display: inline-block;
+    border: 1px solid transparent;
+    font-size: 12px;
+    background-color: #000;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.trade_toggle input:checked + label {
+    border: 1px solid #5f8fdb;
+    background-color: #000;
+}
+
+.trade_arrow_hidden {
+    visibility: hidden;
 }

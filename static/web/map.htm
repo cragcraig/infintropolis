@@ -103,8 +103,8 @@
 <!-- trade overlay -->
 <div id="trade_overlay" class="overlay" style="padding-top: 30px;">
     <!-- left list -->
+    <form id="trade_form" action="#" method="get">
     <div id="trade_left">
-    <form id="trade_from" action="#" method="get">
         <!-- gold -->
         <div class="trade_item trade_item_single">
             <input type="radio" id="tgold1" name="trade" value="gold" checked/>
@@ -166,22 +166,20 @@
                 </div>
             </label>
         </div>
-    </form>
     </div>
     <!-- trade -->
     <div id="trade_center" class="build_item">
         <h2>Trade</h2>
-        <a href="javascript:void(0);" onclick="performTrade();">
-            <img src="/img/ui/arrow.png" alt="->"/>
+        <a href="javascript:void(0);" onclick="tradePerform();">
+            <img id="trade_arrow" src="/img/ui/arrow.png" alt="->"/>
         </a>
     </div>
     <!-- right list -->
     <div id="trade_right">
     <span style="font-size: 10px;">&nbsp;</span>
-    <form id="trade_for" action="#" method="get">
         <!-- lumber -->
         <div class="trade_item trade_item_single" style="text-align: center;">
-            <input type="radio" id="tlumber2" name="trade" value="lumber" checked/>
+            <input type="radio" id="tlumber2" name="tradef" value="lumber" checked/>
             <label for="tlumber2">
                 &nbsp;
                 <div class="resource_icon">
@@ -192,7 +190,7 @@
         </div>
         <!-- wool -->
         <div class="trade_item trade_item_single">
-            <input type="radio" id="twool2" name="trade" value="wool"/>
+            <input type="radio" id="twool2" name="tradef" value="wool"/>
             <label for="twool2">
                 &nbsp;
                 <div class="resource_icon">
@@ -203,7 +201,7 @@
         </div>
         <!-- brick -->
         <div class="trade_item trade_item_single">
-            <input type="radio" id="tbrick2" name="trade" value="brick"/>
+            <input type="radio" id="tbrick2" name="tradef" value="brick"/>
             <label for="tbrick2">
                 &nbsp;
                 <div class="resource_icon">
@@ -214,7 +212,7 @@
         </div>
         <!-- grain -->
         <div class="trade_item trade_item_single">
-            <input type="radio" id="tgrain2" name="trade" value="grain"/>
+            <input type="radio" id="tgrain2" name="tradef" value="grain"/>
             <label for="tgrain2">
                 &nbsp;
                 <div class="resource_icon">
@@ -225,7 +223,7 @@
         </div>
         <!-- ore -->
         <div class="trade_item trade_item_single">
-            <input type="radio" id="tore2" name="trade" value="ore"/>
+            <input type="radio" id="tore2" name="tradef" value="ore"/>
             <label for="tore2">
                 &nbsp;
                 <div class="resource_icon">
@@ -234,8 +232,8 @@
                 &nbsp;
             </label>
         </div>
-    </form>
     </div>
+    </form>
 </div>
 
 <!-- Overlay Scripts -->

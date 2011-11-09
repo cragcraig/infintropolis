@@ -34,6 +34,8 @@ var selectedVertex;
 var selectedEdge;
 var tDrawRollTokens = true;
 var isOverlayShown = false;
+var isTradeActive = false;
+var isBuildActive = false;
 
 // nation
 var capitol = null;
@@ -112,7 +114,7 @@ function JSONCallback(json)
         for (i=0; i<tileMap.length; i++) {
             var pos = getWorldPos(i);
             var id = pos.x + '_' + pos.y;
-            if (json[id]) {
+            if (json[id] && (!isBuildActive || json['isBuildResult'])) {
                 /* block token */
                 if (json[id].token) {
                     tileMap[i].token = json[id].token;
@@ -137,6 +139,17 @@ function JSONCallback(json)
         /* Update Minimap if visible. */
         if (mapUpdated && globalMinimapState)
             minimapRender();
+
+        /* Re-enable trade if this is a trade result. */
+        if (json['isTradeResult'])
+            tradeIdle();
+
+        /* Re-enable map updates if this is a build result. */
+        if (json['isBuildResult'])
+        {
+            isBuildActive = false;
+            UIGroupVisible(0, true);
+        }
     }
     render();
 }
@@ -1608,7 +1621,8 @@ function BuildModeCancel()
     selectedVertex = null;
     selectedEdge = null;
     globalBuildState = false;
-    UIGroupVisible(0, true);
+    if (!isBuildActive)
+        UIGroupVisible(0, true);
     UIGroupVisible(1, false);
     render();
 }
@@ -1616,7 +1630,8 @@ function BuildModeCancel()
 /* Build a buildable at the currently selected location. */
 function BuildModeDo()
 {
-    if (!globalBuildState) return;
+    if (!globalBuildState || isBuildActive)
+        return;
     var selected = (globalState == 2 ? selectedVertex : selectedEdge);
     if (selected) {
         /* Modify selected into a proper buildable object. */
@@ -1633,6 +1648,7 @@ function BuildModeDo()
         RequestJSON("POST", "/set/build",
                     {bx: block.x, by: block.y, x: selected.x, y: selected.y,
                      d: selected.d, type: selected.t});
+        isBuildActive = true;
     }
     launchAutoUpdate();
     BuildModeCancel();
@@ -2003,14 +2019,17 @@ function minimapOff()
 }
 
 /* Perform trade. */
-function performTrade()
+function tradePerform()
 {
-    var radioFrom = document.getElementById('trade_from').trade;
-    var radioFor = document.getElementById('trade_for').trade;
-    var tradeFrom = getSelectedRadioButton(radioFrom);
-    var tradeFor = getSelectedRadioButton(radioFor);
+    var form = document.getElementById('trade_form');
+    var tradeFrom = getSelectedRadioButton(form.trade);
+    var tradeFor = getSelectedRadioButton(form.tradef);
 
-    hideOverlays();
+    /* Close overlay. */
+    if (isTradeActive)
+        return;
+    tradeBusy();
+    /* Launch trade. */
     if (tradeFor && tradeFrom) {
         RequestJSON("POST", "/set/trade",
                     {"from": tradeFrom, "for": tradeFor});
@@ -2026,4 +2045,19 @@ function getSelectedRadioButton(group)
         }
     }
     return null;
+}
+
+/* Set trade busy. */
+function tradeBusy()
+{
+    var arrow = document.getElementById('trade_arrow');
+    arrow.setAttribute("class", "trade_arrow_hidden");
+    isTradeActive = true;
+}
+
+function tradeIdle()
+{
+    var arrow = document.getElementById('trade_arrow');
+    arrow.setAttribute("class", "");
+    isTradeActive = false;
 }
