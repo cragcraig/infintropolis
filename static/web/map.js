@@ -145,8 +145,7 @@ function JSONCallback(json)
             tradeIdle();
 
         /* Re-enable map updates if this is a build result. */
-        if (json['isBuildResult'])
-        {
+        if (json['isBuildResult']) {
             isBuildActive = false;
             UIGroupVisible(0, true);
         }
@@ -826,7 +825,7 @@ function loading()
     UIAddButton(UIButton(-88, 5, loadImg('/img/ui/trade.png'), 5,
                          function() {showOverlay('#trade_overlay');}, 2));
     UIAddButton(UIButton(90, 2, loadImg('/img/ui/nation.png'), 4,
-                         function() {}, 2));
+                         function() {showOverlay('#nation_overlay')}, 2));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_off.png'), 2,
                          minimapOn, 1));
     UIAddButton(UIButton(16, 5, loadImg('/img/ui/map_on.png'), 3,

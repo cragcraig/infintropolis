@@ -41,7 +41,7 @@
             <td><h2>Cost</h2></td>
         </tr>
         <tr>
-            <td class="build_item build_item_normal">
+            <td class="link1 build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('s');">
                     <img src="/img/ui/settlement.png" alt="settlement"/>
                 </a>
@@ -54,7 +54,7 @@
             </td>
         </tr>
         <tr>
-            <td class="build_item build_item_normal">
+            <td class="link1 build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('r');">
                     <img src="/img/ui/road.png" alt="road"/>
                 </a>
@@ -65,7 +65,7 @@
             </td>
         </tr>
         <tr>
-            <td class="build_item build_item_normal">
+            <td class="link1 build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('b');">
                     <img src="/img/ui/ship.png" alt="ship"/>
                 </a>
@@ -83,7 +83,7 @@
             <td>&nbsp;</td>
         </tr>
         <tr>
-            <td class="build_item build_item_upgrade">
+            <td class="link1 build_item_upgrade">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('c');">
                     <img src="/img/ui/city_upgrade.png" alt="city"/>
                 </a>
@@ -101,7 +101,7 @@
 </div>
 
 <!-- trade overlay -->
-<div id="trade_overlay" class="overlay" style="padding-top: 30px;">
+<div id="trade_overlay" class="overlay">
     <!-- left list -->
     <form id="trade_form" action="#" method="get">
     <div id="trade_left">
@@ -168,7 +168,7 @@
         </div>
     </div>
     <!-- trade -->
-    <div id="trade_center" class="build_item">
+    <div id="trade_center" class="link1">
         <h2>Trade</h2>
         <a href="javascript:void(0);" onclick="tradePerform();">
             <img id="trade_arrow" src="/img/ui/arrow.png" alt="->"/>
@@ -234,6 +234,83 @@
         </div>
     </div>
     </form>
+</div>
+
+<!-- nation overlay -->
+<div id="nation_overlay" class="overlay">
+    <div class="nation_actions">
+        <span class="link1">
+            <a class="float_left" href="javascript:void(0);" onclick="CapitolNew();">
+                New Village
+            </a>
+        </span>
+        <span id="village_title">
+            <h2>Villages</h2>
+        </span>
+        <span class="link1">
+            <a class="float_right" href="javascript:void(0);" onclick="CapitolRename();">
+                Rename Village
+            </a>
+        </span>
+    </div>
+    <div id="village_list">
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+        List of Villages<br/>
+    </div>
+    <div id="logout" class="link2">
+        <a class="float_right" href="javascript:void(0);" onclick="logout();">
+            Logout
+        </a>
+    </div>
 </div>
 
 <!-- Overlay Scripts -->
