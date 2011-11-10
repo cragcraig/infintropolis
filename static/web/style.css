@@ -105,8 +105,8 @@ h2 {
 }
 
 .link2 a {
-    border: 1px solid #c90606;
-    background-color: #992121;
+    border: 1px solid #ca3e3e;
+    background-color: #8d2020;
     display: block;
     color: #fff;
     text-decoration: none;
@@ -123,12 +123,12 @@ h2 {
 }
 
 .link2 a:hover {
-    border-color: #e40707;
-    background-color: #ae2929;
+    border-color: #ee3e3e;
+    background-color: #8d3333;
 }
 
 .link2 a:active {
-    background-color: #721b1b;
+    background-color: #701515;
     color: rgba(255, 255, 255, 0.9);
 }
 
@@ -157,6 +157,34 @@ h2 {
 
 .link3 a:active {
     background-color: #692986;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.link4 a {
+    border: 1px solid #666;
+    background-color: #303030;
+    display: block;
+    color: #fff;
+    text-decoration: none;
+    font-style: normal;
+    font-weight: normal;
+    font-family: infbasic;
+    vertical-align: middle;
+    text-align: center;
+    box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    text-shadow: 1px 0px rgba(0,0,0,0.5), -1px 0px rgba(0,0,0,0.5), 0px 1px rgba(0,0,0,0.5), 0px -1px rgba(0,0,0,0.5);
+}
+
+.link4 a:hover {
+    border-color: #686868;
+    background-color: #383838;
+}
+
+.link4 a:active {
+    background-color: #222222;
     color: rgba(255, 255, 255, 0.9);
 }
 
