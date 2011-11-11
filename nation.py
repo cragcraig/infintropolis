@@ -17,6 +17,7 @@ class NationModel(db.Model):
     capitolcount = db.IntegerProperty(required=True, indexed=False)
     color1 = db.IntegerProperty(required=True, indexed=False)
     color2 = db.IntegerProperty(required=True, indexed=False)
+    capitolnames = db.StringListProperty(required=True, indexed=False)
 
 
 class Nation(inf.DatabaseObject):
@@ -52,26 +53,57 @@ class Nation(inf.DatabaseObject):
         origin = Vect(0, 0)
         self.loadOrCreate(name=self._name, pwd=self._pwd, email=email,
                           title='', points=0, capitolcount=1, color1=color1,
-                          color2=color2)
+                          color2=color2, capitolnames=['Village #1'])
         # Confirm that this nation did not previously exist.
         self.checkPassword()
 
-    def atomicAddCapitol(self):
-        """Increment the capitol count by 1 in a transaction."""
-        if db.run_in_transaction(Nation._addCapitol, self):
+    def atomicSetCapitolName(self, number, name):
+        """Set the name of a Capitol in a transaction."""
+        if db.run_in_transaction(Nation._setCapitolName, self, number, name):
             self.cache()
         else:
             self.load()
 
-    def _addCapitol(self):
+    def atomicAddCapitol(self, name=None):
+        """Increment the capitol count by 1 in a transaction."""
+        if db.run_in_transaction(Nation._addCapitol, self, name):
+            self.cache()
+        else:
+            self.load()
+
+    def _addCapitol(self, name):
         self.dbGet()
         self._model.capitolcount += 1
+        if name is None:
+            name = 'Village #' + str(self._model.capitolcount)
+        self._model.capitolnames.append(name)
         self.put()
+        return True
+
+    def _setCapitolName(self, number, name):
+        self.dbGet()
+        if number < self.getCapitolCount():
+            self._model.capitolnames[number] = name
+            self.put()
         return True
 
     def getCapitolCount(self):
         """Return the current number of capitols under this nation."""
         return int(self._model.capitolcount)
+
+    def getCapitolName(self, number):
+        """Get the name of capitol number."""
+        return self._model.capitolnames[number]
+
+    def getCapitolNamesList(self):
+        """Get the list of capitol names."""
+        return self._model.capitolnames
+
+    def getJSON(self):
+        """Get a JSON object for this nation data."""
+        return {'name': self._name,
+                'capitol_count': self.getCapitolCount(),
+                'capitol_names': self.getCapitolNamesList()}
 
     def getColors(self):
         return [int(self._model.color1), int(self._model.color2)]

@@ -1,3 +1,5 @@
+import re
+
 #import webapp2
 from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -95,6 +97,7 @@ class GetCapitol(request.Handler):
         if not capitol.exists() or not capitol.hasSetLocation():
             return
         response['capitol'] = capitol.getJSON()
+        response['nation'] = self.getNation().getJSON()
 
         self.setCookie('capitol', capitolNum)
         self.writeJSON(response)
@@ -193,15 +196,71 @@ class PostTrade(request.Handler):
         self.writeJSON(response)
 
 
+class GetPostNation(request.Handler):
+    """Handle nation requests."""
+
+    def get(self):
+        """Handle requests for Nation data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Respond.
+        response = {'nation': self.getNation().getJSON()}
+        self.writeJSON(response)
+
+    def post(self):
+        """Handle Nation set requests."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Get parameters.
+        request = self.getJSONRequest()
+        new = False
+        number = None
+        if self.inDict(request, 'name'):
+            name = request['name']
+            if name == '':
+                name = "New Village"
+        else:
+            return
+
+        if self.inDict(request, 'new'):
+            new = request['new']
+        if self.inDict(request, 'number'):
+            number = request['number']
+
+        if not new and number is None:
+            return
+
+        # Check for valid name.
+        if not re.match("[\w\d -]{3,32}$", name) or len(name) > 32:
+            return
+
+        # Create new Capitol.
+        if new:
+            self.getNation().atomicAddCapitol(name)
+        else:
+            self.getNation().atomicSetCapitolName(number, name)
+
+        # Respond.
+        response = {'nation': self.getNation().getJSON()}
+        self.writeJSON(response)
+
+
 class GetGather(request.Handler):
     """Handle gather events."""
 
     def get(self):
         """Perform a single world-wide gather event."""
         worldshard = WorldShard()
-        roll = inf.generateDoubleRollNotSeven()
+        roll = inf.generateDoubleRoll()
         subroll = inf.generateSingleRoll()
-        algorithms.performResourceGather(worldshard, roll, subroll)
+        if roll != 7:
+            algorithms.performResourceGather(worldshard, roll, subroll)
         self.writeJSON({'roll': roll, 'subroll': subroll})
 
 
@@ -223,7 +282,8 @@ class GetDebug(request.Handler):
                             'nations': str(mapblock._model.nations),
                             'json': mapblock.getBuildablesJSON()})
         else:
-            self.writeJSON("No such mapblock: " + str(mapblock._pos.x) + "," + str(mapblock._pos.y))
+            self.writeJSON("No such mapblock: " + str(mapblock._pos.x) + ","
+                           + str(mapblock._pos.y))
 
 
 app = webapp.WSGIApplication(
@@ -234,6 +294,8 @@ app = webapp.WSGIApplication(
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
                               ('/set/trade.*', PostTrade),
+                              ('/get/nation.*', GetPostNation),
+                              ('/set/nation.*', GetPostNation),
                               ('/session.*', Session),
                               ('/gather.*', GetGather)],
                              debug=True)

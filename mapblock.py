@@ -176,7 +176,7 @@ class MapBlock(inf.DatabaseObject):
         """
         blist = self.getBuildablesList()
         bsize = inf.BLOCK_SIZE-inf.CAPITOL_SPACING
-        sl = random.sample(xrange(bsize**2), 1000)
+        sl = random.sample(xrange(bsize**2), 300)
         for l in sl:
             pos = Vect(l % bsize + inf.CAPITOL_SPACING // 2,
                        l // bsize + inf.CAPITOL_SPACING // 2)

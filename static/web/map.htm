@@ -103,7 +103,7 @@
 <!-- trade overlay -->
 <div id="trade_overlay" class="overlay">
     <!-- left list -->
-    <form id="trade_form" action="#" method="get">
+    <form id="trade_form" action="#" method="get" onsubmit="return false;">
     <div id="trade_left">
         <!-- gold -->
         <div class="trade_item trade_item_single">
@@ -240,76 +240,48 @@
 <div id="nation_overlay" class="overlay">
     <div class="nation_actions">
         <span class="link2">
-            <a class="float_left" href="javascript:void(0);" onclick="CapitolNew();">
+            <a class="float_left" href="javascript:void(0);"
+               onclick="CapitolNewLaunch();">
                 New Village
             </a>
         </span>
         <span id="village_title">
-            <h2>Villages</h2>
+            <h2 id="nation_title_text">Nation</h2>
         </span>
         <span class="link1">
-            <a class="float_right" href="javascript:void(0);" onclick="CapitolRename();">
+            <a class="float_right" href="javascript:void(0);"
+               onclick="CapitolRenameLaunch();">
                 Rename Village
             </a>
         </span>
     </div>
-    <div id="village_list">
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
-        List of Villages<br/>
+    <div id="village_list" class="link4">
     </div>
     <div id="logout" class="link4">
         <a class="float_right" href="javascript:void(0);" onclick="logout();">
             Logout
         </a>
+    </div>
+</div>
+
+<!-- village rename overlay -->
+<div id="rename_overlay" class="overlay">
+    <h2>Village Name</h2>
+    <div class="okay_cancel">
+        <form id="rename_form" action="#" method="get" onsubmit="return false;">
+            <input type="text" name="rename" maxlength="32"/>
+        </form>
+        <span class="float_left link1">
+            <a id="rename_action" href="javascript:void(0);" onclick="">
+                Okay
+            </a>
+        </span>
+        <span class="float_right link2">
+            <a href="javascript:void(0);"
+               onclick="showOverlay('#nation_overlay');">
+                Cancel
+            </a>
+        </span>
     </div>
 </div>
 
@@ -338,6 +310,7 @@ function showOverlay(id)
     } else {
         api.load();
         isOverlayShown = true;
+        OverlayShownId = id;
     }
 }
 

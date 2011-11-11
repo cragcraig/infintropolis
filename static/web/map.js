@@ -34,10 +34,12 @@ var selectedVertex;
 var selectedEdge;
 var tDrawRollTokens = true;
 var isOverlayShown = false;
+var OverlayShownId = "";
 var isTradeActive = false;
 var isBuildActive = false;
 
 // nation
+var nation = null;
 var capitol = null;
 
 // map
@@ -105,8 +107,16 @@ function JSONCallback(json)
         error = true;
     } else {
         /* parse capitol and nation data */
+        if (json['nation']) {
+            parseNation(json['nation']);
+        }
+
         if (json['capitol']) {
             parseCapitol(json['capitol']);
+        }
+
+        if (json['nation']) {
+            populateVillageList();
         }
 
         /* parse block data */
@@ -162,6 +172,7 @@ function parseCapitol(json)
         capChange = true;
     }
     capitol = json;
+    /* Update MapBlock. */
     if (capChange) {
         var xoff = 0;
         var yoff = 0;
@@ -172,6 +183,16 @@ function parseCapitol(json)
         screenY = Math.floor((json.y - Math.floor(screenHeight/2))/2)*2
                   + mapSizes*yoff;
     }
+    /* Update Nation. */
+    if (nation && capitol.capitol_count != nation.capitol_count)
+        RequestJSON("GET", "/get/capitol", {});
+}
+
+/* Parses a Nation JSON Object. */
+function parseNation(json)
+{
+    if (!json.name) return;
+    nation = json;
 }
 
 /* Parses a MapBlock formatted string.
@@ -313,7 +334,7 @@ function goMap(worldX, worldY)
     /* request blocks */
     var req = new Array();
     for (var i=0; i < 4; i++) {
-        if (!tileMap[i].valid) {
+        if (tileMap[i].valid == false) {
             req.push(i);
         }
     }
@@ -983,7 +1004,7 @@ function isNoMapsLoaded()
         if (!tileMap[i].valid)
             r++;
     }
-    return r == tileMap.length;
+    return r == tileMap.length || !capitol;
 }
 
 // Draw "Map Loading" text.
@@ -995,8 +1016,8 @@ function drawLoadingMapText(str)
     ctx.lineWidth = 2;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.strokeText(str, canvas.width/2, 50);
-    ctx.fillText(str, canvas.width/2, 50);
+    ctx.strokeText(str, canvas.width/2, 35);
+    ctx.fillText(str, canvas.width/2, 35);
 }
 
 // render highlight tile
@@ -1408,7 +1429,7 @@ function RequestJSON(method, url, data)
     if (method != "GET" && method != "POST") return;
     req = new XMLHttpRequest();
     req.onreadystatechange = genRequestCallback(req, JSONCallback);
-    if (capitol) {
+    if (capitol && capitol.number && !data['capitol']) {
         data['capitol'] = capitol.number;
     }
     json = "request=" + JSON.stringify(data);
@@ -1577,6 +1598,8 @@ function UIRenderButtons(mousex, mousey)
     var barWidth = drawResources();
     var barLeft = Math.round((canvas.width - barWidth)/2);
     var barRight = Math.round((canvas.width + barWidth)/2);
+
+    if (barWidth < 0) return;
 
     for (i=0; i<UIButtons.length; i++) {
         if (!UIButtons[i].enabled) continue;
@@ -1810,14 +1833,20 @@ function isBuildableVisable(i, bld)
 }
 
 /* Loading Animation. */
-loadingAnimation = {t1: 0, enabled: false, theta: 0};
+loadingAnimation = {t1: 0, enabled: false, theta: 0, overlay: false};
 
 function loadingAnimationStart()
 {
     if (loadingAnimation.enabled == false) {
-        loadingAnimation.theta = Math.random() * Math.PI * 2;
+        loadingAnimation.theta = 0.0;
         loadingAnimation.t1 = setInterval(loadingAnimationDraw, 30);
         loadingAnimation.enabled = true;
+        if (isOverlayShown) {
+            loadingAnimation.overlay = OverlayShownId;
+            hideOverlays();
+        } else {
+            loadingAnimation.overlay = false;
+        }
     }
 }
 
@@ -1826,6 +1855,9 @@ function loadingAnimationStop()
     if (loadingAnimation.enabled == true) {
         clearInterval(loadingAnimation.t1);
         loadingAnimation.enabled = false;
+        if (loadingAnimation.overlay != false) {
+            showOverlay(loadingAnimation.overlay);
+        }
     }
 }
 
@@ -1834,12 +1866,18 @@ function loadingAnimationDraw()
 {
     ctx.save()
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    //ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    //ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.translate(canvas.width/2, canvas.height/2);
     ctx.rotate(loadingAnimation.theta)
     loadingAnimation.theta += Math.PI/20;
     ctx.drawImage(LogoLoading, -LogoLoading.width/2, -LogoLoading.height/2);
     ctx.restore();
     drawLoadingMapText("Loading World");
+    if (loadingAnimation.theta > 2*Math.PI) {
+        hideOverlays();
+        loadingAnimation.theta -= 2*Math.PI;
+    }
 }
 
 function loadingAnimationRandomX()
@@ -1855,8 +1893,10 @@ function loadingAnimationRandomY()
 /* Render resource bar. */
 function drawResources()
 {
-    if (!capitol || capitol.resources.length < 1)
-        return 0;
+    if (!capitol || capitol.resources.length < 1) {
+        drawLoadingMapText("Loading Capitol");
+        return -1;
+    }
 
     /* Set font style. */
     ctx.font = "16pt infnumbers, serif";
@@ -2054,9 +2094,85 @@ function tradeBusy()
     isTradeActive = true;
 }
 
+/* Set trade idle. */
 function tradeIdle()
 {
     var arrow = document.getElementById('trade_arrow');
     arrow.setAttribute("class", "");
     isTradeActive = false;
+}
+
+/* Populate village list. */
+function populateVillageList()
+{
+    if (!nation || !capitol) return;
+
+    /* Set title. */
+    var title = document.getElementById('nation_title_text');
+    title.innerHTML = nation.name;
+
+    /* Populate list. */
+    var str = "";
+    var j = capitol.number;
+    var html = document.getElementById('village_list');
+    for (var i=0; i<nation.capitol_names.length; i++) {
+        str += "<div";
+        if (capitol && capitol.number == j)
+            str += " id=\"village_scroll_to\" class=\"village_current\"";
+        str += "><a href=\"javascript:void(0);\" onclick=\"CapitolSwitch(" + j +
+               ");\">&rarr;</a><span>" + nation.capitol_names[j] +
+               "</span></div>\n";
+        j++;
+        if (j >= nation.capitol_names.length)
+            j -= nation.capitol_names.length;
+    }
+    html.innerHTML = str;
+}
+
+/* Create a new Capitol. */
+function CapitolNew()
+{
+    if (!nation) return;
+    var name = document.getElementById('rename_form').rename.value;
+    RequestJSON("POST", "/set/nation",
+                {"name": name, "new": true});
+    showOverlay('#nation_overlay');
+}
+
+/* Launch Capitol Rename. */
+function CapitolRenameLaunch()
+{
+    if (!capitol) return;
+    document.getElementById('rename_form').rename.value = capitol.name;
+    document.getElementById('rename_action').onclick = CapitolRename;
+    showOverlay('#rename_overlay');
+    return false;
+}
+
+/* Launch New Capitol Name. */
+function CapitolNewLaunch()
+{
+    if (!capitol) return;
+    document.getElementById('rename_form').rename.value = "";
+    document.getElementById('rename_action').onclick = CapitolNew;
+    showOverlay('#rename_overlay');
+    return false;
+}
+
+/* Rename the current Capitol. */
+function CapitolRename()
+{
+    if (!nation || !capitol) return;
+    var name = document.getElementById('rename_form').rename.value;
+    RequestJSON("POST", "/set/nation",
+                {"name": name, "number": capitol.number});
+    showOverlay('#nation_overlay');
+}
+
+/* Switch to a Capitol. */
+function CapitolSwitch(num) {
+    if (!capitol || num == null) return;
+    capitol = null;
+    RequestJSON("GET", "/get/capitol", {"capitol": num});
+    render();
 }
