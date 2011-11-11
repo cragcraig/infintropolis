@@ -2116,6 +2116,22 @@ function populateVillageList()
     var j = capitol.number;
     var html = document.getElementById('village_list');
     for (var i=0; i<nation.capitol_names.length; i++) {
+        str += "<a href=\"javascript:void(0);\"";
+        if (capitol && capitol.number == j)
+            str += " class=\"village_current\"";
+        else
+            str += " class=\"village_noncurrent\"";
+        str += " onclick=\"CapitolSwitch(" + j +
+               ");\"><span>" + nation.capitol_names[j] +
+               "</span></a>\n";
+        j++;
+        if (j >= nation.capitol_names.length)
+            j -= nation.capitol_names.length;
+    }
+    html.innerHTML = str;
+}
+
+/*    for (var i=0; i<nation.capitol_names.length; i++) {
         str += "<div";
         if (capitol && capitol.number == j)
             str += " id=\"village_scroll_to\" class=\"village_current\"";
@@ -2126,8 +2142,7 @@ function populateVillageList()
         if (j >= nation.capitol_names.length)
             j -= nation.capitol_names.length;
     }
-    html.innerHTML = str;
-}
+*/
 
 /* Create a new Capitol. */
 function CapitolNew()
