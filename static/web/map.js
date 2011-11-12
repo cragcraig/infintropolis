@@ -156,8 +156,7 @@ function JSONCallback(json)
 
         /* Re-enable map updates if this is a build result. */
         if (json['isBuildResult']) {
-            isBuildActive = false;
-            UIGroupVisible(0, true);
+            buildEnable();
         }
     }
     render();
@@ -1620,6 +1619,8 @@ function UIRenderButtons(mousex, mousey)
  */
 function BuildModeEnable(buildType)
 {
+    if (isBuildActive)
+        return;
     globalState = (UIBuildablesTypeMap[buildType] ? 2 : 3);
     globalBuildState = buildType;
     selectedVertex = null
@@ -1644,7 +1645,8 @@ function BuildModeCancel()
     selectedEdge = null;
     globalBuildState = false;
     if (!isBuildActive)
-        UIGroupVisible(0, true);
+        buildEnable();
+    UIGroupVisible(0, true);
     UIGroupVisible(1, false);
     render();
 }
@@ -1670,7 +1672,7 @@ function BuildModeDo()
         RequestJSON("POST", "/set/build",
                     {bx: block.x, by: block.y, x: selected.x, y: selected.y,
                      d: selected.d, type: selected.t});
-        isBuildActive = true;
+        buildDisable();
     }
     launchAutoUpdate();
     BuildModeCancel();
@@ -2131,19 +2133,6 @@ function populateVillageList()
     html.innerHTML = str;
 }
 
-/*    for (var i=0; i<nation.capitol_names.length; i++) {
-        str += "<div";
-        if (capitol && capitol.number == j)
-            str += " id=\"village_scroll_to\" class=\"village_current\"";
-        str += "><a href=\"javascript:void(0);\" onclick=\"CapitolSwitch(" + j +
-               ");\">&rarr;</a><span>" + nation.capitol_names[j] +
-               "</span></div>\n";
-        j++;
-        if (j >= nation.capitol_names.length)
-            j -= nation.capitol_names.length;
-    }
-*/
-
 /* Create a new Capitol. */
 function CapitolNew()
 {
@@ -2185,9 +2174,23 @@ function CapitolRename()
 }
 
 /* Switch to a Capitol. */
-function CapitolSwitch(num) {
+function CapitolSwitch(num)
+{
     if (!capitol || num == null) return;
     capitol = null;
     RequestJSON("GET", "/get/capitol", {"capitol": num});
     render();
+}
+
+/* Enable and Disable building. */
+function buildEnable()
+{
+    $(".build_image").removeClass("hidden");
+    isBuildActive = false;
+}
+
+function buildDisable()
+{
+    $(".build_image").addClass("hidden");
+    isBuildActive = true;
 }

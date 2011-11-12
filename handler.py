@@ -237,7 +237,7 @@ class GetPostNation(request.Handler):
             return
 
         # Check for valid name.
-        if not re.match("[\w\d -]{3,32}$", name) or len(name) > 32:
+        if not re.match("[\w\d?!#%@&~ -]{3,32}$", name) or len(name) > 32:
             return
 
         # Create new Capitol.
