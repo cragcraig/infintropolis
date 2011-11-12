@@ -159,8 +159,8 @@ class Tile:
             self.roll = 0
 
     def _randRoll(self):
-        self.roll = random.choice([2, 3, 3, 4, 4, 5, 5, 6, 6,
-                                   8, 8, 9, 9, 10, 10, 11, 11, 12])
+        self.roll = random.choice([2, 3, 3, 4, 4, 5, 5, 6,
+                                   8, 9, 9, 10, 10, 11, 11, 12])
 
     def _randResource(self):
         t = random.randint(2, 7)
