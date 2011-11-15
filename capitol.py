@@ -151,20 +151,26 @@ class Capitol(inf.DatabaseObject):
             return
         gathered = [0]*6
         visited = set()
-        self._recurseGather(worldshard, self.getLocationBlockVect(), roll,
-                              gathered, visited)
+        self.recurseBuildables(worldshard, Buildable.gather, roll, gathered)
         self.atomicResourceAdd(gathered, async=True)
 
-    def _recurseGather(self, worldshard, block, roll, resources, visited):
-        """Perform a resource gather event for all buildables owned by this
-        capitol in a specific block. Then perform gather events in surrounding
-        blocks recursively.
+    def recurseBuildables(self, worldshard, funct, *args, **kargs):
+        """Call function for each buildable owned by this Capitol.
 
-        worldshard: A worldshard object.
-        block: Vect location of the current block to be gathered.
-        roll: Roll value for the gather event.
-        resources: List of resources for this Capitol gather event.
-        visited: Set of visited MapBlock positions.
+        funct: f(buildable, worldshard, *args)
+        """
+        if not self.exists() or not self.hasSetLocation():
+            return
+        visited = set()
+        self._recurseBuildablesBlock(worldshard, visited,
+                                     self.getLocationBlockVect(), funct,
+                                     *args, **kargs)
+
+    def _recurseBuildablesBlock(self, worldshard, visited, block, funct,
+                                *args, **kargs):
+        """Call function for every buildable owned by this capitol.
+
+        Intended to be called by recurseBuildables().
         """
         if block in visited:
             return
@@ -172,17 +178,16 @@ class Capitol(inf.DatabaseObject):
         m = worldshard.getBlock(block, isCore=False)
         if not m or not m.exists():
             return
-        # Perform gather for this block.
+        # Perform function for this block.
         bleedset = set()
         for b in m.getBuildablesList():
             if b.isInCapitol(self.getNationName(), self.getNumber()):
-                count = True
-                if b.isGatherer():
-                    b.gather(worldshard, roll, resources)
-                    b.block.updateBleedSet(bleedset)
-        # Recursively gather surrounding blocks.
+                funct(b, worldshard, *args)
+                b.block.updateBleedSet(bleedset)
+        # Recursively call occupied surrounding blocks.
         for v in bleedset:
-            self._recurseGather(worldshard, v, roll, resources, visited)
+            self._recurseBuildablesBlock(worldshard, visited, v, funct,
+                                         *args, **kargs)
 
     def atomicResourceAdd(self, resources, async=False):
         """Atomically add a resource list to this capitol's resources."""

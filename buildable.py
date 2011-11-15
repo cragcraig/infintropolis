@@ -44,6 +44,8 @@ class Buildable:
 
     def gather(self, worldshard, roll, resources):
         """Add resources gathered for this roll to the resource list."""
+        if not self.isGatherer():
+            return
         for v in self.pos.getSurroundingTiles():
             t = worldshard.getTile(self.block, v)
             if t and t.roll == roll:
