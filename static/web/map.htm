@@ -10,8 +10,8 @@
 <link rel="shortcut icon" type="image/png" href="/img/icon.png">
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <!-- <script type="text/javascript" src="static/jquery.js"></script> -->
-<script type="text/javascript" src="/static/map.js"></script>
 <script type="text/javascript" src="/static/jquery.tools.min.js"></script>
+<script type="text/javascript" src="/static/map.js"></script>
 </head>
 
 <!-- BODY -->
@@ -91,6 +91,20 @@
             <td class="build_cost">
                 <img src="/img/res/wheat.png" alt="grain"/>
                 <img src="/img/res/wheat.png" alt="grain"/>
+                <img src="/img/res/ore.png" alt="ore"/>
+                <img src="/img/res/ore.png" alt="ore"/>
+                <img src="/img/res/ore.png" alt="ore"/>
+            </td>
+        </tr>
+        <tr>
+            <td class="link1 build_item_upgrade">
+                <a href="javascript:void(0);" onclick="BuildModeEnable('a');">
+                    <img class="build_image" src="/img/ui/city_upgrade.png" alt="city"/>
+                </a>
+            </td>
+            <td class="build_cost">
+                <img src="/img/res/wood2.png" alt="lumber"/>
+                <img src="/img/res/wood2.png" alt="lumber"/>
                 <img src="/img/res/ore.png" alt="ore"/>
                 <img src="/img/res/ore.png" alt="ore"/>
                 <img src="/img/res/ore.png" alt="ore"/>
@@ -284,47 +298,6 @@
         </span>
     </div>
 </div>
-
-<!-- Overlay Scripts -->
-<script>
-$(document).ready(function() {
-
-var settings = {
-    speed: 'fast',
-    load: false,
-    closeOnClick: false,
-    closeOnEsc: false,
-    top: '15%',
-    api: true
-};
-
-$.each($(".overlay"), function(i, v){$(v).overlay(settings);})
-
-});
-
-function showOverlay(id)
-{
-    var api = $(id).overlay();
-    if (api.isOpened()) {
-        hideOverlays();
-    } else {
-        api.load();
-        isOverlayShown = true;
-        OverlayShownId = id;
-    }
-}
-
-function hideOverlays()
-{
-    $.each($(".overlay"), function(i, v){$(v).overlay().close();})
-    isOverlayShown = false;
-}
-
-function hideText()
-{
-    document.getElementById("font_pull").setAttribute("class", "fonts_hide");
-}
-</script>
 
 <!-- Hidden Minimap -->
 <canvas id="minimap" class="hidden_canvas">

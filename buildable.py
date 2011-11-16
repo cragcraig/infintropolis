@@ -55,12 +55,12 @@ class Buildable:
 
     def isUpgrade(self):
         """Returns True if this buildable type is an upgrade."""
-        return self.level == BuildType.city
+        return BuildType.isUpgrade[self.level]
 
     def isGatherer(self):
         """Returns true if this buildable can gather resources."""
-        return self.level == BuildType.city or\
-               self.level == BuildType.settlement
+        return BuildType.gatherMult[self.level]
+               
 
     def getCost(self):
         """Returns the cost of this buildable as a list."""
@@ -80,8 +80,10 @@ class Buildable:
             return self._checkBuildEdge(worldshard, BuildType.road)
         elif self.level == BuildType.ship:
             return self._checkBuildEdge(worldshard, BuildType.ship)
-        else:
+        elif self.isUpgrade():
             return self._checkUpgradeCity(worldshard)
+        else:
+            return False
 
     def _checkBuildVertex(self, worldshard):
         """Check if this buildable can be built at a vertex."""
@@ -191,15 +193,17 @@ class BuildType:
     JSONtod = ['t', 'c', 'b', 'tv', 'bv']
 
     empty = -1
-    settlement, city, road, ship = range(4)
-    tToJSON = ['s', 'c', 'r', 'b']
-    LOSVision = [15, 18, 8, 8]
-    gatherMult = [1, 2, 0, 0]
+    settlement, city, road, ship, barracks = range(5)
+    tToJSON = ['s', 'c', 'r', 'b', 'a']
+    LOSVision = [15, 18, 8, 8, 15]
+    gatherMult = [1, 2, 0, 0, 1]
+    isUpgrade = [False, True, False, False, True]
 
     costList = [ [-1, -1, -1, -1,  0,  0],
                  [ 0,  0,  0, -2, -3,  0],
                  [-1,  0, -1,  0,  0,  0],
-                 [-1, -1,  0,  0,  0,  0] ]
+                 [-1, -1,  0,  0,  0,  0],
+                 [ 0,  0,  0,  0,  0,  0] ]
 
 
 def JSONtod(jsont, jsond):

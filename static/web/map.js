@@ -606,15 +606,20 @@ function mouseCallback()
 {
     reportUserActivity();
 
-    /* UI click */
+    /* UI click. */
     if (UIHandleClick(pureMouseX, pureMouseY))
         return;
 
-    /* Hide overlays */
+    /* Hide overlays. */
     if (isOverlayShown)
         hideOverlays();
 
-    /* build click */
+    /* Click on map. */
+    if (globalState == 0) {
+        MapClickCallback();
+    }
+
+    /* Build click. */
     if (globalBuildState) {
         BuildModeDo();
         return;
@@ -857,6 +862,8 @@ function loading()
     UIGroupVisible(4, true);
     UIGroupVisible(5, true);
 
+    initOverlays();
+
     // load all images
     loadNext();
 }
@@ -1025,6 +1032,33 @@ function drawHighlightTile(x, y)
     ctx.drawImage(highlightedTile, outputx(x,y) - TileWidth/2, outputy(x,y) - TileHeight/2);
 }
 
+// draw shape
+function drawShape(context, x, y, shape, strokeColor, fillColor, strokeWidth)
+{
+    context.fillStyle = fillColor;
+    context.strokeStyle = strokeColor;
+    context.lineWidth = strokeWidth;
+    context.beginPath();
+
+    context.moveTo(x + shape[0].x, y + shape[0].y);
+    for (var i=1; i<shape.length; i++)
+        context.lineTo(x + shape[i].x, y + shape[i].y);
+
+    context.closePath();
+    context.fill();
+    context.stroke();
+}
+
+// drawable shapes
+var DrawShapes = {
+    s: [Vect(8,8),Vect(-8,8),Vect(-8,-4),Vect(0,-11),Vect(8,-4)],
+    c: [Vect(13,8),Vect(-12,8),Vect(-12,-9),Vect(-5,-15),Vect(2,-9),Vect(2,-5),
+        Vect(13,-5)],
+    a: [Vect(0,-15),Vect(4,-10),Vect(4,2),Vect(8,2),Vect(8,6),Vect(2,6),
+        Vect(2,11),Vect(-2,11),Vect(-2,6),Vect(-8,6),Vect(-8,2),Vect(-4,2),
+        Vect(-4,-10)]
+}
+
 // render vertex
 function drawVertex(v)
 {
@@ -1041,31 +1075,13 @@ function drawVertex(v)
         py -= TileEdge/2;
     }
 
-    // draw
+    // set alpha
     if (v.alpha)
         ctx.globalAlpha = v.alpha;
-    ctx.fillStyle = "#" + v.c2;
-    ctx.strokeStyle = "#" + v.c1;
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    if (v.t == 's') {
-        ctx.moveTo(px+8, py+8);
-        ctx.lineTo(px-8, py+8);
-        ctx.lineTo(px-8, py-4);
-        ctx.lineTo(px, py-11);
-        ctx.lineTo(px+8, py-4);
-    } else {
-        ctx.moveTo(px+13, py+8);
-        ctx.lineTo(px-12, py+8);
-        ctx.lineTo(px-12, py-9);
-        ctx.lineTo(px-5, py-15);
-        ctx.lineTo(px+2, py-9);
-        ctx.lineTo(px+2, py-5);
-        ctx.lineTo(px+13, py-5);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+
+    // draw
+    drawShape(ctx, px, py, DrawShapes[v.t], "#" + v.c1, "#" + v.c2, 2.5);
+
     ctx.globalAlpha = 1.0;
 }
 
@@ -1119,7 +1135,7 @@ function drawEdge(e)
         ctx.lineTo(dx2, dy2);
         ctx.closePath();
         ctx.strokeStyle = "#" + e.c1;
-        ctx.lineWidth = 10.0;
+        ctx.lineWidth = 8.5;
         ctx.stroke();
         ctx.strokeStyle = "#" + e.c2;
         ctx.lineWidth = 4.0;
@@ -1152,7 +1168,7 @@ function drawEdge(e)
         ctx.closePath();
         ctx.fillStyle = "#" + e.c2;
         ctx.strokeStyle = "#" + e.c1;
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = 2.5;
         ctx.fill();
         ctx.stroke();
     }
@@ -1498,10 +1514,10 @@ function requestBlocks(blocks, include_maps)
 /* The user interface data.
  *
  * UIButtons: Holds the list of UI buttons.
- * BuildablesTypeMap: Maps buildable types {vertex/edge} => {true/false}.
+ * BuildablesTypeMap: Maps buildable types {edge/vertex} => {true/false}.
  */
 UIButtons = new Array();
-UIBuildablesTypeMap = {s: true, c: true, r: false, b: false};
+UIBuildablesTypeMap = {r: true, b: true};
 
 /* A user interface button.
  *
@@ -1615,13 +1631,13 @@ function UIRenderButtons(mousex, mousey)
 
 /* Enable Build Mode.
  *
- * buildType: {s, c, r, b}
+ * buildType: {s, c, r, b, a}
  */
 function BuildModeEnable(buildType)
 {
     if (isBuildActive)
         return;
-    globalState = (UIBuildablesTypeMap[buildType] ? 2 : 3);
+    globalState = (UIBuildablesTypeMap[buildType] ? 3 : 2);
     globalBuildState = buildType;
     selectedVertex = null
     selectedEdge = null
@@ -1877,7 +1893,8 @@ function loadingAnimationDraw()
     ctx.restore();
     drawLoadingMapText("Loading World");
     if (loadingAnimation.theta > 2*Math.PI) {
-        hideOverlays();
+        if (isOverlayShown)
+            hideOverlays();
         loadingAnimation.theta -= 2*Math.PI;
     }
 }
@@ -2193,4 +2210,42 @@ function buildDisable()
 {
     $(".build_image").addClass("hidden");
     isBuildActive = true;
+}
+
+/* Overlay Control. */
+function initOverlays() {
+
+    var settings = {
+        speed: 'fast',
+        load: false,
+        closeOnClick: false,
+        closeOnEsc: false,
+        top: '15%',
+        api: true
+    };
+
+    $.each($(".overlay"), function(i, v){$(v).overlay(settings);});
+}
+
+function showOverlay(id)
+{
+    var api = $(id).overlay();
+    if (api.isOpened()) {
+        hideOverlays();
+    } else {
+        api.load();
+        isOverlayShown = true;
+        OverlayShownId = id;
+    }
+}
+
+function hideOverlays()
+{
+    $.each($(".overlay"), function(i, v){$(v).overlay().close();})
+    isOverlayShown = false;
+}
+
+function hideText()
+{
+    document.getElementById("font_pull").setAttribute("class", "fonts_hide");
 }

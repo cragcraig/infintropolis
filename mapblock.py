@@ -34,6 +34,7 @@ class BlockModel(db.Model):
     buildables = db.ListProperty(int, indexed=False)
     nations = db.StringListProperty(indexed=False)
 
+
 class SurroundingMapBlocks:
     """Nearbly map tile blocks.
     
