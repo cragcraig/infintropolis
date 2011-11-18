@@ -172,7 +172,7 @@ function parseCapitol(json)
     }
     capitol = json;
     /* Update MapBlock. */
-    if (capChange) {
+    if (capChange && !capitol.disableJump) {
         var xoff = 0;
         var yoff = 0;
         if (json.x < mapSizes/2) xoff = 1;
@@ -1054,7 +1054,7 @@ var DrawShapes = {
     s: [Vect(8,8),Vect(-8,8),Vect(-8,-4),Vect(0,-11),Vect(8,-4)],
     c: [Vect(13,8),Vect(-12,8),Vect(-12,-9),Vect(-5,-15),Vect(2,-9),Vect(2,-5),
         Vect(13,-5)],
-    a: [Vect(6,-8),Vect(6,-4),Vect(2,-4),Vect(2,6),Vect(9,3),
+    p: [Vect(6,-8),Vect(6,-4),Vect(2,-4),Vect(2,6),Vect(9,3),
         Vect(12,4),Vect(5,10),Vect(0,12),Vect(-5,10),Vect(-12,4),Vect(-9,3),
         Vect(-2,6),Vect(-2,-4),Vect(-6,-4),Vect(-6,-8)]
 }
@@ -2141,7 +2141,7 @@ function populateVillageList()
         else
             str += " class=\"village_noncurrent\"";
         str += " onclick=\"CapitolSwitch(" + j +
-               ");\"><span>" + nation.capitol_names[j] +
+               ", false);\"><span>" + nation.capitol_names[j] +
                "</span></a>\n";
         j++;
         if (j >= nation.capitol_names.length)
@@ -2191,11 +2191,12 @@ function CapitolRename()
 }
 
 /* Switch to a Capitol. */
-function CapitolSwitch(num)
+function CapitolSwitch(num, disableJump)
 {
     if (!capitol || num == null) return;
     capitol = null;
-    RequestJSON("GET", "/get/capitol", {"capitol": num});
+    RequestJSON("GET", "/get/capitol", {"capitol": num,
+                                        "disableJump": disableJump});
     render();
 }
 
@@ -2287,12 +2288,14 @@ function MapClickCallback()
 
     /* Building is in a different village. */
     if (b.i >= 0 && b.i != capitol.number) {
-        CapitolSwitch(b.i);
-        loadingAnimation.overlay = '#nation_overlay';
+        CapitolSwitch(b.i, true);
         return b;
     }
 
+    /* Building is a port. */
+    if (b.t == 'p')
+        showOverlay('#train_overlay');
+
     /* Building is of current nation and village. */
-    showOverlay('#train_overlay');
     return b;
 }

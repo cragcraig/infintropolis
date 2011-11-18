@@ -11,24 +11,24 @@ from mapblock import MapBlock
 def findOpenStart():
     """Find or generate an unoccupied location to start a capitol."""
     startPos = None
-    # Find space in an avaliable MapBlock.
+    maxX = -1
+    # Find space in an avaliable MapBlock with buildings.
     query = db.GqlQuery("SELECT * FROM BlockModel "
                         "WHERE isFullOfCapitols = FALSE "
-                        "ORDER BY count DESC")
-    for model in query:
-        block = MapBlock(Vect(model.x, model.y), load=False)
-        block.setModel(model)
-        startPos = block.findOpenSpace()
-        if startPos:
-            return startPos
+                        "AND hasBuilding = TRUE")
+    startPos, maxX = _checkQueryForStart(query, maxX)
+    if startPos:
+        return startPos
+
+    # Find space in an avaliable MapBlock without buildings.
+    query = db.GqlQuery("SELECT * FROM BlockModel "
+                        "WHERE isFullOfCapitols = FALSE")
+    startPos, maxX = _checkQueryForStart(query, maxX)
+    if startPos:
+        return startPos
 
     # Pick empty start locations.
-    x = 0
-    query = db.GqlQuery("SELECT * FROM BlockModel "
-                        "ORDER BY x DESC")
-    r = query.fetch(1)
-    if len(r):
-        x = r[0].x + 1
+    x = maxX + 1
 
     # Create new MapBlocks until space is found.
     while not startPos:
@@ -36,6 +36,18 @@ def findOpenStart():
         startPos = block.findOpenSpace()
         x += 1
     return startPos
+
+def _checkQueryForStart(query, maxX):
+    """Checks a DB query of BlockModels for a good start location."""
+    for model in query:
+        block = MapBlock(Vect(model.x, model.y), load=False)
+        block.setModel(model)
+        startPos = block.findOpenSpace()
+        if model.x > maxX:
+            maxX = model.x
+        if startPos:
+            return (startPos, maxX)
+    return (False, maxX)
 
 
 def performResourceGather(worldshard, roll, subroll):

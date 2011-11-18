@@ -22,15 +22,16 @@ BUILDABLE_LIST_SIZE = 8
 
 class BlockModel(db.Model):
     """A database model representing a 50x50 block of tiles."""
-    x = db.IntegerProperty(required=True, indexed=True)
+    x = db.IntegerProperty(required=True, indexed=False)
     y = db.IntegerProperty(required=True, indexed=False)
     token = db.IntegerProperty(indexed=False)
     # MapBlock
     tiletype = db.ListProperty(int, indexed=False)
     roll = db.ListProperty(int, indexed=False)
     # BuildableBlock
-    count = db.IntegerProperty(indexed=True)
+    count = db.IntegerProperty(indexed=False)
     isFullOfCapitols = db.BooleanProperty(indexed=True)
+    hasBuilding = db.BooleanProperty(indexed=True)
     buildables = db.ListProperty(int, indexed=False)
     nations = db.StringListProperty(indexed=False)
 
@@ -158,7 +159,8 @@ class MapBlock(inf.DatabaseObject):
         self.loadOrCreate(x=self._pos.x, y=self._pos.y, token=tk,
                           tiletype=self._model.tiletype,
                           roll=self._model.roll, count=0,
-                          isFullOfCapitols=False, buildables=[], nations=[])
+                          isFullOfCapitols=False, hasBuilding=False,
+                          buildables=[], nations=[])
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
@@ -354,6 +356,8 @@ class MapBlock(inf.DatabaseObject):
         self._model.buildables.extend(buildable.getList())
         self._model.buildables.extend(colors)
         self._model.buildables.extend([int(nationIndex), int(buildable.capitolNum)])
+        if buildable.isGatherer():
+            self._model.hasBuilding = True
 
     def _delBuildable(self, pos):
         """Removes a buildable from the internal list."""

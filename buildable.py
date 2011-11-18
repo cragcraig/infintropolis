@@ -61,7 +61,6 @@ class Buildable:
         """Returns true if this buildable can gather resources."""
         return BuildType.gatherMult[self.level]
                
-
     def getCost(self):
         """Returns the cost of this buildable as a list."""
         if not self.validate:
@@ -194,7 +193,7 @@ class BuildType:
 
     empty = -1
     settlement, city, road, ship, barracks = range(5)
-    tToJSON = ['s', 'c', 'r', 'b', 'a']
+    tToJSON = ['s', 'c', 'r', 'b', 'p']
     LOSVision = [15, 18, 8, 8, 15]
     gatherMult = [1, 2, 0, 0, 1]
     isUpgrade = [False, True, False, False, True]

@@ -64,7 +64,7 @@ class GetBuildableBlock(request.Handler):
             if self.inDict(reqblock, 'x', 'y', 'token'):
                 block = MapBlock(Vect(reqblock['x'], reqblock['y']),
                                  generate_nonexist=False)
-                if block.checkToken(reqblock['token']):
+                if block.exists() and block.checkToken(reqblock['token']):
                     response[block.getPos().getBlockJSONId()] = {
                         'buildableblock': block.getBuildablesJSON()}
 
@@ -98,6 +98,9 @@ class GetCapitol(request.Handler):
             return
         response['capitol'] = capitol.getJSON()
         response['nation'] = self.getNation().getJSON()
+
+        if self.inDict(request, 'disableJump') and request['disableJump']:
+            response['capitol']['disableJump'] = True
 
         self.setCookie('capitol', capitolNum)
         self.writeJSON(response)

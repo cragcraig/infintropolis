@@ -12,16 +12,16 @@ BUILDABLE_LIST_SIZE = 6
 
 class CapitolModel(db.Model):
     """A database model representing a Capitol."""
-    nation = db.StringProperty(required=True)
-    number = db.IntegerProperty(required=True)
+    nation = db.StringProperty(required=True, indexed=False)
+    number = db.IntegerProperty(required=True, indexed=False)
     location = db.ListProperty(int, indexed=False, required=True)
     hasSet = db.BooleanProperty(required=True, indexed=False)
-    lumber = db.IntegerProperty(required=True)
-    wool = db.IntegerProperty(required=True)
-    brick = db.IntegerProperty(required=True)
-    grain = db.IntegerProperty(required=True)
-    ore = db.IntegerProperty(required=True)
-    gold = db.IntegerProperty(required=True)
+    lumber = db.IntegerProperty(required=True, indexed=False)
+    wool = db.IntegerProperty(required=True, indexed=False)
+    brick = db.IntegerProperty(required=True, indexed=False)
+    grain = db.IntegerProperty(required=True, indexed=False)
+    ore = db.IntegerProperty(required=True, indexed=False)
+    gold = db.IntegerProperty(required=True, indexed=False)
 
 
 class Capitol(inf.DatabaseObject):
