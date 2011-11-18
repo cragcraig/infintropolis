@@ -64,6 +64,7 @@
                 <img src="/img/res/wood2.png" alt="lumber"/>
             </td>
         </tr>
+<!--
         <tr>
             <td class="link1 build_item_normal">
                 <a href="javascript:void(0);" onclick="BuildModeEnable('b');">
@@ -75,6 +76,7 @@
                 <img src="/img/res/wood2.png" alt="lumber"/>
             </td>
         </tr>
+-->
         <tr class="build_spacer">
              <td colspan="2">&nbsp;</td>
         </tr>
@@ -269,7 +271,7 @@
             </a>
         </span>
     </div>
-    <div id="village_list">
+    <div id="village_list" class="item_list">
     </div>
     <div id="logout" class="link4">
         <a class="float_right" href="javascript:void(0);" onclick="logout();">
@@ -298,6 +300,14 @@
         </span>
     </div>
 </div>
+
+<!-- train overlay -->
+<div id="train_overlay" class="overlay">
+    <h2 id="train_title_text">Dockyard</h2>
+    <div id="train_list" class="item_list">
+    </div>
+</div>
+
 
 <!-- Hidden Minimap -->
 <canvas id="minimap" class="hidden_canvas">

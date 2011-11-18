@@ -1054,9 +1054,9 @@ var DrawShapes = {
     s: [Vect(8,8),Vect(-8,8),Vect(-8,-4),Vect(0,-11),Vect(8,-4)],
     c: [Vect(13,8),Vect(-12,8),Vect(-12,-9),Vect(-5,-15),Vect(2,-9),Vect(2,-5),
         Vect(13,-5)],
-    a: [Vect(0,-15),Vect(4,-10),Vect(4,2),Vect(8,2),Vect(8,6),Vect(2,6),
-        Vect(2,11),Vect(-2,11),Vect(-2,6),Vect(-8,6),Vect(-8,2),Vect(-4,2),
-        Vect(-4,-10)]
+    a: [Vect(6,-8),Vect(6,-4),Vect(2,-4),Vect(2,6),Vect(9,3),
+        Vect(12,4),Vect(5,10),Vect(0,12),Vect(-5,10),Vect(-12,4),Vect(-9,3),
+        Vect(-2,6),Vect(-2,-4),Vect(-6,-4),Vect(-6,-8)]
 }
 
 // render vertex
@@ -2248,4 +2248,51 @@ function hideOverlays()
 function hideText()
 {
     document.getElementById("font_pull").setAttribute("class", "fonts_hide");
+}
+
+/* Get selected buildable. */
+function getSelectedBuildable()
+{
+    if (!selectedVertex)
+        return null;
+    var selected = selectedVertex;
+    var x = selected.x + screenX;
+    var y = selected.y + screenY;
+    i = getiFromPos(x, y);
+    x = x % mapSizes;
+    y = y % mapSizes;
+    if (!tileMap[i].valid)
+        return null;
+
+    /* Loop though all buildables. */
+    var b;
+    for (var j=0; j<tileMap[i].buildables.length; j++) {
+        b = tileMap[i].buildables[j];
+        if (b.x == x && b.y == y && b.d == selected.d)
+            return b;
+    }
+    return null;
+}
+
+/* Map click. */
+function MapClickCallback()
+{
+    if (!nation || !capitol)
+        return;
+
+    /* Building is of a different nation. */
+    var b = getSelectedBuildable();
+    if (!b || b.n != nation.name)
+        return;
+
+    /* Building is in a different village. */
+    if (b.i >= 0 && b.i != capitol.number) {
+        CapitolSwitch(b.i);
+        loadingAnimation.overlay = '#nation_overlay';
+        return b;
+    }
+
+    /* Building is of current nation and village. */
+    showOverlay('#train_overlay');
+    return b;
 }

@@ -385,7 +385,7 @@ h2 {
     display: inline;
 }
 
-#village_list {
+.item_list {
     clear: both;
     overflow: auto;
     height: 300px;
@@ -398,11 +398,11 @@ h2 {
     text-align: middle;
 }
 
-#village_list span {
+.item_list span {
     text-align: center;
 }
 
-#village_list a {
+.item_list a {
     display: block;
     font-style: normal;
     font-weight: normal;
