@@ -168,7 +168,7 @@ class Capitol(inf.DatabaseObject):
 
     def _recurseBuildablesBlock(self, worldshard, visited, block, funct,
                                 *args, **kargs):
-        """Call function for every buildable owned by this capitol.
+        """Call function for every non-ship buildable owned by this capitol.
 
         Intended to be called by recurseBuildables().
         """
@@ -181,7 +181,8 @@ class Capitol(inf.DatabaseObject):
         # Perform function for this block.
         bleedset = set()
         for b in m.getBuildablesList():
-            if b.isInCapitol(self.getNationName(), self.getNumber()):
+            if b.isInCapitol(self.getNationName(), self.getNumber())\
+               and not b.isShip():
                 funct(b, worldshard, *args)
                 b.block.updateBleedSet(bleedset)
         # Recursively call occupied surrounding blocks.

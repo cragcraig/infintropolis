@@ -77,14 +77,29 @@ class Buildable:
             return self._checkBuildVertex(worldshard)
         elif self.level == BuildType.road:
             return self._checkBuildEdge(worldshard, BuildType.road)
-        elif self.level == BuildType.ship:
-            return self._checkBuildEdge(worldshard, BuildType.ship)
+        elif self.level == BuildType.port:
+            return self._checkBuildVertex(worldshard, requireWater=True)
+        elif self.isShip():
+            return self._checkBuildShip(worldshard)
         elif self.isUpgrade():
             return self._checkUpgradeCity(worldshard)
         else:
             return False
 
-    def _checkBuildVertex(self, worldshard):
+    def _checkBuildShip(self, worldshard):
+        """Check if this buildable can be built as a ship."""
+        wtile = worldshard.getTile(self.block, self.pos)
+        return wtile and wtile.isWater() and\
+               worldshard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.topVertex, self.nationName, self.capitolNum),
+                 (-1, BuildType.bottomVertex, self.nationName, self.capitolNum),
+                 (0, BuildType.topVertex, self.nationName, self.capitolNum),
+                 (0, BuildType.bottomVertex, self.nationName, self.capitolNum),
+                 (1, BuildType.bottomVertex, self.nationName, self.capitolNum),
+                 (5, BuildType.topVertex, self.nationName, self.capitolNum)),
+                ((-1, BuildType.middle),))
+
+    def _checkBuildVertex(self, worldshard, requireWater=False):
         """Check if this buildable can be built at a vertex."""
         if self.pos.d == BuildType.topVertex:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
@@ -95,7 +110,7 @@ class Buildable:
                  (-1, BuildType.bottomVertex),
                  (1, BuildType.bottomVertex),
                  (2, BuildType.bottomVertex)),
-                 requireLand=True)
+                 requireLand=True, requireWater=requireWater)
         elif self.pos.d == BuildType.bottomVertex:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.centerEdge, self.nationName, self.capitolNum),
@@ -105,7 +120,7 @@ class Buildable:
                  (-1, BuildType.bottomVertex),
                  (4, BuildType.topVertex),
                  (5, BuildType.topVertex)),
-                 requireLand=True)
+                 requireLand=True, requireWater=requireWater)
         else:
             return False
 
@@ -116,8 +131,6 @@ class Buildable:
         rwater = False
         if level == BuildType.road:
             rland = True
-        if level == BuildType.ship:
-            rwater = True
         # Perform verification.
         if self.pos.d == BuildType.topEdge:
             return worldshard.checkBuildableRequirements(self.block, self.pos,
@@ -184,25 +197,29 @@ class Buildable:
         """Returns True if this buildable is in the given nation's capitol."""
         return nation == self.nationName and capitolNumber == self.capitolNum
 
+    def isShip(self):
+        """Is this buildable a ship."""
+        return self.pos.d == BuildType.middle
+
 
 class BuildType:
     """Enum for buildable types."""
-    topEdge, centerEdge, bottomEdge, topVertex, bottomVertex = range(5)
-    dToJSON = ['t', 'c', 'b', 't', 'b']
-    JSONtod = ['t', 'c', 'b', 'tv', 'bv']
+    topEdge, centerEdge, bottomEdge, topVertex, bottomVertex, middle = range(6)
+    dToJSON = ['t', 'c', 'b', 't', 'b', 'm']
+    JSONtod = ['t', 'c', 'b', 'tv', 'bv', 'm']
 
     empty = -1
-    settlement, city, road, ship, barracks = range(5)
-    tToJSON = ['s', 'c', 'r', 'b', 'p']
-    LOSVision = [15, 18, 8, 8, 15]
-    gatherMult = [1, 2, 0, 0, 1]
+    settlement, city, road, port = range(4)
+    tToJSON = ['s', 'c', 'r', 'p']
+    LOSVision = [15, 18, 8, 15]
+    gatherMult = [1, 2, 0, 0]
     isUpgrade = [False, True, False, False, True]
+    stationaryList = frozenset(['s', 'c', 'r'])
 
     costList = [ [-1, -1, -1, -1,  0,  0],
                  [ 0,  0,  0, -2, -3,  0],
                  [-1,  0, -1,  0,  0,  0],
-                 [-1, -1,  0,  0,  0,  0],
-                 [ 0,  0,  0,  0,  0,  0] ]
+                 [-1, -1,  0,  0, -2,  0] ]
 
 
 def JSONtod(jsont, jsond):

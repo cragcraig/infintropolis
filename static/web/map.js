@@ -2340,7 +2340,7 @@ function MapClickCallback()
 
         /* Building is in a different village. */
         if (b.i >= 0 && b.i != capitol.number) {
-            popAskConfirm("Switch to " + nation.capitol_names[b.i],
+            popAskConfirm("Govern village " + nation.capitol_names[b.i] + "?",
                           function() {CapitolSwitch(b.i, true);});
             return;
         }
