@@ -25,13 +25,21 @@ var screenWidth;
 var screenHeight;
 
 // state
+/* 0 = nothing,
+ * 1 = select tile,
+ * 2 = select vertex,
+ * 3 = select edge,
+ * 4 = dock area,
+ */
 var globalState = 0;
+var globalHighlightFunct = null;
 var globalMinimapState = false;
 var globalBuildState = false;
 var globalDebug = false;
-var selectedTile;
-var selectedVertex;
-var selectedEdge;
+var selectedTile = null;
+var selectedVertex = null;
+var selectedEdge = null;
+var selectedBuilding = null;
 var tDrawRollTokens = true;
 var isOverlayShown = false;
 var OverlayShownId = "";
@@ -325,6 +333,10 @@ function goMap(worldX, worldY)
             screenY -= mapSizes;
         }
     }
+
+    /* Clear selected building.
+     * (technically it could be shifted too) */
+    selectedBuilding = null;
 
     /* set position */
     mapX = worldX;
@@ -1185,9 +1197,12 @@ function renderTiles()
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // draw tiles
+    var highlight = false;
     for (i=-1; i<screenWidth+2; i++) {
         for (j=-2; j<screenHeight+2; j++) {
-            drawTile(getTile(i+screenX, j+screenY), i, j);
+            if (globalState == 4)
+                highlight = globalHighlightFunct(i+screenX, j+screenY);
+            drawTile(getTile(i+screenX, j+screenY), i, j, highlight);
         }
     }
 }
@@ -1215,25 +1230,30 @@ function renderBuildables()
 }
 
 // Draw a tile
-function drawTile(tile, x, y)
+function drawTile(tile, x, y, highlight)
 {
     if (tile == undefined) return;
 
     var dx = outputx(x,y);
     var dy = outputy(x,y);
+    var yoffset = (tile.roll == -1 ? TileHeight : 0);
+    if (highlight)
+        yoffset = 2*TileHeight;
     ctx.drawImage(tileSprite, TileWidth * tile.type,
-                  (tile.roll == -1 ? TileHeight : 0), TileWidth, TileHeight,
+                  yoffset, TileWidth, TileHeight,
                   dx - TileWidth/2, dy - TileHeight/2, TileWidth, TileHeight);
 
     if (tDrawRollTokens && tile.roll > 0) {
         /* circle */
         var color = (tile.roll == 6 || tile.roll == 8) ? "#ad151b" : "#000";
         var numDots = tile.roll - 2;
-        ctx.drawImage(tokens[numDots], dx - tokens[numDots].width/2, dy - tokens[numDots].height/2);
+        ctx.drawImage(tokens[numDots], dx - tokens[numDots].width/2,
+                                       dy - tokens[numDots].height/2);
     }
     /* event text */
     if (tDrawRollTokens && tile.type == 9 && tile.roll != -1) {
-        ctx.drawImage(specialTokens[0], dx - specialTokens[0].width/2, dy - specialTokens[0].height/2);
+        ctx.drawImage(specialTokens[0], dx - specialTokens[0].width/2,
+                                        dy - specialTokens[0].height/2);
     }
     /* draw debug text */
     if (globalDebug) {
@@ -1241,7 +1261,8 @@ function drawTile(tile, x, y)
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText((x + screenX)%mapSizes + "," + (y + screenY)%mapSizes, dx, dy);
+        ctx.fillText((x + screenX)%mapSizes + "," +
+                     (y + screenY)%mapSizes, dx, dy);
     }
 }
 
@@ -1833,6 +1854,18 @@ function tilesSurroundingBuildable(t, x, y, d)
     return [];
 }
 
+/* Get list of tiles surrounding the given tile. */
+function tilesSurroundingTile(x, y)
+{
+    if (y % 2) {
+        return [Vect(x+1, y), Vect(x+1, y-1), Vect(x, y-1), Vect(x-1, y),
+                Vect(x, y+1), Vect(x+1, y+1)];
+    } else {
+        return [Vect(x+1, y), Vect(x, y-1), Vect(x-1, y-1), Vect(x-1, y),
+                Vect(x-1, y+1), Vect(x, y+1)];
+    }
+}
+
 /* Checks if the buildable is adjacent to a visable tile.
  *
  * Returns true if an adjacent tile is visible, false otherwise.
@@ -2194,6 +2227,7 @@ function CapitolRename()
 function CapitolSwitch(num, disableJump)
 {
     if (!capitol || num == null) return;
+    globalState = 0;
     capitol = null;
     RequestJSON("GET", "/get/capitol", {"capitol": num,
                                         "disableJump": disableJump});
@@ -2265,12 +2299,15 @@ function getSelectedBuildable()
     if (!tileMap[i].valid)
         return null;
 
-    /* Loop though all buildables. */
+    /* Loop though all non-road buildables. */
     var b;
     for (var j=0; j<tileMap[i].buildables.length; j++) {
         b = tileMap[i].buildables[j];
-        if (b.x == x && b.y == y && b.d == selected.d)
+        if (b.x == x && b.y == y && b.d == selected.d &&
+            !UIBuildablesTypeMap[b.t]) {
+            b.mapi = i;
             return b;
+        }
     }
     return null;
 }
@@ -2297,5 +2334,67 @@ function MapClickCallback()
         showOverlay('#train_overlay');
 
     /* Building is of current nation and village. */
+    selectedBuilding = b;
     return b;
+}
+
+/* TrainMode data. */
+TrainMode = {
+    enabled: false,
+    type: null,
+    level: null
+};
+
+/* Is tile water? */
+function isWater(tile)
+{
+    return tile == 1 || tile == 10;
+}
+
+/* Enable TrainMode. */
+function TrainModeEnable(type, level)
+{
+    if (!selectedBuilding) return;
+
+    /* Get surrounding water tiles. */
+    var p = getPosFromi(selectedBuilding.mapi, selectedBuilding.x,
+                        selectedBuilding.y);
+    var posTiles = tilesSurroundingBuildable(false,
+                                             p.x,
+                                             p.y,
+                                             selectedBuilding.d);
+    var posVects = Array();
+    for (var j=0; j<posTiles.length; j++) {
+        var t = getTile(posTiles[j].x, posTiles[j].y);
+        if (isWater(t.type))
+            posVects.push(posTiles[j]);
+    }
+
+    /* Single build option, do build. */
+
+    /* Multiple build options, start choose mode. */
+    globalState = 4;
+    globalHighlightFunct = TrainModeHighlighter(posVects);
+    TrainMode.enabled = true;
+    TrainMode.type = type;
+    TrainMode.level = level;
+    hideOverlays();
+    render();
+}
+
+function TrainModeHighlighter(posVects)
+{
+    return function(x, y) {
+        return TileHighlighter(x, y, posVects);
+    }
+}
+
+/* Highlight function for TrainMode. */
+function TileHighlighter(x, y, posVects)
+{
+    for (var j=0; j<posVects.length; j++) {
+        if (posVects[j].x == x && posVects[j].y == y)
+            return true;
+    }
+    return false;
 }
