@@ -306,11 +306,29 @@
     <h2 id="train_title_text">Dockyard</h2>
     <div id="train_list" class="item_list">
         <a href="javascript:void(0);" class="village_noncurrent"
-           onclick="TrainModeEnable('b', 0)">
+           onclick="TrainModeDo('b', 0)">
             <span>Sloop</span>
         </a>
     </div>
 </div>
+
+<!-- ok/cancel overlay -->
+<div id="confirm_overlay" class="overlay">
+    <h2 id="confirm_title">Village Name</h2>
+    <div class="okay_cancel">
+        <span class="float_left link1">
+            <a id="confirm_action" href="javascript:void(0);" onclick="">
+                Okay
+            </a>
+        </span>
+        <span class="float_right link2">
+            <a href="javascript:void(0);" onclick="hideOverlays();">
+                Cancel
+            </a>
+        </span>
+    </div>
+</div>
+
 
 
 <!-- Hidden Minimap -->

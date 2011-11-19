@@ -29,7 +29,8 @@ var screenHeight;
  * 1 = select tile,
  * 2 = select vertex,
  * 3 = select edge,
- * 4 = dock area,
+ * 4 = train select location,
+ * 5 = highlight tiles
  */
 var globalState = 0;
 var globalHighlightFunct = null;
@@ -626,16 +627,15 @@ function mouseCallback()
     if (isOverlayShown)
         hideOverlays();
 
-    /* Click on map. */
-    if (globalState == 0) {
-        MapClickCallback();
-    }
-
     /* Build click. */
     if (globalBuildState) {
         BuildModeDo();
         return;
+    /* Click on map. */
+    } else {
+        MapClickCallback();
     }
+
 
     /* start mouse scroll */
     if (mouseScrollTimer != null) return;
@@ -1200,7 +1200,7 @@ function renderTiles()
     var highlight = false;
     for (i=-1; i<screenWidth+2; i++) {
         for (j=-2; j<screenHeight+2; j++) {
-            if (globalState == 4)
+            if (globalState == 4 || globalState == 5)
                 highlight = globalHighlightFunct(i+screenX, j+screenY);
             drawTile(getTile(i+screenX, j+screenY), i, j, highlight);
         }
@@ -2318,32 +2318,41 @@ function MapClickCallback()
     if (!nation || !capitol)
         return;
 
-    /* Building is of a different nation. */
-    var b = getSelectedBuildable();
-    if (!b || b.n != nation.name)
-        return;
-
-    /* Building is in a different village. */
-    if (b.i >= 0 && b.i != capitol.number) {
-        CapitolSwitch(b.i, true);
-        return b;
+    /* Port build location select state. */
+    if (globalState == 4) {
+        var t = Vect(selectedTile.x + screenX, selectedTile.y + screenY);
+        if (globalHighlightFunct(t.x, t.y)) {
+            globalHighlightFunct = TrainModeHighlighter([t]);
+            render();
+            TrainModeLaunch(t.x, t.y);
+            return;
+        } else {
+            globalState = 0;
+            render();
+        }
     }
 
-    /* Building is a port. */
-    if (b.t == 'p')
-        showOverlay('#train_overlay');
+    if (globalState == 0) {
+        /* Building is of a different nation. */
+        var b = getSelectedBuildable();
+        if (!b || b.n != nation.name)
+            return;
 
-    /* Building is of current nation and village. */
-    selectedBuilding = b;
-    return b;
+        /* Building is in a different village. */
+        if (b.i >= 0 && b.i != capitol.number) {
+            popAskConfirm("Switch to " + nation.capitol_names[b.i],
+                          function() {CapitolSwitch(b.i, true);});
+            return;
+        }
+
+        /* Building is of current nation and village. */
+        selectedBuilding = b;
+
+        /* Building is a port. */
+        if (b.t == 'p')
+            TrainModeEnable();
+    }
 }
-
-/* TrainMode data. */
-TrainMode = {
-    enabled: false,
-    type: null,
-    level: null
-};
 
 /* Is tile water? */
 function isWater(tile)
@@ -2370,17 +2379,29 @@ function TrainModeEnable(type, level)
             posVects.push(posTiles[j]);
     }
 
-    /* Single build option, do build. */
-
-    /* Multiple build options, start choose mode. */
+    /* Setup global state and highlighter. */
     globalState = 4;
     globalHighlightFunct = TrainModeHighlighter(posVects);
-    TrainMode.enabled = true;
-    TrainMode.type = type;
-    TrainMode.level = level;
-    hideOverlays();
     render();
+
+    /* Single build option, do build. */
+    if (posVects.length == 1) {
+        TrainModeLaunch(posVects[0].x, posVects[0].y);
+    } else {
+        /* Multiple build options, start choose mode. */
+        hideOverlays();
+    }
 }
+
+/* Launch TrainMode overlay. */
+function TrainModeLaunch(x, y) {
+    TrainModeData.pos = Vect(x, y);
+    showOverlay('#train_overlay');
+}
+
+var TrainModeData = {
+    pos: null
+};
 
 function TrainModeHighlighter(posVects)
 {
@@ -2396,5 +2417,17 @@ function TileHighlighter(x, y, posVects)
         if (posVects[j].x == x && posVects[j].y == y)
             return true;
     }
+    return false;
+}
+
+/* Show confirm dialogue. */
+function popAskConfirm(question, funct)
+{
+    document.getElementById('confirm_title').innerHTML = question;
+    document.getElementById('confirm_action').onclick = function() {
+        hideOverlays();
+        funct();
+    };
+    showOverlay('#confirm_overlay');
     return false;
 }
