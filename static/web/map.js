@@ -1047,6 +1047,7 @@ function drawHighlightTile(x, y)
 // draw shape
 function drawShape(context, x, y, shape, strokeColor, fillColor, strokeWidth)
 {
+    if (!shape) return;
     context.fillStyle = fillColor;
     context.strokeStyle = strokeColor;
     context.lineWidth = strokeWidth;
@@ -1068,7 +1069,29 @@ var DrawShapes = {
         Vect(13,-5)],
     p: [Vect(6,-8),Vect(6,-4),Vect(2,-4),Vect(2,6),Vect(9,3),
         Vect(12,4),Vect(5,10),Vect(0,12),Vect(-5,10),Vect(-12,4),Vect(-9,3),
-        Vect(-2,6),Vect(-2,-4),Vect(-6,-4),Vect(-6,-8)]
+        Vect(-2,6),Vect(-2,-4),Vect(-6,-4),Vect(-6,-8)],
+    f: [Vect(16,3), Vect(20,-5), Vect(3,-5), Vect(2,-18), Vect(3,-32),
+        Vect(0,-32), Vect(-6,-22), Vect(-6,-15), Vect(-3,-7), Vect(-3,-5),
+        Vect(-20,-5), Vect(-16,3)]
+}
+
+// render middle
+function drawMiddle(b)
+{
+    if (!b) return;
+
+    // calculate position
+    var px = outputx(b.x, b.y);
+    var py = outputy(b.x, b.y);
+
+    // set alpha
+    if (b.alpha)
+        ctx.globalAlpha = b.alpha;
+
+    // draw
+    drawShape(ctx, px, py, DrawShapes[b.t], "#" + b.c1, "#" + b.c2, 2.5);
+
+    ctx.globalAlpha = 1.0;
 }
 
 // render vertex
@@ -1273,10 +1296,12 @@ function drawBuildable(buildable)
         buildable.x > screenWidth + 2 || buildable.y > screenWidth + 2) return;
 
     // Check buildable type.
-    if (buildable.t == 'r' || buildable.t == 'b') {
-        drawEdge(buildable)
+    if (buildable.t == 'r') {
+        drawEdge(buildable);
+    } else if (buildable.d != 'm') {
+        drawVertex(buildable);
     } else {
-        drawVertex(buildable)
+        drawMiddle(buildable);
     }
 }
 
@@ -1872,8 +1897,13 @@ function tilesSurroundingTile(x, y)
  */
 function isBuildableVisable(i, bld)
 {
-    st = tilesSurroundingBuildable((bld.t == 'r' || bld.t == 'b'),
-                                   bld.x, bld.y, bld.d);
+    if (bld.d != 'm') {
+        st = tilesSurroundingBuildable((bld.t == 'r'),
+                                       bld.x, bld.y, bld.d);
+    } else {
+        st = [Vect(bld.x, bld.y)]
+    }
+
     for (var j=0; j<st.length; j++) {
         v = getPosFromi(i, st[j].x, st[j].y);
         t = getTile(v.x, v.y);
@@ -2403,6 +2433,23 @@ var TrainModeData = {
     pos: null
 };
 
+/* Send Training request to server. */
+function TrainModeDo(type, level)
+{
+    globalState = 0;
+    hideOverlays();
+    if (!TrainModeData.pos) return;
+    var i = getiFromPos(TrainModeData.pos.x, TrainModeData.pos.y);
+    var x = TrainModeData.pos.x % mapSizes;
+    var y = TrainModeData.pos.y % mapSizes;
+    var block = getWorldPos(i);
+    TrainModeData.pos = null;
+    RequestJSON("POST", "/set/build",
+                {bx: block.x, by: block.y, x: x, y: y,
+                 d: 'm', type: type});
+}
+
+/* Generate highlight function for TrainMode. */
 function TrainModeHighlighter(posVects)
 {
     return function(x, y) {

@@ -55,11 +55,11 @@ class Buildable:
 
     def isUpgrade(self):
         """Returns True if this buildable type is an upgrade."""
-        return BuildType.isUpgrade[self.level]
+        return not self.isShip() and BuildType.isUpgrade[self.level]
 
     def isGatherer(self):
         """Returns true if this buildable can gather resources."""
-        return BuildType.gatherMult[self.level]
+        return not self.isShip() and BuildType.gatherMult[self.level]
                
     def getCost(self):
         """Returns the cost of this buildable as a list."""
@@ -209,26 +209,28 @@ class BuildType:
     JSONtod = ['t', 'c', 'b', 'tv', 'bv', 'm']
 
     empty = -1
-    settlement, city, road, port = range(4)
-    tToJSON = ['s', 'c', 'r', 'p']
-    LOSVision = [15, 18, 8, 15]
+    settlement, city, road, port,\
+    sloop = range(5)
+    tToJSON = ['s', 'c', 'r', 'p',
+               'f']
+    LOSVision = [15, 18, 8, 15,
+                  4]
     gatherMult = [1, 2, 0, 0]
-    isUpgrade = [False, True, False, False, True]
-    stationaryList = frozenset(['s', 'c', 'r'])
+    isUpgrade = [False, True, False, False]
+    stationarySet = frozenset(['s', 'c', 'r', 'p'])
+    vertexSet = frozenset(['s', 'c', 'p'])
 
     costList = [ [-1, -1, -1, -1,  0,  0],
                  [ 0,  0,  0, -2, -3,  0],
                  [-1,  0, -1,  0,  0,  0],
-                 [-1, -1,  0,  0, -2,  0] ]
+                 [-1, -1,  0,  0, -2,  0],
+                 
+                 [ 1,  1,  0,  0,  0,  0] ]
 
 
 def JSONtod(jsont, jsond):
     """Get the correct d value from a json d value."""
     v = jsond
-    if isJSONVertex(jsont):
+    if jsont in BuildType.vertexSet:
         v += 'v'
     return BuildType.JSONtod.index(v)
-
-
-def isJSONVertex(jsont):
-    return jsont != 'r' and jsont != 'b'
