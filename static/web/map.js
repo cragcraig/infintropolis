@@ -30,7 +30,8 @@ var screenHeight;
  * 2 = select vertex,
  * 3 = select edge,
  * 4 = train select location,
- * 5 = highlight tiles
+ * 5 = highlight tiles,
+ * 6 = move mode
  */
 var globalState = 0;
 var globalHighlightFunct = null;
@@ -1223,7 +1224,7 @@ function renderTiles()
     var highlight = false;
     for (i=-1; i<screenWidth+2; i++) {
         for (j=-2; j<screenHeight+2; j++) {
-            if (globalState == 4 || globalState == 5)
+            if (globalHighlightFunct)
                 highlight = globalHighlightFunct(i+screenX, j+screenY);
             drawTile(getTile(i+screenX, j+screenY), i, j, highlight);
         }
@@ -2318,11 +2319,14 @@ function hideText()
 /* Get selected buildable. */
 function getSelectedBuildable()
 {
-    if (!selectedVertex)
-        return null;
-    var selected = selectedVertex;
+    if (!selectedTile) return;
+
+    var selected = selectedTile;
+    if (selectedVertex)
+        selected = selectedVertex;
     var x = selected.x + screenX;
     var y = selected.y + screenY;
+    var d = (selectedVertex ? selected.d : 'm');
     i = getiFromPos(x, y);
     x = x % mapSizes;
     y = y % mapSizes;
@@ -2333,8 +2337,7 @@ function getSelectedBuildable()
     var b;
     for (var j=0; j<tileMap[i].buildables.length; j++) {
         b = tileMap[i].buildables[j];
-        if (b.x == x && b.y == y && b.d == selected.d &&
-            !UIBuildablesTypeMap[b.t]) {
+        if (b.x == x && b.y == y && b.d == d && !UIBuildablesTypeMap[b.t]) {
             b.mapi = i;
             return b;
         }
@@ -2349,15 +2352,25 @@ function MapClickCallback()
         return;
 
     /* Port build location select state. */
-    if (globalState == 4) {
+    if (globalHighlightFunct != null && selectedTile) {
         var t = Vect(selectedTile.x + screenX, selectedTile.y + screenY);
         if (globalHighlightFunct(t.x, t.y)) {
-            globalHighlightFunct = TrainModeHighlighter([t]);
+            /* TrainMode */
+            if (globalState == 4) {
+                globalHighlightFunct = TileListHighlighter([t]);
+                TrainModeLaunch(t.x, t.y);
+            /* MoveMode */
+            } else if (globalState == 6) {
+                MoveModeDo(t.x, t.y);
+                globalState = 0;
+                globalHighlightFunct = null;
+            }
             render();
-            TrainModeLaunch(t.x, t.y);
             return;
         } else {
+            /* Un-highlight. */
             globalState = 0;
+            globalHighlightFunct = null;
             render();
         }
     }
@@ -2369,7 +2382,7 @@ function MapClickCallback()
             return;
 
         /* Building is in a different village. */
-        if (b.i >= 0 && b.i != capitol.number) {
+        if (b.i >= 0 && b.i != capitol.number && b.d != 'm') {
             popAskConfirm("Govern village " + nation.capitol_names[b.i] + "?",
                           function() {CapitolSwitch(b.i, true);});
             return;
@@ -2378,9 +2391,13 @@ function MapClickCallback()
         /* Building is of current nation and village. */
         selectedBuilding = b;
 
-        /* Building is a port. */
+        /* Buildable is a port. */
         if (b.t == 'p')
             TrainModeEnable();
+
+        /* Buildable is a ship. */
+        if (b.d == 'm')
+            MoveModeEnable();
     }
 }
 
@@ -2388,6 +2405,20 @@ function MapClickCallback()
 function isWater(tile)
 {
     return tile == 1 || tile == 10;
+}
+
+/* Does tile have a ship on it? */
+function isOpenTile(x, y)
+{
+    for (i=0; i<tileMap.length; i++) {
+        if (!tileMap[i].valid) continue;
+        for (j=0; j<tileMap[i].buildables.length; j++) {
+            var build = tileMap[i].buildables[j];
+            if (build.x == x && build.y == y && build.d == 'm')
+                return false;
+        }
+    }
+    return true;
 }
 
 /* Enable TrainMode. */
@@ -2405,17 +2436,19 @@ function TrainModeEnable(type, level)
     var posVects = Array();
     for (var j=0; j<posTiles.length; j++) {
         var t = getTile(posTiles[j].x, posTiles[j].y);
-        if (isWater(t.type))
+        if (isWater(t.type) && isOpenTile(posTiles[j].x, posTiles[j].y))
             posVects.push(posTiles[j]);
     }
 
     /* Setup global state and highlighter. */
     globalState = 4;
-    globalHighlightFunct = TrainModeHighlighter(posVects);
+    globalHighlightFunct = TileListHighlighter(posVects);
     render();
 
     /* Single build option, do build. */
-    if (posVects.length == 1) {
+    if (posVects.length == 0) {
+        return;
+    } else if (posVects.length == 1) {
         TrainModeLaunch(posVects[0].x, posVects[0].y);
     } else {
         /* Multiple build options, start choose mode. */
@@ -2450,7 +2483,7 @@ function TrainModeDo(type, level)
 }
 
 /* Generate highlight function for TrainMode. */
-function TrainModeHighlighter(posVects)
+function TileListHighlighter(posVects)
 {
     return function(x, y) {
         return TileHighlighter(x, y, posVects);
@@ -2477,4 +2510,40 @@ function popAskConfirm(question, funct)
     };
     showOverlay('#confirm_overlay');
     return false;
+}
+
+/* Enable MoveMode. */
+function MoveModeEnable()
+{
+    if (!selectedBuilding) return;
+    /* Setup global state and highlighter. */
+    globalState = 6;
+    globalHighlightFunct = MoveModeHighlighterGen();
+    render();
+}
+
+/* Generate move move highlighter function. */
+function MoveModeHighlighterGen()
+{
+    return function(x, y) {
+        var t = getTile(x, y);
+        return isWater(t.type);
+    };
+}
+
+/* Perform move. */
+function MoveModeDo(x, y)
+{
+    if (!selectedBuilding || selectedBuilding.d != 'm')
+        return;
+
+    var i1 = getiFromPos(selectedBuilding.x, selectedBuilding.y);
+    var block1 = getWorldPos(i1);
+    var i2 = getiFromPos(x, y);
+    var block2 = getWorldPos(i2);
+    TrainModeData.pos = null;
+    RequestJSON("POST", "/set/move",
+                {bx: block1.x, by: block1.y,
+                 x: selectedBuilding.x%mapSizes, y: selectedBuilding.y%mapSizes,
+                 btx: block2.x, bty: block2.y, xt: x%mapSizes, yt: y%mapSizes});
 }
