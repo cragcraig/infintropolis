@@ -2411,13 +2411,14 @@ function isWater(tile)
 /* Does tile have a ship on it? */
 function isOpenTile(x, y)
 {
-    for (i=0; i<tileMap.length; i++) {
-        if (!tileMap[i].valid) continue;
-        for (j=0; j<tileMap[i].buildables.length; j++) {
-            var build = tileMap[i].buildables[j];
-            if (build.x == x && build.y == y && build.d == 'm')
-                return false;
-        }
+    var i = getiFromPos(x, y);
+    x = x%mapSizes;
+    y = y%mapSizes;
+    if (!tileMap[i].valid) return false;
+    for (j=0; j<tileMap[i].buildables.length; j++) {
+        var build = tileMap[i].buildables[j];
+        if (build.x == x && build.y == y && build.d == 'm')
+            return false;
     }
     return true;
 }

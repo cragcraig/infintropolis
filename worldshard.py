@@ -21,6 +21,10 @@ class WorldShard:
         self._toload.update(vect.getSurroundingBlocksAndSelf())
         self._core.add(Vect(vect.x, vect.y))
 
+    def addSurroundingBlocks(self, vect):
+        """Adds a block's dependencies to the shard."""
+        self._toload.update(vect.getSurroundingBlocks())
+
     def addSingleBlock(self, vect):
         """Adds a block to the shard."""
         self._toload.add(Vect(vect.x, vect.y))
