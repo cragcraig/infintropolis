@@ -256,7 +256,7 @@ function parseBuildableBlock(i, list)
     }
 }
 
-/* Constructs a hash of the buildables owned by the nation in tileMap[i]. */
+/* Constructs a hash of the buildables owned by this nation in tileMap[i]. */
 function hashBuildables(i)
 {
     if (!capitol || !tileMap[i].valid) {
@@ -266,7 +266,7 @@ function hashBuildables(i)
     for (var j=0; j < tileMap[i].buildables.length; j++) {
         var b = tileMap[i].buildables[j];
         if (b.n == capitol.nation) {
-            hash += b.x + "," + b.y + "," + b.t + ":";
+            hash += b.x + "," + b.y + "," + b.d + "," + b.t + ":";
         }
     }
     return hash;
