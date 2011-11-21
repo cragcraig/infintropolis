@@ -2073,7 +2073,7 @@ function minimapRender()
                     } else if (build.d == 'c') {
                         mCtx.moveTo(x, y + 3);
                         mCtx.lineTo(x, y + 7);
-                    } else {
+                    } else if (build.d =='b') {
                         mCtx.moveTo(x, y + 8);
                         mCtx.lineTo(x + 4, y + 10);
                     }
@@ -2086,11 +2086,16 @@ function minimapRender()
                     mCtx.stroke();
                 } else {
                     var yoff = (build.d == 't' ? 3 : 7);
+                    var xoff = 0;
+                    if (build.d == 'm') {
+                        yoff = 5;
+                        xoff = 5;
+                    }
                     mCtx.fillStyle = "#" + build.c2;
                     mCtx.strokeStyle = "#" + build.c1;
                     mCtx.lineWidth = 2;
-                    mCtx.fillRect(x - 2, y - 2 + yoff, 4, 4);
-                    mCtx.strokeRect(x - 2, y - 2 + yoff, 4, 4);
+                    mCtx.fillRect(x - 2 + xoff, y - 2 + yoff, 4, 4);
+                    mCtx.strokeRect(x - 2 + xoff, y - 2 + yoff, 4, 4);
                 }
             }
         }
