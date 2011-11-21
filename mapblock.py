@@ -315,6 +315,18 @@ class MapBlock(inf.DatabaseObject):
                                  BUILDABLE_LIST_SIZE)]
         return self._buildableslist
 
+    def getBuildable(self, pos, nation=None, capitol=None, level=-1):
+        """Returns the buildable located at pos, if one exists.
+
+        Any provided nation or level attributes will be enforced.
+        """
+        for b in self.getBuildablesList():
+            if b.pos == pos and (not nation or b.nationName == nation) and\
+               (level == -1 or b.level == level) and\
+               (capitol == None or b.capitolNum == capitol):
+                return b
+        return None
+
     def hasBuildableAt(self, pos, nation=None, capitol=None, level=-1):
         """Checks if there is a buildable at the given location.
 

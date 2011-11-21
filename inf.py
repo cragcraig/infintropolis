@@ -92,6 +92,8 @@ class Vect:
         elif self.d == buildable.BuildType.bottomVertex:
             return [self, tileDirMove(self, 4),
                     tileDirMove(self, 3)]
+        elif self.d == buildable.BuildType.middle:
+            return [self]
         else:
             return []
 

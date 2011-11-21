@@ -1,3 +1,4 @@
+from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
@@ -138,6 +139,67 @@ class WorldShard:
         if b:
             return b.get(p)
         return None
+
+    def cacheCore(self):
+        """Cache all core blocks."""
+        for v in self._core:
+            m = self._mapblocks[v]
+            if m.exists():
+                m.cache()
+
+    def atomicMoveBuildables(self, nation, originBlock, origin, destBlock,
+                             dest):
+        """Move a buildable from one hex to another."""
+        xg_on = db.create_transaction_options(xg=True)
+        if db.run_in_transaction_options(xg_on, WorldShard._atomicMove,
+                                         self, nation, originBlock, origin,
+                                         destBlock, dest):
+            self.cacheCore()
+            return True
+        else:
+            self.clear()
+            return False
+
+    def _atomicMove(self, nation, originBlock, origin, destBlock, dest):
+        """Intended only for internal use by atomicMoveBuildables."""
+        # Load blocks and add to worldshard.
+        oBlock = MapBlock(originBlock, load=False)
+        oBlock.dbGet()
+        self.addBlockData(oBlock)
+        self._toload.update(originBlock.getSurroundingBlocks())
+        if originBlock == destBlock:
+            dBlock = oBlock
+        else:
+            dBlock = MapBlock(destBlock, load=False)
+            dBlock.dbGet()
+            self.addBlockData(dBlock)
+            self._toload.update(destBlock.getSurroundingBlocks())
+
+        # Check that blocks exist.
+        if not oBlock.exists() or not dBlock.exists():
+            print "\nPoop."
+            return False
+
+        # Check that move can occur.
+        origin.d = BuildType.middle
+        dest.d = BuildType.middle
+        if dBlock.hasBuildableAt(dest):
+            print "\nPoop2."
+            return False
+
+        # Move buildable.
+        b = oBlock.getBuildable(origin, nation=nation.getName())
+        if not b:
+            return False
+        b.pos = dest
+        dBlock._addBuildable(b, nation.getColors())
+        oBlock._delBuildable(origin)
+
+        # Save.
+        oBlock.put()
+        if originBlock != destBlock:
+            dBlock.put()
+        return True
 
     def loadDependencies(self, generate=True):
         """Loads all dependencies for this shard."""

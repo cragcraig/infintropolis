@@ -2339,6 +2339,7 @@ function getSelectedBuildable()
         b = tileMap[i].buildables[j];
         if (b.x == x && b.y == y && b.d == d && !UIBuildablesTypeMap[b.t]) {
             b.mapi = i;
+            b.mapBlockVect = getWorldPos(i);
             return b;
         }
     }
@@ -2470,6 +2471,7 @@ var TrainModeData = {
 function TrainModeDo(type, level)
 {
     globalState = 0;
+    globalHighlightFunct = null;
     hideOverlays();
     if (!TrainModeData.pos) return;
     var i = getiFromPos(TrainModeData.pos.x, TrainModeData.pos.y);
@@ -2480,6 +2482,7 @@ function TrainModeDo(type, level)
     RequestJSON("POST", "/set/build",
                 {bx: block.x, by: block.y, x: x, y: y,
                  d: 'm', type: type});
+    render();
 }
 
 /* Generate highlight function for TrainMode. */
@@ -2522,7 +2525,7 @@ function MoveModeEnable()
     render();
 }
 
-/* Generate move move highlighter function. */
+/* Generate move mode highlighter function. */
 function MoveModeHighlighterGen()
 {
     return function(x, y) {
@@ -2537,8 +2540,7 @@ function MoveModeDo(x, y)
     if (!selectedBuilding || selectedBuilding.d != 'm')
         return;
 
-    var i1 = getiFromPos(selectedBuilding.x, selectedBuilding.y);
-    var block1 = getWorldPos(i1);
+    var block1 = selectedBuilding.mapBlockVect;
     var i2 = getiFromPos(x, y);
     var block2 = getWorldPos(i2);
     TrainModeData.pos = null;

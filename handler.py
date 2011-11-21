@@ -153,6 +153,46 @@ class PostBuild(request.Handler):
         self.writeJSON(response)
 
 
+class PostMove(request.Handler):
+    """Handle move requests."""
+
+    def post(self):
+        """Perform move and return updated block data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Setup.
+        request = self.getJSONRequest()
+
+        # Check arguments.
+        if not self.inDict(request, 'bx', 'by', 'x', 'y',
+                           'btx', 'bty', 'xt', 'yt'):
+            return
+
+        # Construct parameters.
+        origin = Vect(request['x'], request['y'])
+        originBlock = Vect(request['bx'], request['by'])
+        dest = Vect(request['xt'], request['yt'])
+        destBlock = Vect(request['btx'], request['bty'])
+
+        # Check bounds.
+        if not origin.isInBlockBounds() or not dest.isInBlockBounds():
+            return
+
+        # Do move.
+        worldshard = WorldShard()
+        worldshard.atomicMoveBuildables(self.getNation(), originBlock, 
+                                        origin, destBlock, dest)
+
+        # Return updated block data.
+        worldshard.loadDependencies()
+        worldshard.applyLOS(self.getNation().getName())
+        response = worldshard.getJSONDict()
+        self.writeJSON(response)
+
+
 class PostTrade(request.Handler):
     """Handle trade requests."""
 
@@ -166,6 +206,7 @@ class PostTrade(request.Handler):
         # Setup.
         request = self.getJSONRequest()
         response = {'isTradeResult': True}
+
         # Check arguments.
         if not self.inDict(request, 'from', 'for')\
            or request['from'] == request['for'] or request['for'] == 'gold'\
@@ -293,6 +334,7 @@ app = webapp.WSGIApplication(
                              [('/', Session),
                               ('/get/debug.*', GetDebug),
                               ('/get/capitol.*', GetCapitol),
+                              ('/set/move.*', PostMove),
                               ('/get/map.*', GetBlock),
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
