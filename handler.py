@@ -169,26 +169,30 @@ class PostMove(request.Handler):
         response = {'isMoveResult': True}
 
         # Check arguments.
-        if not self.inDict(request, 'bx', 'by', 'x', 'y',
-                           'btx', 'bty', 'xt', 'yt'):
+        if not self.inDict(request, 'path'):
             self.writeJSON(response)
             return
 
-        # Construct parameters.
-        origin = Vect(request['x'], request['y'])
-        originBlock = Vect(request['bx'], request['by'])
-        dest = Vect(request['xt'], request['yt'])
-        destBlock = Vect(request['btx'], request['bty'])
-
-        # Check bounds.
-        if not origin.isInBlockBounds() or not dest.isInBlockBounds():
-            self.writeJSON(response)
-            return
+        # Construct and check path.
+        path = []
+        i = 0
+        for v in request['path']:
+            path.append(inf.WorldVect(Vect(v['bx'], v['by']),
+                                      Vect(v['x'], v['y'], BuildType.middle)))
+            if not path[i].pos.isInBlockBounds():
+                self.writeJSON(response)
+                return
 
         # Do move.
         worldshard = WorldShard()
-        worldshard.atomicMoveBuildables(self.getNation(), originBlock, 
-                                        origin, destBlock, dest)
+        worldshard.atomicPathBuildable(self.getNation(), path)
+        
+        # Update LOS.
+        if self.inDict(request, 'maps'):
+            for reqblock in request['maps']:
+                if self.inDict(reqblock, 'x', 'y'):
+                    v = Vect(reqblock['x'], reqblock['y'])
+                    worldshard.addBlock(v);
 
         # Return updated block data.
         worldshard.loadDependencies()

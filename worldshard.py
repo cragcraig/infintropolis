@@ -19,12 +19,16 @@ class WorldShard:
 
     def addBlock(self, vect):
         """Adds a block and its dependencies to the shard."""
-        self._toload.update(vect.getSurroundingBlocksAndSelf())
+        for v in vect.getSurroundingBlocksAndSelf():
+            if v not in self._mapblocks:
+                self._toload.add(v)
         self._core.add(Vect(vect.x, vect.y))
 
     def addSurroundingBlocks(self, vect):
         """Adds a block's dependencies to the shard."""
-        self._toload.update(vect.getSurroundingBlocks())
+        for v in vect.getSurroundingBlocks():
+            if v not in self._mapblocks:
+                self._toload.add(v)
 
     def addSingleBlock(self, vect):
         """Adds a block to the shard."""
@@ -153,7 +157,7 @@ class WorldShard:
             if m.exists():
                 m.cache()
 
-    def atomicMoveBuildables(self, nation, originBlock, origin, destBlock,
+    def atomicMoveBuildable(self, nation, originBlock, origin, destBlock,
                              dest):
         """Move a buildable from one hex to another."""
         xg_on = db.create_transaction_options(xg=True)
@@ -167,7 +171,7 @@ class WorldShard:
             return False
 
     def _atomicMove(self, nation, originBlock, origin, destBlock, dest):
-        """Intended only for internal use by atomicMoveBuildables."""
+        """Intended only for internal use by atomicMoveBuildable."""
         # Load blocks and add to worldshard.
         oBlock = MapBlock(originBlock, load=False)
         oBlock.dbGet()
@@ -205,16 +209,69 @@ class WorldShard:
             dBlock.put()
         return True
 
-    def loadDependencies(self, generate=True):
+    def atomicPathBuildable(self, nation, path):
+        """Move a buildable along a path."""
+        xg_on = db.create_transaction_options(xg=True)
+        if db.run_in_transaction_options(xg_on, WorldShard._atomicPath,
+                                         self, nation, path):
+            self.cacheCore()
+            return True
+        else:
+            self.clear()
+            return False
+
+    def _atomicPath(self, nation, path):
+        """Intended only for internal use by atomicPathBuildable."""
+        # Load blocks and add to worldshard.
+        for bv in path:
+            self.addSingleBlock(bv.block)
+        self.loadDependencies(generate=False, useCached=False)
+
+        origin = path.pop(0)
+        dest = origin
+
+        # Check path.
+        pbv = origin
+        for bv in path:
+            b = self.getBlockOnly(bv.block)
+            if b.hasBuildableAt(bv.pos) or b.get(bv.pos).isLand() or\
+               not bv.isAdjacent(pbv):
+                break
+            pbv = bv
+            dest = bv
+
+        # Select origin and dest blocks.
+        oBlock = self.getBlockOnly(origin.block)
+        dBlock = self.getBlockOnly(dest.block)
+        if not oBlock or not dBlock:
+            return False
+
+        # Move buildable.
+        b = oBlock.getBuildable(origin.pos, nation=nation.getName())
+        if not b:
+            return False
+        b.pos = dest.pos
+        oBlock._delBuildable(origin.pos)
+        dBlock._addBuildable(b, nation.getColors())
+
+        # Save.
+        oBlock.put()
+        if origin.block != dest.block:
+            dBlock.put()
+        return True
+
+    def loadDependencies(self, generate=True, useCached=True):
         """Loads all dependencies for this shard."""
-        self._loadCachedBlocks()
+        if useCached:
+            self._loadCachedBlocks()
         self._loadDbBlocks()
         # Generate non-existent core MapBlocks.
-        for n in self._toload:
-            if n in self._core and n not in self._mapblocks:
-                m = MapBlock(n, load=False, worldshard=self)
-                self._mapblocks[n] = m
-                m.generate(self)
+        if generate:
+            for n in self._toload:
+                if n in self._core and n not in self._mapblocks:
+                    m = MapBlock(n, load=False, worldshard=self)
+                    self._mapblocks[n] = m
+                    m.generate(self)
         self._toload = set()
 
     def _loadCachedBlocks(self):
@@ -259,7 +316,7 @@ class WorldShard:
         for m in self._mapblocks.values():
             m.initLOS()
         for m in self._mapblocks.values():
-            blist = m.getBuildablesList()
+            blist = m.getBuildablesList(refresh=True)
             for b in blist:
                 if b.nationName == nationName:
                     for v in b.pos.getSurroundingTiles():

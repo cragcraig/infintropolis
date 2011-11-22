@@ -118,6 +118,34 @@ class Vect:
             bleedset.add(Vect(self.x, self.y + 1))
 
 
+class WorldVect:
+    """Class containing two vectors fully defining a position in the world."""
+
+    def __init__(self, blockVect, posVect):
+        self.block = blockVect
+        self.pos = posVect
+
+    def isAdjacent(self, other):
+        opos = Vect(other.pos.x + BLOCK_SIZE*(other.block.x - self.block.x),
+                    other.pos.y + BLOCK_SIZE*(other.block.y - self.block.y))
+        return opos in listSurroundingTilePosVects(self.pos)
+
+    def wrap(self):
+        wrapCoordinates(self.block, self.pos)
+        
+    def __eq__(self, other):
+        return self.block == other.block and self.pos == other.pos
+
+    def __ne__(self, other):
+        return self.block != other.block or self.pos != other.pos
+
+    def __hash__(self):
+        return hash((self.block, self.pos))
+
+    def copy(self):
+        return copy.copy(self)
+
+
 class Tile:
     """An individual resource tile."""
 
@@ -243,6 +271,9 @@ def listSurroundingTilePos(coord):
     else:
         return ((x+1, y), (x, y-1), (x-1, y-1), (x-1, y), (x-1, y+1), (x, y+1))
 
+def listSurroundingTilePosVects(coord):
+    t = listSurroundingTilePos(coord)
+    return [Vect(x[0], x[1]) for x in t]
 
 def generateSingleRoll():
     return random.randint(1, 6)

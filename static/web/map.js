@@ -40,6 +40,7 @@ var globalState = 0;
 var globalHighlightFunct = null;
 var globalMinimapState = false;
 var globalBuildState = false;
+var globalPauseAutoUpdate = false;
 var globalDebug = false;
 var selectedTile = null;
 var selectedVertex = null;
@@ -1620,6 +1621,7 @@ function RequestJSON(method, url, data)
     } else {
         req.send(null);
     }
+    globalPauseAutoUpdate = true;
 }
 /* Generates a JSON request callback.
  *
@@ -1631,6 +1633,7 @@ function genRequestCallback(req, callback)
 {
     return function () {
         if (req.readyState == 4) {
+            globalPauseAutoUpdate = false;
             if (req.status == 200 && req.responseText != '') {
                 res = JSON.parse(req.responseText);
                 if (res.logout) {
@@ -1878,7 +1881,8 @@ var autoupdateTimer = null;
 function autoupdateBuildableBlocks()
 {
     clearAutoUpdate();
-    requestBuildableBlocks();
+    if (!globalPauseAutoUpdate)
+        requestBuildableBlocks();
     if (autoupdateMovement == true) {
         autoupdatePeriod = autoupdateMinPeriod;
     } else {
@@ -2272,6 +2276,7 @@ function tradePerform()
     if (tradeFor && tradeFrom) {
         RequestJSON("POST", "/set/trade",
                     {"from": tradeFrom, "for": tradeFor});
+        globalPauseAutoUpdate = false;
     }
 }
 
@@ -2338,6 +2343,7 @@ function CapitolNew()
     var name = document.getElementById('rename_form').rename.value;
     RequestJSON("POST", "/set/nation",
                 {"name": name, "new": true});
+    globalPauseAutoUpdate = false;
     showOverlay('#nation_overlay');
 }
 
@@ -2368,6 +2374,7 @@ function CapitolRename()
     var name = document.getElementById('rename_form').rename.value;
     RequestJSON("POST", "/set/nation",
                 {"name": name, "number": capitol.number});
+    globalPauseAutoUpdate = false;
     showOverlay('#nation_overlay');
 }
 
@@ -2659,21 +2666,27 @@ function MoveModeHighlighter(x, y)
 /* Perform move. */
 function MoveModeDo(x, y)
 {
-    if (!selectedBuilding || selectedBuilding.d != 'm')
+    if (!selectedBuilding || !selectedPath || selectedBuilding.d != 'm' ||
+        selectedPath.length < 2)
         return;
 
-    var block1 = selectedBuilding.mapBlockVect;
-    var i2 = getiFromPos(x, y);
-    var block2 = getWorldPos(i2);
-    if (block1.x == block2.x && block1.y == block2.y
-        && x%mapSizes == selectedBuilding.x%mapSizes
-        && y%mapSizes == selectedBuilding.y%mapSizes)
-        return;
+    /* Construct path. */
+    var mpath = new Array();
+    for (var j=selectedPath.length-1; j>=0; j--) {
+        var b = getWorldPos(selectedPath[j].i);
+        var v = {bx: b.x, by: b.y, x: selectedPath[j].x, y: selectedPath[j].y};
+        mpath.push(v);
+    }
+
+    /* Update LOS. */
+    var blocks = new Array();
+    for (var j=0; j<tileMap.length; j++) {
+            blocks.push(getWorldPos(j));
+    }
+
+    /* Send request. */
     TrainModeData.pos = null;
-    RequestJSON("POST", "/set/move",
-                {bx: block1.x, by: block1.y,
-                 x: selectedBuilding.x%mapSizes, y: selectedBuilding.y%mapSizes,
-                 btx: block2.x, bty: block2.y, xt: x%mapSizes, yt: y%mapSizes});
+    RequestJSON("POST", "/set/move", {path: mpath, maps: blocks});
 }
 
 /* Calculate movement map. */
