@@ -337,7 +337,7 @@ class MapBlock(inf.DatabaseObject):
                 return True
         return False
 
-    def _build(self, buildable, colors):
+    def _build(self, buildable, colors, put=True):
         """Builds the buildable. For use inside atomicBuild()."""
         self.dbGet()
         self.worldshard.clear()
@@ -346,16 +346,18 @@ class MapBlock(inf.DatabaseObject):
             if buildable.isUpgrade():
                 self._delBuildable(buildable.pos)
             self._addBuildable(buildable, colors)
-            self.put()
+            if put:
+                self.put()
             return True
         return False
 
     def _buildcost(self, buildable, colors, capitol):
         """Builds the buildable. For use inside atomicBuildCost()."""
-        if not capitol.addResources(buildable.getCost()):
+        if not capitol.addResources(buildable.getCost(), put=False):
             return False
-        if not self._build(buildable, colors):
+        if not self._build(buildable, colors, put=False):
             return False
+        db.put([capitol._model, self._model])
         return True
 
     def _addBuildable(self, buildable, colors):

@@ -157,58 +157,6 @@ class WorldShard:
             if m.exists():
                 m.cache()
 
-    def atomicMoveBuildable(self, nation, originBlock, origin, destBlock,
-                             dest):
-        """Move a buildable from one hex to another."""
-        xg_on = db.create_transaction_options(xg=True)
-        if db.run_in_transaction_options(xg_on, WorldShard._atomicMove,
-                                         self, nation, originBlock, origin,
-                                         destBlock, dest):
-            self.cacheCore()
-            return True
-        else:
-            self.clear()
-            return False
-
-    def _atomicMove(self, nation, originBlock, origin, destBlock, dest):
-        """Intended only for internal use by atomicMoveBuildable."""
-        # Load blocks and add to worldshard.
-        oBlock = MapBlock(originBlock, load=False)
-        oBlock.dbGet()
-        self.addBlockData(oBlock)
-        self._toload.update(originBlock.getSurroundingBlocks())
-        if originBlock == destBlock:
-            dBlock = oBlock
-        else:
-            dBlock = MapBlock(destBlock, load=False)
-            dBlock.dbGet()
-            self.addBlockData(dBlock)
-            self._toload.update(destBlock.getSurroundingBlocks())
-
-        # Check that blocks exist.
-        if not oBlock.exists() or not dBlock.exists():
-            return False
-
-        # Check that move can occur.
-        origin.d = BuildType.middle
-        dest.d = BuildType.middle
-        if dBlock.hasBuildableAt(dest):
-            return False
-
-        # Move buildable.
-        b = oBlock.getBuildable(origin, nation=nation.getName())
-        if not b:
-            return False
-        b.pos = dest
-        oBlock._delBuildable(origin)
-        dBlock._addBuildable(b, nation.getColors())
-
-        # Save.
-        oBlock.put()
-        if originBlock != destBlock:
-            dBlock.put()
-        return True
-
     def atomicPathBuildable(self, nation, path):
         """Move a buildable along a path."""
         xg_on = db.create_transaction_options(xg=True)
@@ -220,7 +168,7 @@ class WorldShard:
             self.clear()
             return False
 
-    def _atomicPath(self, nation, path):
+    def _atomicPath(self, nation, path, enforceContinuous=True):
         """Intended only for internal use by atomicPathBuildable."""
         # Load blocks and add to worldshard.
         for bv in path:
@@ -235,7 +183,7 @@ class WorldShard:
         for bv in path:
             b = self.getBlockOnly(bv.block)
             if b.hasBuildableAt(bv.pos) or b.get(bv.pos).isLand() or\
-               not bv.isAdjacent(pbv):
+               (enforceContinuous and not bv.isAdjacent(pbv)):
                 break
             pbv = bv
             dest = bv
@@ -255,9 +203,10 @@ class WorldShard:
         dBlock._addBuildable(b, nation.getColors())
 
         # Save.
-        oBlock.put()
-        if origin.block != dest.block:
-            dBlock.put()
+        if origin.block == dest.block:
+            oBlock.put()
+        else:
+            db.put([oBlock._model, dBlock._model])
         return True
 
     def loadDependencies(self, generate=True, useCached=True):
@@ -291,7 +240,6 @@ class WorldShard:
                 m.setModel(n)
                 self._mapblocks[v] = m
                 self._toload.discard(v)
-
 
     def _loadDbBlocks(self):
         """Attempts to load shard dependencies from the database.

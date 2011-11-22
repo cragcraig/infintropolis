@@ -200,7 +200,7 @@ class Capitol(inf.DatabaseObject):
             self.load()
             return False
 
-    def addResources(self, resources, async=False):
+    def addResources(self, resources, async=False, put=True):
         """Add a resource list to this capitol's resources.
 
         Intended to be run as an atomic transaction.
@@ -218,10 +218,11 @@ class Capitol(inf.DatabaseObject):
         self._model.grain = final[inf.TileType.grain]
         self._model.ore = final[inf.TileType.ore]
         self._model.gold = final[inf.TileType.gold]
-        if async:
-            self.put_async()
-        else:
-            self.put()
+        if put:
+            if async:
+                self.put_async()
+            else:
+                self.put()
         return True
 
     def getNumber(self):
