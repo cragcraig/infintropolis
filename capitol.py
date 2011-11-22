@@ -27,9 +27,6 @@ class CapitolModel(db.Model):
 class Capitol(inf.DatabaseObject):
     """Represents a connected group of buildables with a single origin."""
     modelClass = CapitolModel
-    _nation = None
-    _nationName = None
-    _number = None
 
     def __init__(self, nation=None, number=None, model=None, load=True):
         """Load CapitolModel from cache/database.
@@ -37,6 +34,7 @@ class Capitol(inf.DatabaseObject):
         If create is set to True and the origin Vect is supplied the capitol
         will be added to the database.
         """
+        inf.DatabaseObject.__init__(self)
         self._nation = nation
         if model:
             self.setModel(model)
@@ -207,9 +205,9 @@ class Capitol(inf.DatabaseObject):
 
         Intended to be run as an atomic transaction.
         """
+        self.dbGet()
         if not any(resources):
             return True
-        self.dbGet()
         res = self.getResourceList()
         final = [res[i] + resources[i] for i in xrange(len(res))]
         if any(map(lambda x: x < 0, final)):

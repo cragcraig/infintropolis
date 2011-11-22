@@ -15,14 +15,16 @@ class Handler(webapp.RequestHandler):
     
     Provides methods covering cookies and browser redirects.
     """
-    _nation = None
-    _jsonReq = None
     _encodeMap = string.maketrans(' \'', '+*')
     _decodeMap = string.maketrans('+*', ' \'')
 
+    def __init__(self):
+        self._nation = None
+        self._jsonReq = None
+
     def setCookie(self, key, value, timeout=999999):
         """Add a cookie to the header."""
-        value = str(value).encode('ascii').translate(self._encodeMap)
+        value = str(value).encode('ascii').translate(Handler._encodeMap)
         self.response.headers.add_header('Set-Cookie',
                                          key + '=' + value + '; '
                                          'max-age=' + str(timeout) + '; '
@@ -32,7 +34,7 @@ class Handler(webapp.RequestHandler):
         """Read the contents of a cookie."""
         value = self.request.cookies.get(key)
         if value is not None:
-            return str(value).encode('ascii').translate(self._decodeMap)
+            return str(value).encode('ascii').translate(Handler._decodeMap)
         else:
             return None
 

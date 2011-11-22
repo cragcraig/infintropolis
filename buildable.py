@@ -39,6 +39,8 @@ class Buildable:
         self.nationName = nation.getName()
         self.capitolNum = capitol.getNumber()
         block = worldshard.getBlock(self.block)
+        if not block.worldshard:
+            print "\nReally no worldshard"
         if block and self.checkBuild(worldshard):
             block.atomicBuildCost(self, nation.getColors(), capitol)
 

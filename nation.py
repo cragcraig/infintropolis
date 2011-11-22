@@ -23,9 +23,6 @@ class NationModel(db.Model):
 class Nation(inf.DatabaseObject):
     """Represents the set of all Capitols controlled by a single user."""
     modelClass = NationModel
-    _error = None
-    _name = None
-    _pwd = None
 
     def __init__(self, name='', pwd='', email='', color1=0, color2=0,
                  create=False):
@@ -33,8 +30,10 @@ class Nation(inf.DatabaseObject):
 
         If create is set to True the nation will be added to the database.
         """
+        inf.DatabaseObject.__init__(self)
         self._name = name
         self._pwd = pwd
+        self._error = None
         if create:
             self.create(email, color1, color2)
         else:

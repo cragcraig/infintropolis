@@ -19,9 +19,6 @@ def validBlockCoord(coord):
 
 class Vect:
     """Vector containing an (x,y[,d]) coordinate."""
-    x = None
-    y = None
-    d = None
 
     def __init__(self, x, y, d=0):
         self.x = int(x)
@@ -123,8 +120,6 @@ class Vect:
 
 class Tile:
     """An individual resource tile."""
-    tiletype = None
-    roll = None
 
     def __init__(self, tiletype=None, roll=None):
         self.tiletype = tiletype
@@ -270,8 +265,10 @@ class DatabaseObject:
     The getKeyName() and dbget() methods must be overloaded and modelClass must
     be defined as the associated db.Model class.
     """
-    _model = None
-    _useCached = False
+
+    def __init__(self):
+        self._model = None
+        self._useCached = False
 
     def load(self, use_cached=True):
         """Load or reload Block from cache/database."""

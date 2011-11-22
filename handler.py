@@ -150,6 +150,7 @@ class PostBuild(request.Handler):
         response = worldshard.getJSONBuildablesDict()
         response['isBuildResult'] = True
         response['capitol'] = capitol.getJSON()
+        response['cn'] = capitol.getNumber()
         self.writeJSON(response)
 
 
@@ -165,10 +166,12 @@ class PostMove(request.Handler):
 
         # Setup.
         request = self.getJSONRequest()
+        response = {'isMoveResult': True}
 
         # Check arguments.
         if not self.inDict(request, 'bx', 'by', 'x', 'y',
                            'btx', 'bty', 'xt', 'yt'):
+            self.writeJSON(response)
             return
 
         # Construct parameters.
@@ -179,6 +182,7 @@ class PostMove(request.Handler):
 
         # Check bounds.
         if not origin.isInBlockBounds() or not dest.isInBlockBounds():
+            self.writeJSON(response)
             return
 
         # Do move.
@@ -189,7 +193,7 @@ class PostMove(request.Handler):
         # Return updated block data.
         worldshard.loadDependencies()
         worldshard.applyLOS(self.getNation().getName())
-        response = worldshard.getJSONDict()
+        response.update(worldshard.getJSONDict())
         self.writeJSON(response)
 
 

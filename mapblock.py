@@ -42,12 +42,12 @@ class SurroundingMapBlocks:
     Used when generating a map. Will not generate map blocks if they do not
     already exist.
     """
-    north = None
-    south = None
-    west = None
-    east = None
 
     def __init__(self, pos, worldshard=None):
+        self.north = None
+        self.south = None
+        self.west = None
+        self.east = None
         vn = Vect(pos.x, pos.y - 1)
         vs = Vect(pos.x, pos.y + 1)
         vw = Vect(pos.x - 1, pos.y)
@@ -81,12 +81,6 @@ class SurroundingMapBlocks:
 class MapBlock(inf.DatabaseObject):
     """A block of map tiles."""
     modelClass = BlockModel
-    _pos = Vect(0,0)
-    _buildableslist = None
-    los = None
-    costmap = None
-    worldshard = None
-    time = None
 
     def __init__(self, pos, load=True, generate_nonexist=True, worldshard=None):
         """Load BlockModel from cache/database.
@@ -94,8 +88,12 @@ class MapBlock(inf.DatabaseObject):
         By default a BlockModel will be generated and stored to the database
         if one does not exist.
         """
+        inf.DatabaseObject.__init__(self)
         self._pos = pos.copy()
         self.worldshard = worldshard
+        self._buildableslist = None
+        self.los = None
+        self.costmap = None
         if load:
             self.load()
             if not self.exists() and generate_nonexist:
@@ -274,6 +272,7 @@ class MapBlock(inf.DatabaseObject):
         build will fail.
         """
         if not self.worldshard:
+            print "\nWhatt no worldshard"
             return False
         xg_on = db.create_transaction_options(xg=True)
         if db.run_in_transaction_options(xg_on, MapBlock._buildcost,

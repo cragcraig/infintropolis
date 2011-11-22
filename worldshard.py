@@ -10,11 +10,12 @@ from mapblock import MapBlock
 
 class WorldShard:
     """Abstracts and optimizes operations involving multiple MapBlocks."""
-    #TODO(craig): Add optional max size option to __init__().
-    _toload = set()
-    _core = set()
-    _mapblocks = dict()
     _maxsize = 1024
+
+    def __init__(self):
+        self._toload = set()
+        self._core = set()
+        self._mapblocks = dict()
 
     def addBlock(self, vect):
         """Adds a block and its dependencies to the shard."""
@@ -58,6 +59,7 @@ class WorldShard:
         """Returns a block if it is in the shard, loading it otherwise."""
         if vect in self._mapblocks:
             r = self._mapblocks[vect]
+            #r.worldshard = self
         else:
             self.guillotineSize()
             r = self.loadBlock(vect, isCore=isCore)
@@ -75,10 +77,10 @@ class WorldShard:
         return None
 
     def guillotineSize(self):
-        """Reduce the stored MapBlocks to no more than self._maxsize."""
-        if len(self._mapblocks) > self._maxsize:
+        """Reduce the stored MapBlocks to no more than WorldShard._maxsize."""
+        if len(self._mapblocks) > WorldShard._maxsize:
             d = random.sample(self._mapblocks,
-                              len(self._mapblocks) - self._maxsize)
+                              len(self._mapblocks) - WorldShard._maxsize)
             for k in d:
                 del self._mapblocks[k]
 
@@ -181,14 +183,12 @@ class WorldShard:
 
         # Check that blocks exist.
         if not oBlock.exists() or not dBlock.exists():
-            print "\nPoop."
             return False
 
         # Check that move can occur.
         origin.d = BuildType.middle
         dest.d = BuildType.middle
         if dBlock.hasBuildableAt(dest):
-            print "\nPoop2."
             return False
 
         # Move buildable.
@@ -196,8 +196,8 @@ class WorldShard:
         if not b:
             return False
         b.pos = dest
-        dBlock._addBuildable(b, nation.getColors())
         oBlock._delBuildable(origin)
+        dBlock._addBuildable(b, nation.getColors())
 
         # Save.
         oBlock.put()

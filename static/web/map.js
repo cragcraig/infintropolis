@@ -10,6 +10,9 @@ var mouseX;
 var mouseY;
 var pureMouseX;
 var pureMouseY;
+var clickMouseX;
+var clickMouseY;
+var movedMouse = false;
 var initd = false;
 
 var scrollId = null;
@@ -42,6 +45,7 @@ var selectedTile = null;
 var selectedVertex = null;
 var selectedEdge = null;
 var selectedBuilding = null;
+var selectedPath = null;
 var tDrawRollTokens = true;
 var isOverlayShown = false;
 var OverlayShownId = "";
@@ -64,10 +68,17 @@ var civLoader = [];
 function MapBlock()
 {
     var o = {valid: false, invalidLOS: false, token: 0,
-             map: new Array(mapSizes), buildables: new Array()};
-    
+             map: new Array(mapSizes), buildables: new Array(),
+             movemap: new Array(mapSizes*mapSizes)};
+
+    /* Tiles */
     for (var j=0; j < mapSizes; j++) {
         o.map[j] = new Array(mapSizes);
+    }
+
+    /* Move map */
+    for (var i=0; i < o.movemap.length; i++) {
+        o.movemap[i] = 0;
     }
 
     return o;
@@ -94,6 +105,22 @@ function getWorldPos(i)
     return r;
 }
 
+function getiFromWorldPos(x, y)
+{
+    if (mapX == x) {
+        if (mapY == y)
+            return 0;
+        else if (mapY + 1 == y)
+            return 2;
+    } else if (mapX + 1 == x) {
+        if (mapY == y)
+            return 1;
+        else if (mapY + 1 == y)
+            return 3;
+    }
+    return -1;
+}
+
 function getiFromPos(x, y)
 {
     return (x < mapSizes ? 0 : 1) + (y < mapSizes ? 0 : 2);
@@ -103,6 +130,16 @@ function getPosFromi(i, x, y)
 {
     return Vect(x + (i == 0 || i == 2 ? 0 : mapSizes),
                 y + (i == 0 || i == 1 ? 0 : mapSizes));
+}
+
+function mapVectToScreen(v)
+{
+    var d = getPosFromi(v.i, v.x, v.y);
+    var x = d.x - screenX;
+    var y = d.y - screenY;
+    d.x = outputx(x, y);
+    d.y = outputy(x, y);
+    return d;
 }
 
 /* Parses a JSON response from the server.
@@ -127,6 +164,11 @@ function JSONCallback(json)
 
         if (json['nation']) {
             populateVillageList();
+        }
+
+        /* Remove move path. */
+        if (json['isMoveResult'] && globalState != 6) {
+            selectedPath = null;
         }
 
         /* parse block data */
@@ -156,9 +198,12 @@ function JSONCallback(json)
         /* Update LOS on an as-needed basis. */
         updateLOSAsNeeded();
 
-        /* Update Minimap if visible. */
-        if (mapUpdated && globalMinimapState)
-            minimapRender();
+        /* Update Minimap and move map. */
+        if (mapUpdated) {
+            if (globalMinimapState)
+                minimapRender();
+            MoveModeUpdateMap();
+        }
 
         /* Re-enable trade if this is a trade result. */
         if (json['isTradeResult'])
@@ -356,6 +401,10 @@ function goMap(worldX, worldY)
     /* Update Minimap if visible. */
     if (globalMinimapState)
         minimapRender();
+
+    /* Update path if visible. */
+    if (globalState == 6)
+        MoveModeUpdateMap();
 }
 
 function moveWest()
@@ -554,6 +603,12 @@ function updateMouse(e)
     mouseX += screenOffsetX;
     mouseY += screenOffsetY;
 
+    /* Disable clicks if mouse moves. */
+    var xdiff = clickMouseX - pureMouseX;
+    var ydiff = clickMouseY - pureMouseY;
+    if (!movedMouse && xdiff*xdiff + ydiff*ydiff > 5*5)
+        movedMouse = true;
+
     UICheckState(pureMouseX, pureMouseY);
     updateSelection();
 }
@@ -609,6 +664,7 @@ function initMouseScroll()
 {
     canvas.onmousedown = mouseCallback;
     canvas.onmouseup = mouseOutCallback;
+    canvas.onclick = mouseClickCallback;
     
     canvas.touchstart = mouseTouch;
     canvas.touchend = mouseOutCallback;
@@ -633,19 +689,29 @@ function mouseCallback()
         BuildModeDo();
         return;
     /* Click on map. */
-    } else {
-        MapClickCallback();
     }
-
 
     /* start mouse scroll */
     if (mouseScrollTimer != null) return;
     mouseScrollTimer = setInterval(mouseScroll, dragDelay);
 
+    clickMouseX = pureMouseX;
+    clickMouseY = pureMouseY;
+    movedMouse = false;
     oldMouseX = pureMouseX;
     oldMouseY = pureMouseY;
 
     canvas.style.cursor = 'move';
+}
+
+function mouseClickCallback()
+{
+    /* Do not generate clicks on map scroll events. */
+    if (movedMouse) return;
+
+    /* Map click. */
+    if (!globalBuildState)
+        MapClickCallback();
 }
 
 function mouseOutCallback()
@@ -695,6 +761,10 @@ function mouseScroll()
 function onTileChange()
 {
     if (globalState == 1) {
+        render();
+    } else if (globalState == 6) {
+        /* Update movement path. */
+        MoveModeUpdatePath();
         render();
     }
 }
@@ -966,6 +1036,8 @@ function render()
 
     /* Render map. */
     renderTiles();
+    if (selectedPath)
+        renderPath(selectedPath);
     renderBuildables();
 
     switch (globalState) {
@@ -1037,6 +1109,42 @@ function drawLoadingMapText(str)
     ctx.textBaseline = "top";
     ctx.strokeText(str, canvas.width/2, 35);
     ctx.fillText(str, canvas.width/2, 35);
+}
+
+// render path
+function renderPath(path)
+{
+    if (!path || path.length < 2) return;
+    ctx.strokeStyle = "#000";
+    ctx.fillStyle = "#000";
+    ctx.lineWidth = 15;
+    ctx.lineCap = "butt";
+    var v;
+
+    /* Path. */
+    var u = mapVectToScreen(path[path.length-1]);
+    ctx.beginPath();
+    ctx.moveTo(u.x, u.y);
+    for (var i=path.length-2; i>=0; i--) {
+        v = mapVectToScreen(path[i]);
+        ctx.lineTo(v.x, v.y);
+    }
+    ctx.moveTo(v.x, v.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    /* Arrow. */
+    var pv = mapVectToScreen(path[1]);
+    var theta = Math.atan2(pv.x - v.x, pv.y - v.y);
+    ctx.beginPath();
+    ctx.moveTo(v.x, v.y);
+    ctx.lineTo(v.x + Math.sin(theta+Math.PI/8)*15,
+               v.y + Math.cos(theta+Math.PI/8)*15);
+    ctx.lineTo(v.x + Math.sin(theta-Math.PI/8)*15,
+               v.y + Math.cos(theta-Math.PI/8)*15);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
 }
 
 // render highlight tile
@@ -1260,9 +1368,9 @@ function drawTile(tile, x, y, highlight)
 
     var dx = outputx(x,y);
     var dy = outputy(x,y);
-    var yoffset = (tile.roll == -1 ? TileHeight : 0);
-    if (highlight)
-        yoffset = 2*TileHeight;
+    var yoffset = (highlight ? 2*TileHeight : 0);
+    if (tile.roll == -1)
+        yoffset += TileHeight;
     ctx.drawImage(tileSprite, TileWidth * tile.type,
                   yoffset, TileWidth, TileHeight,
                   dx - TileWidth/2, dy - TileHeight/2, TileWidth, TileHeight);
@@ -2414,7 +2522,7 @@ function isWater(tile)
 }
 
 /* Does tile have a ship on it? */
-function isOpenTile(x, y)
+function isOpenTile(x, y, visableOnly)
 {
     var i = getiFromPos(x, y);
     x = x%mapSizes;
@@ -2422,7 +2530,8 @@ function isOpenTile(x, y)
     if (!tileMap[i].valid) return false;
     for (j=0; j<tileMap[i].buildables.length; j++) {
         var build = tileMap[i].buildables[j];
-        if (build.x == x && build.y == y && build.d == 'm')
+        if (build.x == x && build.y == y && build.d == 'm' &&
+            (!visableOnly || isBuildableVisable(i, build)))
             return false;
     }
     return true;
@@ -2443,7 +2552,7 @@ function TrainModeEnable(type, level)
     var posVects = Array();
     for (var j=0; j<posTiles.length; j++) {
         var t = getTile(posTiles[j].x, posTiles[j].y);
-        if (isWater(t.type) && isOpenTile(posTiles[j].x, posTiles[j].y))
+        if (isWater(t.type) && isOpenTile(posTiles[j].x, posTiles[j].y, false))
             posVects.push(posTiles[j]);
     }
 
@@ -2527,17 +2636,20 @@ function MoveModeEnable()
     if (!selectedBuilding) return;
     /* Setup global state and highlighter. */
     globalState = 6;
-    globalHighlightFunct = MoveModeHighlighterGen();
+    globalHighlightFunct = MoveModeHighlighter;
+    MoveModeUpdateMap();
     render();
 }
 
+var MoveModePath = null;
+
 /* Generate move mode highlighter function. */
-function MoveModeHighlighterGen()
+function MoveModeHighlighter(x, y)
 {
-    return function(x, y) {
-        var t = getTile(x, y);
-        return isWater(t.type);
-    };
+    var i = getiFromPos(x, y);
+    x = x % mapSizes;
+    y = y % mapSizes;
+    return tileMap[i].valid && tileMap[i].movemap[x*mapSizes + y] > 0;
 }
 
 /* Perform move. */
@@ -2549,9 +2661,133 @@ function MoveModeDo(x, y)
     var block1 = selectedBuilding.mapBlockVect;
     var i2 = getiFromPos(x, y);
     var block2 = getWorldPos(i2);
+    if (block1.x == block2.x && block1.y == block2.y
+        && x%mapSizes == selectedBuilding.x%mapSizes
+        && y%mapSizes == selectedBuilding.y%mapSizes)
+        return;
     TrainModeData.pos = null;
     RequestJSON("POST", "/set/move",
                 {bx: block1.x, by: block1.y,
                  x: selectedBuilding.x%mapSizes, y: selectedBuilding.y%mapSizes,
                  btx: block2.x, bty: block2.y, xt: x%mapSizes, yt: y%mapSizes});
+}
+
+/* Calculate movement map. */
+function MoveModeUpdateMap()
+{
+    if (globalState !=6 || !selectedBuilding || selectedBuilding.d != 'm')
+        return;
+
+    /* Clear all movemaps. */
+    for (var i=0; i<tileMap.length; i++) {
+        if (!tileMap[i].valid) continue;
+        for (var j=0; j<tileMap[i].movemap.length; j++)
+            tileMap[i].movemap[j] = 0;
+    }
+
+    /* Recursively create map. */
+    var block = selectedBuilding.mapBlockVect;
+    var ib = getiFromWorldPos(block.x, block.y);
+    if (ib < 0) return;
+    tileMap[ib].movemap[selectedBuilding.x*mapSizes + selectedBuilding.y] = 999;
+    var s = tilesSurroundingTile(selectedBuilding.x, selectedBuilding.y);
+    for (var j=0; j<s.length; j++)
+        MoveModeRecurse(ib, s[j].x, s[j].y, 5);
+    MoveModeUpdatePath();
+}
+
+function MoveModeRecurse(i, x, y, count)
+{
+    /* Wrap coordinates. */
+    if (x < 0) {
+        i -= 1;
+        x += mapSizes;
+    } else if (x >= mapSizes) {
+        i += 1;
+        x -= mapSizes;
+    }
+    if (y < 0) {
+        i -= 2;
+        y += mapSizes;
+    } else if (y >= mapSizes) {
+        i += 2;
+        y -= mapSizes;
+    }
+    if (i < 0 || i > 3 || !tileMap[i].valid) return;
+
+    /* Check for land or visable collision. */
+    var p = getPosFromi(i, x, y);
+    var t = getTile(p.x, p.y);
+    if (!isWater(t.type) || !isOpenTile(p.x, p.y, true)) return;
+
+    /* Update map. */
+    var index = x*mapSizes + y;
+    if (count <= tileMap[i].movemap[index]) return;
+    tileMap[i].movemap[index] = count--;
+    if (count <= 0) return;
+
+    /* Recurse. */
+    var s = tilesSurroundingTile(x, y);
+    for (var j=0; j<s.length; j++)
+        MoveModeRecurse(i, s[j].x, s[j].y, count);
+    MoveModeUpdatePath();
+}
+
+/* Calculate movement path. */
+function MoveModeUpdatePath()
+{
+    /* Check that we are in a pathable location. */
+    if (!selectedTile) return;
+    var x = selectedTile.x + screenX;
+    var y = selectedTile.y + screenY;
+    var i = getiFromPos(x, y);
+    x = x%mapSizes;
+    y = y%mapSizes;
+    if (tileMap[i].movemap[x*mapSizes + y] <= 0) {
+        selectedPath = null;
+        return;
+    }
+
+    /* Construct path. */
+    var tmpPath = new Array();
+    var v = {i: i, x: x, y: y};
+    while (v != null) {
+        tmpPath.push(v);
+        v = getTileNextMove(v.i, v.x, v.y);
+    }
+    selectedPath = tmpPath;
+}
+
+function getTileNextMove(i, x, y)
+{
+    var s = tilesSurroundingTile(x, y);
+    var value = tileMap[i].movemap[x*mapSizes + y];
+    for (var j=0; j<s.length; j++) {
+        var w = wrapMapVect(i, s[j].x, s[j].y);
+        if (!w) continue;
+        if (tileMap[w.i].movemap[w.x*mapSizes + w.y] > value)
+            return w;
+    }
+    return null;
+}
+
+function wrapMapVect(i, x, y)
+{
+    if (x < 0) {
+        i -= 1;
+        x += mapSizes;
+    } else if (x >= mapSizes) {
+        i += 1;
+        x -= mapSizes;
+    }
+    if (y < 0) {
+        i -= 2;
+        y += mapSizes;
+    } else if (y >= mapSizes) {
+        i += 2;
+        y -= mapSizes;
+    }
+    if (i < 0 || i > 3 || !tileMap[i].valid)
+        return null;
+    return {i: i, x: x, y: y};
 }
