@@ -272,7 +272,6 @@ class MapBlock(inf.DatabaseObject):
         build will fail.
         """
         if not self.worldshard:
-            print "\nWhatt no worldshard"
             return False
         xg_on = db.create_transaction_options(xg=True)
         if db.run_in_transaction_options(xg_on, MapBlock._buildcost,

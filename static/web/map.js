@@ -1122,26 +1122,30 @@ function renderPath(path)
     var v;
 
     /* Path. */
-    var u = mapVectToScreen(path[path.length-1]);
+    v = mapVectToScreen(path[path.length-1]);
     ctx.beginPath();
-    ctx.moveTo(u.x, u.y);
-    for (var i=path.length-2; i>=0; i--) {
+    ctx.moveTo(v.x, v.y);
+    for (var i=path.length-2; i>0; i--) {
         v = mapVectToScreen(path[i]);
         ctx.lineTo(v.x, v.y);
     }
-    ctx.moveTo(v.x, v.y);
+    var pv = mapVectToScreen(path[0]);
+    var theta = Math.atan2(v.x - pv.x, v.y - pv.y);
+    var xl = pv.x + Math.sin(theta)*20;
+    var yl = pv.y + Math.cos(theta)*20;
+    ctx.lineTo(xl, yl);
+    ctx.moveTo(xl, yl);
     ctx.closePath();
     ctx.stroke();
 
     /* Arrow. */
-    var pv = mapVectToScreen(path[1]);
-    var theta = Math.atan2(pv.x - v.x, pv.y - v.y);
     ctx.beginPath();
-    ctx.moveTo(v.x, v.y);
-    ctx.lineTo(v.x + Math.sin(theta+Math.PI/8)*15,
-               v.y + Math.cos(theta+Math.PI/8)*15);
-    ctx.lineTo(v.x + Math.sin(theta-Math.PI/8)*15,
-               v.y + Math.cos(theta-Math.PI/8)*15);
+    ctx.moveTo(xl,
+               yl);
+    ctx.lineTo(xl + Math.sin(theta+Math.PI/8)*15,
+               yl + Math.cos(theta+Math.PI/8)*15);
+    ctx.lineTo(xl + Math.sin(theta-Math.PI/8)*15,
+               yl + Math.cos(theta-Math.PI/8)*15);
     ctx.closePath();
     ctx.stroke();
     ctx.fill();
