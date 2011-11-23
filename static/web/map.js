@@ -1116,8 +1116,7 @@ function drawLoadingMapText(str)
 function renderPath(path)
 {
     if (!path || path.length < 2) return;
-    ctx.strokeStyle = "#000";
-    ctx.fillStyle = "#000";
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
     ctx.lineWidth = 15;
     ctx.lineCap = "butt";
     var v;
@@ -1134,22 +1133,16 @@ function renderPath(path)
     var theta = Math.atan2(v.x - pv.x, v.y - pv.y);
     var xl = pv.x + Math.sin(theta)*20;
     var yl = pv.y + Math.cos(theta)*20;
+    ctx.lineTo(xl + Math.sin(theta)*13, yl + Math.cos(theta)*13);
+    ctx.lineTo(xl + Math.sin(theta+Math.PI/8)*15,
+               yl + Math.cos(theta+Math.PI/8)*15);
     ctx.lineTo(xl, yl);
+    ctx.lineTo(xl + Math.sin(theta-Math.PI/8)*15,
+               yl + Math.cos(theta-Math.PI/8)*15);
+    ctx.lineTo(xl + Math.sin(theta)*13, yl + Math.cos(theta)*13);
     ctx.moveTo(xl, yl);
     ctx.closePath();
     ctx.stroke();
-
-    /* Arrow. */
-    ctx.beginPath();
-    ctx.moveTo(xl,
-               yl);
-    ctx.lineTo(xl + Math.sin(theta+Math.PI/8)*15,
-               yl + Math.cos(theta+Math.PI/8)*15);
-    ctx.lineTo(xl + Math.sin(theta-Math.PI/8)*15,
-               yl + Math.cos(theta-Math.PI/8)*15);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fill();
 }
 
 // render highlight tile

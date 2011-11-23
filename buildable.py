@@ -214,7 +214,7 @@ class BuildType:
     tToJSON = ['s', 'c', 'r', 'p',
                'f']
     LOSVision = [15, 18, 8, 15,
-                  4]
+                  7]
     gatherMult = [1, 2, 0, 0]
     isUpgrade = [False, True, False, False]
     stationarySet = frozenset(['s', 'c', 'r', 'p'])
