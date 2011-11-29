@@ -200,7 +200,7 @@ class WorldShard:
             return False
         b.pos = dest.pos
         oBlock._delBuildable(origin.pos)
-        dBlock._addBuildable(b, nation.getColors())
+        dBlock._addBuildable(b)
 
         # Save.
         if origin.block == dest.block:

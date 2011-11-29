@@ -1,4 +1,5 @@
 import random
+import pickle
 
 from google.appengine.ext import db
 from google.appengine.api import memcache
@@ -32,8 +33,7 @@ class BlockModel(db.Model):
     count = db.IntegerProperty(indexed=False)
     isFullOfCapitols = db.BooleanProperty(indexed=True)
     hasBuilding = db.BooleanProperty(indexed=True)
-    buildables = db.ListProperty(int, indexed=False)
-    nations = db.StringListProperty(indexed=False)
+    buildables = db.ListProperty(db.Blob, indexed=False)
 
 
 class SurroundingMapBlocks:
@@ -158,7 +158,7 @@ class MapBlock(inf.DatabaseObject):
                           tiletype=self._model.tiletype,
                           roll=self._model.roll, count=0,
                           isFullOfCapitols=False, hasBuilding=False,
-                          buildables=[], nations=[])
+                          buildables=[])
 
     def getString(self):
         """Construct a comma deliminated string MapBlock representation."""
@@ -253,19 +253,18 @@ class MapBlock(inf.DatabaseObject):
             t.setWater()
         self.set(coord, t)
 
-    def atomicBuild(self, buildable, colors):
+    def atomicBuild(self, buildable):
         """Builds the buildable in an atomic database transaction."""
         if not self.worldshard:
             return False
-        if db.run_in_transaction(MapBlock._build, self, buildable,
-                                 colors):
+        if db.run_in_transaction(MapBlock._build, self, buildable):
             self.cache()
             return True
         else:
             self.load()
             return False
 
-    def atomicBuildCost(self, buildable, colors, capitol):
+    def atomicBuildCost(self, buildable, capitol):
         """Builds the buildable in an atomic database XG transaction.
         
         Removes cost resources from the Capitol. If they are not avaliable the
@@ -275,7 +274,7 @@ class MapBlock(inf.DatabaseObject):
             return False
         xg_on = db.create_transaction_options(xg=True)
         if db.run_in_transaction_options(xg_on, MapBlock._buildcost,
-                                         self, buildable, colors, capitol):
+                                         self, buildable, capitol):
             self.cache()
             capitol.cache()
             return True
@@ -302,15 +301,9 @@ class MapBlock(inf.DatabaseObject):
         """Get a list of buildables."""
         if not self._buildableslist or refresh:
             self._buildableslist =\
-                [Buildable(self._pos,
-                           Vect(self._model.buildables[i],
-                                self._model.buildables[i+1],
-                                self._model.buildables[i+2]),
-                           self._model.buildables[i+3],
-                           self._model.nations[self._model.buildables[i+6]],
-                           self._model.buildables[i+7])
-                 for i in xrange(0, len(self._model.buildables),
-                                 BUILDABLE_LIST_SIZE)]
+                [Buildable(self._pos, Vect(b[0], b[1], b[2]),
+                           b[3], b[5], b[6], b[4])
+                 for b in map(pickle.loads, self._model.buildables)]
         return self._buildableslist
 
     def getBuildable(self, pos, nation=None, capitol=None, level=-1):
@@ -337,7 +330,7 @@ class MapBlock(inf.DatabaseObject):
                 return True
         return False
 
-    def _build(self, buildable, colors, put=True):
+    def _build(self, buildable, put=True):
         """Builds the buildable. For use inside atomicBuild()."""
         self.dbGet()
         self.worldshard.clear()
@@ -345,54 +338,55 @@ class MapBlock(inf.DatabaseObject):
         if buildable.checkBuild(self.worldshard) and self.exists():
             if buildable.isUpgrade():
                 self._delBuildable(buildable.pos)
-            self._addBuildable(buildable, colors)
+            self._addBuildable(buildable)
             if put:
                 self.put()
             return True
         return False
 
-    def _buildcost(self, buildable, colors, capitol):
+    def _buildcost(self, buildable, capitol):
         """Builds the buildable. For use inside atomicBuildCost()."""
         if not capitol.addResources(buildable.getCost(), put=False):
             return False
-        if not self._build(buildable, colors, put=False):
+        if not self._build(buildable, put=False):
             return False
         db.put([capitol._model, self._model])
         return True
 
-    def _addBuildable(self, buildable, colors):
+    def _addBuildable(self, buildable):
         """Adds a buildable to the internal list."""
-        nationIndex = self._getNationIndex(buildable.nationName)
-        assert len(colors) == 2
         self._model.count += 1
-        self._model.buildables.extend(buildable.getList())
-        self._model.buildables.extend(colors)
-        self._model.buildables.extend([int(nationIndex), int(buildable.capitolNum)])
+        l = buildable.getList()
+        self._model.buildables.append(db.Blob(pickle.dumps(l)))
         if buildable.isGatherer():
             self._model.hasBuilding = True
+        self._buildableslist = None
 
     def _delBuildable(self, pos):
         """Removes a buildable from the internal list."""
-        p = pos.getList()
-        lp = len(p)
-        for i in xrange(0, len(self._model.buildables), BUILDABLE_LIST_SIZE):
-            if self._model.buildables[i:i+lp] == p:
-                del self._model.buildables[i:i+BUILDABLE_LIST_SIZE]
-                self._model.count -= 1
+        i = 0
+        for b in self._model.buildables:
+            l = pickle.loads(b)
+            if Vect(l[0], l[1], l[2]) == pos:
                 break
+            i += 1
+        if i < len(self._model.buildables):
+            del self._model.buildables[i]
+            self._model.count -= 1
+        self._buildableslist = None
 
     def getBuildablesJSON(self):
         """Construct a list of dictionary representations of buildables."""
-        return [{'x': int(self._model.buildables[i]),
-                 'y': int(self._model.buildables[i+1]),
-                 'd': BuildType.dToJSON[self._model.buildables[i+2]],
-                 't': BuildType.tToJSON[self._model.buildables[i+3]],
-                 'c1': self._int2hexcolor(self._model.buildables[i+4]),
-                 'c2': self._int2hexcolor(self._model.buildables[i+5]),
-                 'n': self._model.nations[self._model.buildables[i+6]],
-                 'i': int(self._model.buildables[i+7])}
-                for i in xrange(0, len(self._model.buildables),
-                                BUILDABLE_LIST_SIZE)]
+        l = self.getBuildablesList()
+        return [{'x': b.pos.x,
+                 'y': b.pos.y,
+                 'd': BuildType.dToJSON[b.pos.d],
+                 't': BuildType.tToJSON[b.level],
+                 'c1': self._int2hexcolor(b.colors[0]),
+                 'c2': self._int2hexcolor(b.colors[1]),
+                 'n': b.nationName,
+                 'i': b.capitolNum}
+                for b in l]
 
     def getToken(self):
         """Return the MapBlock token required for Buildables-only requests.
@@ -407,16 +401,6 @@ class MapBlock(inf.DatabaseObject):
     def checkToken(self, token):
         """Returns True if the token matches the MapBlock token."""
         return token == self._model.token
-
-    def _getNationIndex(self, nationName):
-        """Get the index of a nation in the model's nation list.
-
-        Adds the nation if it does not exist. It is up to you to save the
-        updated model to the database.
-        """
-        if nationName not in self._model.nations:
-            self._model.nations.append(nationName)
-        return self._model.nations.index(nationName)
 
     def _int2hexcolor(self, color):
         return "%06x" % color

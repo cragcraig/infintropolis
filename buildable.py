@@ -18,29 +18,25 @@ class Buildable:
        |  |
      b '\/
     """
-    pos = None
-    level = None
-    block = None
-    nationName = None
-    capitolNum = None
-    validate = False
 
     def __init__(self, blockPos, pos, level, nationName=None, capitolNum=None,
-                 validate=True):
+                 colors=(0,0), validate=True):
         self.pos = pos.copy()
         self.block = blockPos.copy()
         self.level = int(level)
         self.nationName = nationName
         self.capitolNum = capitolNum
         self.validate = validate
+        self.colors = colors
 
     def build(self, worldshard, nation, capitol):
         """Adds this buildable in all necessary database models."""
         self.nationName = nation.getName()
         self.capitolNum = capitol.getNumber()
+        self.colors = nation.getColors()
         block = worldshard.getBlock(self.block)
         if block and self.checkBuild(worldshard):
-            block.atomicBuildCost(self, nation.getColors(), capitol)
+            block.atomicBuildCost(self, capitol)
 
     def gather(self, worldshard, roll, resources):
         """Add resources gathered for this roll to the resource list."""
@@ -190,7 +186,7 @@ class Buildable:
     def getList(self):
         """Returns the pos and level as a list."""
         l = self.pos.getList()
-        l.append(self.level)
+        l.extend([self.level, self.colors, self.nationName, self.capitolNum])
         return l
 
     def isInCapitol(self, nation, capitolNumber):
