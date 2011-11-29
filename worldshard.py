@@ -264,7 +264,7 @@ class WorldShard:
         for m in self._mapblocks.values():
             m.initLOS()
         for m in self._mapblocks.values():
-            blist = m.getBuildablesList(refresh=True)
+            blist = m.getBuildablesList()
             for b in blist:
                 if b.nationName == nationName:
                     for v in b.pos.getSurroundingTiles():

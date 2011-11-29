@@ -7,8 +7,6 @@ from buildable import Buildable, BuildType
 from mapblock import MapBlock
 from worldshard import WorldShard
 
-BUILDABLE_LIST_SIZE = 6
-
 
 class CapitolModel(db.Model):
     """A database model representing a Capitol."""
