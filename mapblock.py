@@ -5,6 +5,7 @@ from google.appengine.ext import db
 from google.appengine.api import memcache
 
 import inf
+import buildable
 import algorithms
 from inf import Vect, Tile, TileType
 from buildable import Buildable, BuildType
@@ -301,31 +302,30 @@ class MapBlock(inf.DatabaseObject):
         """Get a list of buildables."""
         if not self._buildableslist or refresh:
             self._buildableslist =\
-                [Buildable(self._pos, Vect(b[0], b[1], b[2]),
-                           b[3], b[5], b[6], b[4])
-                 for b in map(pickle.loads, self._model.buildables)]
+                [buildable.unserialize(b, self._pos)
+                 for b in self._model.buildables]
         return self._buildableslist
 
-    def getBuildable(self, pos, nation=None, capitol=None, level=-1):
+    def getBuildable(self, pos, nation=None, capitol=None, bclass=None):
         """Returns the buildable located at pos, if one exists.
 
-        Any provided nation or level attributes will be enforced.
+        Any provided nation or class attributes will be enforced.
         """
         for b in self.getBuildablesList():
             if b.pos == pos and (not nation or b.nationName == nation) and\
-               (level == -1 or b.level == level) and\
+               (bclass == None or b.__class__ == bclass) and\
                (capitol == None or b.capitolNum == capitol):
                 return b
         return None
 
-    def hasBuildableAt(self, pos, nation=None, capitol=None, level=-1):
+    def hasBuildableAt(self, pos, nation=None, capitol=None, bclass=None):
         """Checks if there is a buildable at the given location.
 
-        Any provided nation or level attributes will be enforced.
+        Any provided nation or class attributes will be enforced.
         """
         for b in self.getBuildablesList():
             if b.pos == pos and (not nation or b.nationName == nation) and\
-               (level == -1 or b.level == level) and\
+               (bclass == None or b.__class__ == bclass) and\
                (capitol == None or b.capitolNum == capitol):
                 return True
         return False
@@ -335,9 +335,9 @@ class MapBlock(inf.DatabaseObject):
         self.dbGet()
         self.worldshard.clear()
         self.worldshard.addBlockData(self)
-        if buildable.checkBuild(self.worldshard) and self.exists():
-            if buildable.isUpgrade():
-                self._delBuildable(buildable.pos)
+        if (not buildable.validate or buildable.checkBuild(self.worldshard))\
+           and self.exists():
+            self._delBuildable(buildable.pos)
             self._addBuildable(buildable)
             if put:
                 self.put()
@@ -346,19 +346,17 @@ class MapBlock(inf.DatabaseObject):
 
     def _buildcost(self, buildable, capitol):
         """Builds the buildable. For use inside atomicBuildCost()."""
-        if not capitol.addResources(buildable.getCost(), put=False):
+        if buildable.validate and not capitol.addResources(buildable.getCost()):
             return False
-        if not self._build(buildable, put=False):
+        if not self._build(buildable):
             return False
-        db.put([capitol._model, self._model])
         return True
 
     def _addBuildable(self, buildable):
         """Adds a buildable to the internal list."""
         self._model.count += 1
-        l = buildable.getList()
-        self._model.buildables.append(db.Blob(pickle.dumps(l)))
-        if buildable.isGatherer():
+        self._model.buildables.append(db.Blob(buildable.serialize()))
+        if buildable.getGather() > 0:
             self._model.hasBuilding = True
         self._buildableslist = None
 
@@ -367,7 +365,7 @@ class MapBlock(inf.DatabaseObject):
         i = 0
         for b in self._model.buildables:
             l = pickle.loads(b)
-            if Vect(l[0], l[1], l[2]) == pos:
+            if Vect(l[1], l[2], l[3]) == pos:
                 break
             i += 1
         if i < len(self._model.buildables):
@@ -380,8 +378,8 @@ class MapBlock(inf.DatabaseObject):
         l = self.getBuildablesList()
         return [{'x': b.pos.x,
                  'y': b.pos.y,
-                 'd': BuildType.dToJSON[b.pos.d],
-                 't': BuildType.tToJSON[b.level],
+                 'd': b.pos.getJSONd(),
+                 't': b.classId,
                  'c1': self._int2hexcolor(b.colors[0]),
                  'c2': self._int2hexcolor(b.colors[1]),
                  'n': b.nationName,

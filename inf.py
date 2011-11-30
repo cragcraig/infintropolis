@@ -25,6 +25,14 @@ class Vect:
         self.y = int(y)
         self.d = int(d)
 
+    def getJSONd(self):
+        """Translate d value into JSON."""
+        return buildable.BuildType.dToJSON[self.d]
+
+    def setdFromJSON(self, d):
+        """Set d from a JSON d-value."""
+        self.d = buildable.BuildType.JSONtod.index(d)
+
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y and self.d == other.d
 
@@ -74,6 +82,21 @@ class Vect:
         return (Vect(x, y), Vect(x+1, y), Vect(x-1, y), Vect(x, y+1),
                 Vect(x, y-1), Vect(x+1, y+1), Vect(x-1, y-1), Vect(x+1, y-1),
                 Vect(x-1, y+1))
+
+    def isEdge(self):
+        """Returns true if this coordinate is a tile edge."""
+        return self.d == buildable.BuildType.topEdge or\
+               self.d == buildable.BuildType.centerEdge or\
+               self.d == buildable.BuildType.bottomEdge
+
+    def isVertex(self):
+        """Returns true if this coordinate is a tile vertex."""
+        return self.d == buildable.BuildType.topVertex or\
+               self.d == buildable.BuildType.bottomVertex
+
+    def isMiddle(self):
+        """Returns true if this coordinate is a tile middle."""
+        return self.d == buildable.BuildType.middle
 
     def getSurroundingTiles(self):
         """Returns a list of the surrounding tile positions."""

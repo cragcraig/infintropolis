@@ -116,10 +116,10 @@ class WorldShard:
         return True
 
     def hasBuildableAt(self, blockPos, pos, d, nation=None, capitol=None,
-                       level=-1):
+                       bclass=None):
         """Checks if there is a buildable at the given location.
 
-        Any provided nation or level attributes will be enforced. Only x,y are
+        Any provided nation or class attributes will be enforced. Only x,y are
         used from the pos Vect as d is a separate parameter to the method.
         Wrapping of the pos vector and subsequent use of the corrected blockPos
         is performed automatically.
@@ -132,7 +132,7 @@ class WorldShard:
             self.loadBlock(bp, isCore=False)
         if bp not in self._mapblocks:
             return False
-        return self._mapblocks[bp].hasBuildableAt(p, nation, capitol, level)
+        return self._mapblocks[bp].hasBuildableAt(p, nation, capitol, bclass)
 
     def _checkForTile(self, blockPos, buildPos, tileMethod):
         """True if tileMethod evaluates True for a tile adjacent to buildPos."""
@@ -196,7 +196,7 @@ class WorldShard:
 
         # Move buildable.
         b = oBlock.getBuildable(origin.pos, nation=nation.getName())
-        if not b:
+        if not b or not b.canMove():
             return False
         b.pos = dest.pos
         oBlock._delBuildable(origin.pos)
@@ -268,7 +268,7 @@ class WorldShard:
             for b in blist:
                 if b.nationName == nationName:
                     for v in b.pos.getSurroundingTiles():
-                        self._recurseLOS(v, m, BuildType.LOSVision[b.level])
+                        self._recurseLOS(v, m, b.getVision())
 
     def _recurseLOS(self, pos, block, count):
         """Recursively performs line of sight calculations.

@@ -1,10 +1,31 @@
 import copy
+import pickle
 
 import inf
 
 
+def unserialize(str, block):
+    """Recreate a serialized buildable."""
+    b = pickle.loads(str)
+    return _create(b[0], block, inf.Vect(b[1], b[2], b[3]), *b[4:])
+
+
+def new(JSONBuildableType, *args, **kwargs):
+    """Create a buildable object of the specified JSON type."""
+    f = filter(lambda o: o.classId == JSONBuildableType,
+               BuildType.objects)
+    assert len(f) == 1
+    return f[0](*args, **kwargs)
+
+
+def _create(buildableType, *args, **kwargs):
+    """Create a buildable object of the specified serialized type."""
+    obj = BuildType.objects[buildableType]
+    return obj(*args, **kwargs)
+
+
 class Buildable:
-    """Represents an buildable game object.
+    """Represents an buildable game object. Should never be used directly.
 
     Edge
     d = {t, c, b}
@@ -19,86 +40,78 @@ class Buildable:
      b '\/
     """
 
-    def __init__(self, blockPos, pos, level, nationName=None, capitolNum=None,
+    def __init__(self, blockPos, pos, nationName=None, capitolNum=None,
                  colors=(0,0), validate=True):
         self.pos = pos.copy()
         self.block = blockPos.copy()
-        self.level = int(level)
         self.nationName = nationName
         self.capitolNum = capitolNum
         self.validate = validate
         self.colors = colors
 
-    def build(self, worldshard, nation, capitol):
+    def build(self, shard, nation, capitol):
         """Adds this buildable in all necessary database models."""
         self.nationName = nation.getName()
         self.capitolNum = capitol.getNumber()
         self.colors = nation.getColors()
-        block = worldshard.getBlock(self.block)
-        if block and self.checkBuild(worldshard):
+        block = shard.getBlock(self.block)
+        if block and (not self.validate or self.checkBuild(shard)):
             block.atomicBuildCost(self, capitol)
 
-    def gather(self, worldshard, roll, resources):
+    def gather(self, shard, roll, resources):
         """Add resources gathered for this roll to the resource list."""
-        if not self.isGatherer():
+        if self.getGather() == 0:
             return
         for v in self.pos.getSurroundingTiles():
-            t = worldshard.getTile(self.block, v)
+            t = shard.getTile(self.block, v)
             if t and t.roll == roll:
                 i = inf.TileType.typeToResource[t.tiletype]
                 if i is not None:
-                    resources[i] += BuildType.gatherMult[self.level]
+                    resources[i] += self.getGather()
 
-    def isUpgrade(self):
-        """Returns True if this buildable type is an upgrade."""
-        return not self.isShip() and BuildType.isUpgrade[self.level]
-
-    def isGatherer(self):
-        """Returns true if this buildable can gather resources."""
-        return not self.isShip() and BuildType.gatherMult[self.level]
+    def getGather(self):
+        """Returns the number of resources gathered in a single event."""
+        return 0
                
     def getCost(self):
         """Returns the cost of this buildable as a list."""
-        if not self.validate:
-            return [0, 0, 0, 0, 0, 0]
-        else:
-            return BuildType.costList[self.level]
+        return [0, 0, 0, 0, 0, 0]
 
-    def checkBuild(self, worldshard):
+    def getVision(self):
+        return 1
+
+    def checkBuild(self, shard):
         """Checks if this buildable can be built."""
-        if not self.validate:
-            return True
         # Perform type-specific validation.
-        if self.level == BuildType.settlement:
-            return self._checkBuildVertex(worldshard)
-        elif self.level == BuildType.road:
-            return self._checkBuildEdge(worldshard, BuildType.road)
-        elif self.level == BuildType.port:
-            return self._checkBuildVertex(worldshard, requireWater=True)
-        elif self.isShip():
-            return self._checkBuildShip(worldshard)
-        elif self.isUpgrade():
-            return self._checkUpgradeCity(worldshard)
-        else:
-            return False
+        return False
 
-    def _checkBuildShip(self, worldshard):
+    def _checkBuildShip(self, shard):
         """Check if this buildable can be built as a ship."""
-        wtile = worldshard.getTile(self.block, self.pos)
+        if not self.pos.isMiddle():
+            return False
+        wtile = shard.getTile(self.block, self.pos)
         return wtile and wtile.isWater() and\
-               worldshard.checkBuildableRequirements(self.block, self.pos,
-                ((-1, BuildType.topVertex, self.nationName, self.capitolNum),
-                 (-1, BuildType.bottomVertex, self.nationName, self.capitolNum),
-                 (0, BuildType.topVertex, self.nationName, self.capitolNum),
-                 (0, BuildType.bottomVertex, self.nationName, self.capitolNum),
-                 (1, BuildType.bottomVertex, self.nationName, self.capitolNum),
-                 (5, BuildType.topVertex, self.nationName, self.capitolNum)),
+               shard.checkBuildableRequirements(self.block, self.pos,
+                ((-1, BuildType.topVertex, self.nationName, self.capitolNum,
+                  Port),
+                 (-1, BuildType.bottomVertex, self.nationName, self.capitolNum,
+                  Port),
+                 (0, BuildType.topVertex, self.nationName, self.capitolNum,
+                  Port),
+                 (0, BuildType.bottomVertex, self.nationName, self.capitolNum,
+                  Port),
+                 (1, BuildType.bottomVertex, self.nationName, self.capitolNum,
+                  Port),
+                 (5, BuildType.topVertex, self.nationName, self.capitolNum,
+                  Port)),
                 ((-1, BuildType.middle),))
 
-    def _checkBuildVertex(self, worldshard, requireWater=False):
+    def _checkBuildVertex(self, shard, requireWater=False):
+        if not self.pos.isVertex():
+            return False
         """Check if this buildable can be built at a vertex."""
         if self.pos.d == BuildType.topVertex:
-            return worldshard.checkBuildableRequirements(self.block, self.pos,
+            return shard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.centerEdge, self.nationName, self.capitolNum),
                  (-1, BuildType.topEdge, self.nationName, self.capitolNum),
                  (2, BuildType.bottomEdge, self.nationName, self.capitolNum)),
@@ -108,7 +121,7 @@ class Buildable:
                  (2, BuildType.bottomVertex)),
                  requireLand=True, requireWater=requireWater)
         elif self.pos.d == BuildType.bottomVertex:
-            return worldshard.checkBuildableRequirements(self.block, self.pos,
+            return shard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.centerEdge, self.nationName, self.capitolNum),
                  (-1, BuildType.bottomEdge, self.nationName, self.capitolNum),
                  (4, BuildType.topEdge, self.nationName, self.capitolNum)),
@@ -120,113 +133,197 @@ class Buildable:
         else:
             return False
 
-    def _checkBuildEdge(self, worldshard, level):
+    def _checkBuildEdge(self, shard, bclass, rland, rwater):
         """Check if this buildable can be built at an edge."""
-        # Determine land/water requirements.
-        rland = False
-        rwater = False
-        if level == BuildType.road:
-            rland = True
+        if not self.pos.isEdge():
+            return False
         # Perform verification.
         if self.pos.d == BuildType.topEdge:
-            return worldshard.checkBuildableRequirements(self.block, self.pos,
+            return shard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.topVertex, self.nationName, self.capitolNum),
                  (1, BuildType.bottomVertex, self.nationName, self.capitolNum),
                  (-1, BuildType.centerEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (2, BuildType.bottomEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (1, BuildType.centerEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (1, BuildType.bottomEdge, self.nationName, self.capitolNum,
-                  level)),
+                  bclass)),
                 ((-1, BuildType.topEdge),),
                 requireLand=rland, requireWater=rwater)
         elif self.pos.d == BuildType.centerEdge:
-            return worldshard.checkBuildableRequirements(self.block, self.pos,
+            return shard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.topVertex, self.nationName, self.capitolNum),
                  (-1, BuildType.bottomVertex, self.nationName, self.capitolNum),
                  (-1, BuildType.topEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (-1, BuildType.bottomEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (2, BuildType.bottomEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (4, BuildType.topEdge, self.nationName, self.capitolNum,
-                  level)),
+                  bclass)),
                 ((-1, BuildType.centerEdge),),
                 requireLand=rland, requireWater=rwater)
         elif self.pos.d == BuildType.bottomEdge:
-            return worldshard.checkBuildableRequirements(self.block, self.pos,
+            return shard.checkBuildableRequirements(self.block, self.pos,
                 ((-1, BuildType.bottomVertex, self.nationName, self.capitolNum),
                  (5, BuildType.topVertex, self.nationName, self.capitolNum),
                  (-1, BuildType.centerEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (4, BuildType.topEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (5, BuildType.centerEdge, self.nationName, self.capitolNum,
-                  level),
+                  bclass),
                  (5, BuildType.topEdge, self.nationName, self.capitolNum,
-                  level)),
+                  bclass)),
                 ((-1, BuildType.bottomEdge),),
                 requireLand=rland, requireWater=rwater)
         else:
             return False
             
-    def _checkUpgradeCity(self, worldshard):
+    def _checkUpgradeSettlement(self, shard):
         """Check if this buildable can upgrade the current location."""
-        return worldshard.checkBuildableRequirements(self.block, self.pos,
+        return shard.checkBuildableRequirements(self.block, self.pos,
             ((-1, self.pos.d, self.nationName, self.capitolNum,
-              BuildType.settlement),),
+              Settlement),),
             ())
 
     def copy(self):
         return copy.copy(self)
 
     def getList(self):
-        """Returns the pos and level as a list."""
-        l = self.pos.getList()
-        l.extend([self.level, self.colors, self.nationName, self.capitolNum])
+        """Returns the buildable serialized in a list."""
+        l = [self.pos.x, self.pos.y, self.pos.d, self.nationName,
+             self.capitolNum, self.colors]
         return l
+
+    def serialize(self):
+        """Return a serialized copy of this buildable."""
+        l = [BuildType.objects.index(self.__class__)]
+        l.extend(self.getList())
+        return pickle.dumps(l)
 
     def isInCapitol(self, nation, capitolNumber):
         """Returns True if this buildable is in the given nation's capitol."""
         return nation == self.nationName and capitolNumber == self.capitolNum
 
-    def isShip(self):
-        """Is this buildable a ship."""
-        return self.pos.d == BuildType.middle
+    def isMoveable(self):
+        """Is this buildable moveable."""
+        return False
+
+    def canMove(self):
+        """Can this buildable be moved right now."""
+        return self.isMoveable()
+
+
+class Settlement(Buildable):
+    """A buildable settlement."""
+    classId = 's'
+
+    def getGather(self):
+        return 1
+               
+    def getCost(self):
+        return [-1, -1, -1, -1, 0, 0]
+
+    def getVision(self):
+        return 15
+
+    def checkBuild(self, shard):
+        return self._checkBuildVertex(shard)
+
+    def isMoveable(self):
+        return False
+
+
+class Port(Buildable):
+    """A buildable port."""
+    classId = 'p'
+
+    def getGather(self):
+        return 0
+               
+    def getCost(self):
+        return [-1, -1, 0, 0, -2, 0]
+
+    def getVision(self):
+        return 15
+
+    def checkBuild(self, shard):
+        return self._checkBuildVertex(shard, requireWater=True)
+
+    def isMoveable(self):
+        return False
+
+
+class City(Buildable):
+    """A buildable city."""
+    classId = 'c'
+
+    def getGather(self):
+        return 2
+               
+    def getCost(self):
+        return [0, 0, 0, -2, -3, 0]
+
+    def getVision(self):
+        return 18
+
+    def checkBuild(self, shard):
+        return self._checkUpgradeSettlement(shard)
+
+    def isMoveable(self):
+        return False
+
+
+class Road(Buildable):
+    """A buildable road."""
+    classId = 'r'
+
+    def getGather(self):
+        return 0
+               
+    def getCost(self):
+        return [-1, 0, -1, 0, 0, 0]
+
+    def getVision(self):
+        return 8
+
+    def checkBuild(self, shard):
+        return self._checkBuildEdge(shard, Road, True, False)
+
+    def isMoveable(self):
+        return False
+
+
+class Sloop(Buildable):
+    """A buildable sloop."""
+    classId = 'f'
+
+    def getGather(self):
+        return 0
+
+    def getCost(self):
+        return [0, 0, 0, 0, 0, 0]
+
+    def getVision(self):
+        return 7
+
+    def checkBuild(self, shard):
+        return self._checkBuildShip(shard)
+
+    def isMoveable(self):
+        return True
+
+    def canMove(self):
+        return True
 
 
 class BuildType:
-    """Enum for buildable types."""
+    """Defines buildable types."""
+    objects = [Settlement, City, Port, Road, Sloop]
     topEdge, centerEdge, bottomEdge, topVertex, bottomVertex, middle = range(6)
     dToJSON = ['t', 'c', 'b', 't', 'b', 'm']
     JSONtod = ['t', 'c', 'b', 'tv', 'bv', 'm']
-
-    empty = -1
-    settlement, city, road, port,\
-    sloop = range(5)
-    tToJSON = ['s', 'c', 'r', 'p',
-               'f']
-    LOSVision = [15, 18, 8, 15,
-                  7]
-    gatherMult = [1, 2, 0, 0]
-    isUpgrade = [False, True, False, False]
-    stationarySet = frozenset(['s', 'c', 'r', 'p'])
-    vertexSet = frozenset(['s', 'c', 'p'])
-
-    costList = [ [-1, -1, -1, -1,  0,  0],
-                 [ 0,  0,  0, -2, -3,  0],
-                 [-1,  0, -1,  0,  0,  0],
-                 [-1, -1,  0,  0, -2,  0],
-                 
-                 [ 1,  1,  0,  0,  0,  0] ]
-
-
-def JSONtod(jsont, jsond):
-    """Get the correct d value from a json d value."""
-    v = jsond
-    if jsont in BuildType.vertexSet:
-        v += 'v'
-    return BuildType.JSONtod.index(v)

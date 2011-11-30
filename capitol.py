@@ -2,10 +2,8 @@ from google.appengine.ext import db
 
 import inf
 import algorithms
-from inf import Vect
-from buildable import Buildable, BuildType
-from mapblock import MapBlock
-from worldshard import WorldShard
+import buildable
+import worldshard
 
 
 class CapitolModel(db.Model):
@@ -80,7 +78,7 @@ class Capitol(inf.DatabaseObject):
     def hasLocation(self):
         """Returns true if a location has been assigned.
 
-        This location is not required to be permanent.
+        This location is not required to be permanent unless hasSet is True.
         """
         return len(self._model.location) > 0
 
@@ -90,11 +88,11 @@ class Capitol(inf.DatabaseObject):
 
     def getLocationBlockVect(self):
         """Return the block where this Capitol originates."""
-        return Vect(self._model.location[0], self._model.location[1])
+        return inf.Vect(self._model.location[0], self._model.location[1])
 
     def getLocationVect(self):
         """Return the position where this Capitol originates."""
-        return Vect(self._model.location[2], self._model.location[3],
+        return inf.Vect(self._model.location[2], self._model.location[3],
                     self._model.location[4])
 
     def updateLocationLogic(self):
@@ -107,11 +105,11 @@ class Capitol(inf.DatabaseObject):
                 self.atomicSetLocation(blockVect, pos)
         if self.hasLocation(): #TODO(craig): and not settlementExists()
             #TODO(craig): Check that build can actually occur.
-            worldshard = WorldShard()
+            shard = worldshard.WorldShard()
             bv = self.getLocationBlockVect()
             v = self.getLocationVect()
-            build = Buildable(bv, v, BuildType.settlement, validate=False)
-            build.build(worldshard, self._nation, self)
+            build = buildable.Settlement(bv, v, validate=False)
+            build.build(shard, self._nation, self)
         if not self.hasSetLocation(): #TODO(craig) and settlementExists()
             self.atomicSetHasLocation()
 
@@ -141,28 +139,29 @@ class Capitol(inf.DatabaseObject):
         self.put()
         return True
 
-    def gatherResources(self, worldshard, roll):
+    def gatherResources(self, shard, roll):
         """Perform a resource gather event for this capitol."""
         if not self.exists() or not self.hasSetLocation():
             return
         gathered = [0]*6
         visited = set()
-        self.recurseBuildables(worldshard, Buildable.gather, roll, gathered)
+        self.recurseBuildables(shard, buildable.Buildable.gather, roll,
+                               gathered)
         self.atomicResourceAdd(gathered, async=True)
 
-    def recurseBuildables(self, worldshard, funct, *args, **kargs):
+    def recurseBuildables(self, shard, funct, *args, **kargs):
         """Call function for each buildable owned by this Capitol.
 
-        funct: f(buildable, worldshard, *args)
+        funct: f(buildable, shard, *args)
         """
         if not self.exists() or not self.hasSetLocation():
             return
         visited = set()
-        self._recurseBuildablesBlock(worldshard, visited,
+        self._recurseBuildablesBlock(shard, visited,
                                      self.getLocationBlockVect(), funct,
                                      *args, **kargs)
 
-    def _recurseBuildablesBlock(self, worldshard, visited, block, funct,
+    def _recurseBuildablesBlock(self, shard, visited, block, funct,
                                 *args, **kargs):
         """Call function for every non-ship buildable owned by this capitol.
 
@@ -171,19 +170,19 @@ class Capitol(inf.DatabaseObject):
         if block in visited:
             return
         visited.add(block)
-        m = worldshard.getBlock(block, isCore=False)
+        m = shard.getBlock(block, isCore=False)
         if not m or not m.exists():
             return
         # Perform function for this block.
         bleedset = set()
         for b in m.getBuildablesList():
             if b.isInCapitol(self.getNationName(), self.getNumber())\
-               and not b.isShip():
-                funct(b, worldshard, *args)
+               and not b.isMoveable():
+                funct(b, shard, *args)
                 b.block.updateBleedSet(bleedset)
         # Recursively call occupied surrounding blocks.
         for v in bleedset:
-            self._recurseBuildablesBlock(worldshard, visited, v, funct,
+            self._recurseBuildablesBlock(shard, visited, v, funct,
                                          *args, **kargs)
 
     def atomicResourceAdd(self, resources, async=False):

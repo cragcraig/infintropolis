@@ -11,7 +11,6 @@ import buildable
 from session import Session
 from inf import Vect
 from worldshard import WorldShard
-from buildable import Buildable, BuildType
 from mapblock import MapBlock
 from nation import Nation
 from capitol import Capitol
@@ -120,15 +119,13 @@ class PostBuild(request.Handler):
         request = self.getJSONRequest()
         response = {'isBuildResult': True}
         # Check arguments.
-        if not self.inDict(request, 'type', 'x', 'y', 'd', 'bx', 'by')\
-           or request['type'] not in BuildType.tToJSON:
+        if not self.inDict(request, 'type', 'x', 'y', 'd', 'bx', 'by'):
             self.writeJSON(response)
             return
 
         # Construct parameters.
-        pos = Vect(request['x'], request['y'],
-                   buildable.JSONtod(request['type'], request['d']))
-        buildtype = BuildType.tToJSON.index(request['type'])
+        pos = Vect(request['x'], request['y'])
+        pos.setdFromJSON(request['d'])
         blockVect = Vect(request['bx'], request['by'])
         if not inf.validBlockCoord(pos):
             self.writeJSON(response)
@@ -143,7 +140,7 @@ class PostBuild(request.Handler):
 
         # Build.
         worldshard = WorldShard()
-        build = Buildable(blockVect, pos, buildtype)
+        build = buildable.new(request['type'], blockVect, pos)
         build.build(worldshard, self.getNation(), capitol)
 
         # Return updated BuildableBlock.
@@ -178,7 +175,8 @@ class PostMove(request.Handler):
         i = 0
         for v in request['path']:
             path.append(inf.WorldVect(Vect(v['bx'], v['by']),
-                                      Vect(v['x'], v['y'], BuildType.middle)))
+                                      Vect(v['x'], v['y'],
+                                           buildable.BuildType.middle)))
             if not path[i].pos.isInBlockBounds():
                 self.writeJSON(response)
                 return

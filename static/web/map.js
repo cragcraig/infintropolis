@@ -1828,6 +1828,7 @@ function BuildModeDo()
     if (!globalBuildState || isBuildActive)
         return;
     var selected = (globalState == 2 ? selectedVertex : selectedEdge);
+    var extraD = (globalState == 2 ? 'v' : '');
     if (selected) {
         /* Modify selected into a proper buildable object. */
         var x = selected.x + screenX;
@@ -1842,7 +1843,7 @@ function BuildModeDo()
         /* Launch build request. */
         RequestJSON("POST", "/set/build",
                     {bx: block.x, by: block.y, x: selected.x, y: selected.y,
-                     d: selected.d, type: selected.t});
+                     d: selected.d + extraD, type: selected.t});
         buildDisable();
     }
     launchAutoUpdate();
