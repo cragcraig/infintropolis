@@ -8,7 +8,6 @@ import inf
 import buildable
 import algorithms
 from inf import Vect, Tile, TileType
-from buildable import Buildable, BuildType
 
 # Probabilities for map generator.
 PROBABILITY_MAP = [[3, 40, 30, 10, 30, 80, 90],
@@ -196,8 +195,10 @@ class MapBlock(inf.DatabaseObject):
                             clear = False
                             break
                 if clear == True:
-                    d = random.sample([BuildType.topVertex, BuildType.bottomVertex], 1)
-                    return (Vect(self._pos.x, self._pos.y), Vect(pos.x, pos.y, d[0]))
+                    d = random.sample([buildable.BuildType.topVertex,
+                                       buildable.BuildType.bottomVertex], 1)
+                    return inf.WorldVect(Vect(self._pos.x, self._pos.y),
+                                         Vect(pos.x, pos.y, d[0]))
         bb.atomicSetFullOfCapitols()
         return None
 

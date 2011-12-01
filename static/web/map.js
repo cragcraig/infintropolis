@@ -165,6 +165,13 @@ function JSONCallback(json)
 
         if (json['nation']) {
             populateVillageList();
+            /* Switch to new capitol. */
+            if (json['isNewCapitol'] && nation && capitol &&
+                nation.capitol_count - 1 != capitol.number) {
+                for (var i=0; i<tileMap.length; i++)
+                    tileMap[i].valid = false;
+                CapitolSwitch(nation.capitol_count - 1, false);
+            }
         }
 
         /* Remove move path. */
@@ -174,7 +181,7 @@ function JSONCallback(json)
 
         /* parse block data */
         var mapUpdated = false;
-        for (i=0; i<tileMap.length; i++) {
+        for (var i=0; i<tileMap.length; i++) {
             var pos = getWorldPos(i);
             var id = pos.x + '_' + pos.y;
             if (json[id] && (!isBuildActive || json['isBuildResult'])) {
@@ -2058,8 +2065,6 @@ function loadingAnimationDraw()
 {
     ctx.save()
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    //ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.translate(canvas.width/2, canvas.height/2);
     ctx.rotate(loadingAnimation.theta)
     loadingAnimation.theta += Math.PI/20;

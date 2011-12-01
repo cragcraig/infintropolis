@@ -126,7 +126,7 @@ class PostBuild(request.Handler):
         # Construct parameters.
         pos = Vect(request['x'], request['y'])
         pos.setdFromJSON(request['d'])
-        blockVect = Vect(request['bx'], request['by'])
+        worldPos = inf.WorldVect(Vect(request['bx'], request['by']), pos)
         if not inf.validBlockCoord(pos):
             self.writeJSON(response)
             return
@@ -140,7 +140,7 @@ class PostBuild(request.Handler):
 
         # Build.
         worldshard = WorldShard()
-        build = buildable.new(request['type'], blockVect, pos)
+        build = buildable.new(request['type'], worldPos)
         build.build(worldshard, self.getNation(), capitol)
 
         # Return updated BuildableBlock.
@@ -269,6 +269,7 @@ class GetPostNation(request.Handler):
 
         # Get parameters.
         request = self.getJSONRequest()
+        response = {}
         new = False
         number = None
         if self.inDict(request, 'name'):
@@ -293,11 +294,12 @@ class GetPostNation(request.Handler):
         # Create new Capitol.
         if new:
             self.getNation().atomicAddCapitol(name)
+            response['isNewCapitol'] = True
         else:
             self.getNation().atomicSetCapitolName(number, name)
 
         # Respond.
-        response = {'nation': self.getNation().getJSON()}
+        response.update({'nation': self.getNation().getJSON()})
         self.writeJSON(response)
 
 

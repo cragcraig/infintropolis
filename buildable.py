@@ -9,19 +9,12 @@ import inf
 def unserialize(str, block):
     """Recreate a serialized buildable."""
     b = pickle.loads(str)
-    return _create(b[0], block, inf.Vect(b[1], b[2], b[3]), *b[4:])
+    return new(b[0], inf.WorldVect(block, inf.Vect(b[1], b[2], b[3])), *b[4:])
 
 
-def new(JSONBuildableType, *args, **kwargs):
-    """Create a buildable object of the specified JSON type."""
-    f = filter(lambda o: o.classId == JSONBuildableType, _objects)
-    assert len(f) == 1
-    return f[0](*args, **kwargs)
-
-
-def _create(buildableType, *args, **kwargs):
-    """Create a buildable object of the specified serialized type."""
-    obj = _objects_dict[buildableType]
+def new(classId, *args, **kwargs):
+    """Create a buildable object of the specified classId type."""
+    obj = _objects_dict[classId]
     return obj(*args, **kwargs)
 
 
@@ -43,10 +36,10 @@ class Buildable:
      b '\/
     """
 
-    def __init__(self, blockPos, pos, nationName=None, capitolNum=None,
+    def __init__(self, worldPos, nationName=None, capitolNum=None,
                  colors=(0,0)):
-        self.pos = pos.copy()
-        self.block = blockPos.copy()
+        self.pos = worldPos.pos.copy()
+        self.block = worldPos.block.copy()
         self.nationName = nationName
         self.capitolNum = capitolNum
         self.colors = colors
@@ -273,7 +266,10 @@ class Settlement(Buildable):
 
 
 class NewSettlement(Settlement):
-    """A settlement that does not require surrounding buildings."""
+    """A settlement that does not require surrounding buildings or cost.
+    
+    This buildable will serialize as a normal settlement.
+    """
 
     def getCost(self):
         return [0, 0, 0, 0, 0, 0]
@@ -388,5 +384,5 @@ class BuildType:
 
 # List of buildable objects.
 
-_objects = [Settlement, City, Port, Road, Sloop]
+_objects = frozenset([Settlement, City, Port, Road, Sloop])
 _objects_dict = dict([(o.classId, o) for o in _objects])

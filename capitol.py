@@ -100,9 +100,9 @@ class Capitol(inf.DatabaseObject):
         if self.hasSetLocation():
             return
         elif not self.hasLocation():
-            blockVect, pos = algorithms.findOpenStart()
-            if blockVect and pos:
-                self.atomicSetLocation(blockVect, pos)
+            startPos = algorithms.findOpenStart()
+            if startPos:
+                self.atomicSetLocation(startPos)
         if self.hasLocation():
             shard = worldshard.WorldShard()
             v = inf.WorldVect(self.getLocationBlockVect(),
@@ -110,7 +110,7 @@ class Capitol(inf.DatabaseObject):
             if not shard.hasBuildableAt(v.block, v.pos, v.pos.d,
                                         nation=self.getNationName(),
                                         capitol=self._number):
-                build = buildable.NewSettlement(v.block, v.pos)
+                build = buildable.NewSettlement(v)
                 build.build(shard, self._nation, self)
             if not self.hasSetLocation() and\
                shard.hasBuildableAt(v.block, v.pos, v.pos.d,
@@ -118,16 +118,17 @@ class Capitol(inf.DatabaseObject):
                                     capitol=self._number):
                 self.atomicSetHasLocation()
 
-    def atomicSetLocation(self, blockVect, pos):
+    def atomicSetLocation(self, startPos):
         """Atomic set location (not necessarily permanent)."""
-        if db.run_in_transaction(Capitol._setLoc, self, blockVect, pos):
+        if db.run_in_transaction(Capitol._setLoc, self, startPos):
             self.cache()
         else:
             self.load()
 
-    def _setLoc(self, blockVect, pos):
+    def _setLoc(self, startPos):
         self.dbGet()
-        self._model.location = [blockVect.x, blockVect.y, pos.x, pos.y, pos.d]
+        self._model.location = [startPos.block.x, startPos.block.y,
+                                startPos.pos.x, startPos.pos.y, startPos.pos.d]
         self.put()
         return True
 
