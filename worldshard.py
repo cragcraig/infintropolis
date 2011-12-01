@@ -99,7 +99,7 @@ class WorldShard:
                                    inf.tileDirMove(buildPos, i[0]), *i[1:]):
                 istrue = True
                 break
-        if not istrue:
+        if not istrue and len(truelist) > 0:
             return False
         # Check falselist.
         for i in falselist:

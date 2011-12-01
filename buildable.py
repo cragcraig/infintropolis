@@ -279,7 +279,7 @@ class NewSettlement(Settlement):
         return [0, 0, 0, 0, 0, 0]
 
     def checkBuild(self, shard):
-        return True #self._checkBuildNewVertex(shard)
+        return self._checkBuildNewVertex(shard)
 
 
 class Port(Buildable):

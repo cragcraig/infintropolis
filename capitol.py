@@ -103,8 +103,7 @@ class Capitol(inf.DatabaseObject):
             blockVect, pos = algorithms.findOpenStart()
             if blockVect and pos:
                 self.atomicSetLocation(blockVect, pos)
-        if self.hasLocation(): #TODO(craig): and not settlementExists()
-            #TODO(craig): Check that build can actually occur.
+        if self.hasLocation():
             shard = worldshard.WorldShard()
             v = inf.WorldVect(self.getLocationBlockVect(),
                               self.getLocationVect())
