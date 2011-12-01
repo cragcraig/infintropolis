@@ -179,6 +179,7 @@ class WorldShard:
         dest = origin
 
         # Check path.
+        moveCost = 0
         pbv = origin
         for bv in path:
             b = self.getBlockOnly(bv.block)
@@ -187,6 +188,7 @@ class WorldShard:
                 break
             pbv = bv
             dest = bv
+            moveCost += 1
 
         # Select origin and dest blocks.
         oBlock = self.getBlockOnly(origin.block)
@@ -196,7 +198,7 @@ class WorldShard:
 
         # Move buildable.
         b = oBlock.getBuildable(origin.pos, nation=nation.getName())
-        if not b or not b.canMove():
+        if not b or b.getMoveRange() < moveCost:
             return False
         b.pos = dest.pos
         oBlock._delBuildable(origin.pos)

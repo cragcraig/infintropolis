@@ -106,12 +106,18 @@ class Capitol(inf.DatabaseObject):
         if self.hasLocation(): #TODO(craig): and not settlementExists()
             #TODO(craig): Check that build can actually occur.
             shard = worldshard.WorldShard()
-            bv = self.getLocationBlockVect()
-            v = self.getLocationVect()
-            build = buildable.Settlement(bv, v, validate=False)
-            build.build(shard, self._nation, self)
-        if not self.hasSetLocation(): #TODO(craig) and settlementExists()
-            self.atomicSetHasLocation()
+            v = inf.WorldVect(self.getLocationBlockVect(),
+                              self.getLocationVect())
+            if not shard.hasBuildableAt(v.block, v.pos, v.pos.d,
+                                        nation=self.getNationName(),
+                                        capitol=self._number):
+                build = buildable.NewSettlement(v.block, v.pos)
+                build.build(shard, self._nation, self)
+            if not self.hasSetLocation() and\
+               shard.hasBuildableAt(v.block, v.pos, v.pos.d,
+                                    nation=self.getNationName(),
+                                    capitol=self._number):
+                self.atomicSetHasLocation()
 
     def atomicSetLocation(self, blockVect, pos):
         """Atomic set location (not necessarily permanent)."""

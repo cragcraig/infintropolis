@@ -4,6 +4,8 @@ import pickle
 import inf
 
 
+# Object generators.
+
 def unserialize(str, block):
     """Recreate a serialized buildable."""
     b = pickle.loads(str)
@@ -12,20 +14,21 @@ def unserialize(str, block):
 
 def new(JSONBuildableType, *args, **kwargs):
     """Create a buildable object of the specified JSON type."""
-    f = filter(lambda o: o.classId == JSONBuildableType,
-               BuildType.objects)
+    f = filter(lambda o: o.classId == JSONBuildableType, _objects)
     assert len(f) == 1
     return f[0](*args, **kwargs)
 
 
 def _create(buildableType, *args, **kwargs):
     """Create a buildable object of the specified serialized type."""
-    obj = BuildType.objects[buildableType]
+    obj = _objects_dict[buildableType]
     return obj(*args, **kwargs)
 
 
+# Base class.
+
 class Buildable:
-    """Represents an buildable game object. Should never be used directly.
+    """Base class for all buildable game objects. Should not be used directly.
 
     Edge
     d = {t, c, b}
@@ -41,12 +44,11 @@ class Buildable:
     """
 
     def __init__(self, blockPos, pos, nationName=None, capitolNum=None,
-                 colors=(0,0), validate=True):
+                 colors=(0,0)):
         self.pos = pos.copy()
         self.block = blockPos.copy()
         self.nationName = nationName
         self.capitolNum = capitolNum
-        self.validate = validate
         self.colors = colors
 
     def build(self, shard, nation, capitol):
@@ -55,7 +57,7 @@ class Buildable:
         self.capitolNum = capitol.getNumber()
         self.colors = nation.getColors()
         block = shard.getBlock(self.block)
-        if block and (not self.validate or self.checkBuild(shard)):
+        if block and self.checkBuild(shard):
             block.atomicBuildCost(self, capitol)
 
     def gather(self, shard, roll, resources):
@@ -133,6 +135,29 @@ class Buildable:
         else:
             return False
 
+    def _checkBuildNewVertex(self, shard, requireWater=False):
+        if not self.pos.isVertex():
+            return False
+        """Check if this buildable can be built at a vertex."""
+        if self.pos.d == BuildType.topVertex:
+            return shard.checkBuildableRequirements(self.block, self.pos,
+                (),
+                ((-1, BuildType.topVertex),
+                 (-1, BuildType.bottomVertex),
+                 (1, BuildType.bottomVertex),
+                 (2, BuildType.bottomVertex)),
+                 requireLand=True, requireWater=requireWater)
+        elif self.pos.d == BuildType.bottomVertex:
+            return shard.checkBuildableRequirements(self.block, self.pos,
+                (),
+                ((-1, BuildType.topVertex),
+                 (-1, BuildType.bottomVertex),
+                 (4, BuildType.topVertex),
+                 (5, BuildType.topVertex)),
+                 requireLand=True, requireWater=requireWater)
+        else:
+            return False
+
     def _checkBuildEdge(self, shard, bclass, rland, rwater):
         """Check if this buildable can be built at an edge."""
         if not self.pos.isEdge():
@@ -201,7 +226,7 @@ class Buildable:
 
     def serialize(self):
         """Return a serialized copy of this buildable."""
-        l = [BuildType.objects.index(self.__class__)]
+        l = [self.classId]
         l.extend(self.getList())
         return pickle.dumps(l)
 
@@ -213,10 +238,19 @@ class Buildable:
         """Is this buildable moveable."""
         return False
 
-    def canMove(self):
-        """Can this buildable be moved right now."""
-        return self.isMoveable()
+    def getJSONDict(self):
+        """Get a JSON dict representation of this buildable."""
+        return {'x': self.pos.x,
+                'y': self.pos.y,
+                'd': self.pos.getJSONd(),
+                't': self.classId,
+                'c1': "%06x" % self.colors[0],
+                'c2': "%06x" % self.colors[1],
+                'n': self.nationName,
+                'i': self.capitolNum}
 
+
+# Game Objects.
 
 class Settlement(Buildable):
     """A buildable settlement."""
@@ -236,6 +270,16 @@ class Settlement(Buildable):
 
     def isMoveable(self):
         return False
+
+
+class NewSettlement(Settlement):
+    """A settlement that does not require surrounding buildings."""
+
+    def getCost(self):
+        return [0, 0, 0, 0, 0, 0]
+
+    def checkBuild(self, shard):
+        return True #self._checkBuildNewVertex(shard)
 
 
 class Port(Buildable):
@@ -298,18 +342,13 @@ class Road(Buildable):
         return False
 
 
-class Sloop(Buildable):
-    """A buildable sloop."""
-    classId = 'f'
+# Ships.
+
+class Ship(Buildable):
+    """A generic ship."""
 
     def getGather(self):
         return 0
-
-    def getCost(self):
-        return [0, 0, 0, 0, 0, 0]
-
-    def getVision(self):
-        return 7
 
     def checkBuild(self, shard):
         return self._checkBuildShip(shard)
@@ -317,13 +356,37 @@ class Sloop(Buildable):
     def isMoveable(self):
         return True
 
-    def canMove(self):
-        return True
+    def getMoveRange(self):
+        return self._shipRange()
 
+
+class Sloop(Ship):
+    """A buildable sloop."""
+    classId = 'f'
+
+    def getCost(self):
+        return [0, 0, 0, 0, 0, 0]
+
+    def getVision(self):
+        return 7
+
+    def _shipRange(self):
+        return 5
+
+    def _shipRecover(self):
+        return 5*60
+
+
+# Defines buildable object positions.
 
 class BuildType:
     """Defines buildable types."""
-    objects = [Settlement, City, Port, Road, Sloop]
     topEdge, centerEdge, bottomEdge, topVertex, bottomVertex, middle = range(6)
     dToJSON = ['t', 'c', 'b', 't', 'b', 'm']
     JSONtod = ['t', 'c', 'b', 'tv', 'bv', 'm']
+
+
+# List of buildable objects.
+
+_objects = [Settlement, City, Port, Road, Sloop]
+_objects_dict = dict([(o.classId, o) for o in _objects])

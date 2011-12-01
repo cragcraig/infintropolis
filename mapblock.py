@@ -313,7 +313,7 @@ class MapBlock(inf.DatabaseObject):
         """
         for b in self.getBuildablesList():
             if b.pos == pos and (not nation or b.nationName == nation) and\
-               (bclass == None or b.__class__ == bclass) and\
+               (bclass == None or isinstance(b, bclass)) and\
                (capitol == None or b.capitolNum == capitol):
                 return b
         return None
@@ -325,7 +325,7 @@ class MapBlock(inf.DatabaseObject):
         """
         for b in self.getBuildablesList():
             if b.pos == pos and (not nation or b.nationName == nation) and\
-               (bclass == None or b.__class__ == bclass) and\
+               (bclass == None or isinstance(b, bclass)) and\
                (capitol == None or b.capitolNum == capitol):
                 return True
         return False
@@ -335,8 +335,7 @@ class MapBlock(inf.DatabaseObject):
         self.dbGet()
         self.worldshard.clear()
         self.worldshard.addBlockData(self)
-        if (not buildable.validate or buildable.checkBuild(self.worldshard))\
-           and self.exists():
+        if buildable.checkBuild(self.worldshard) and self.exists():
             self._delBuildable(buildable.pos)
             self._addBuildable(buildable)
             if put:
@@ -346,7 +345,7 @@ class MapBlock(inf.DatabaseObject):
 
     def _buildcost(self, buildable, capitol):
         """Builds the buildable. For use inside atomicBuildCost()."""
-        if buildable.validate and not capitol.addResources(buildable.getCost()):
+        if not capitol.addResources(buildable.getCost()):
             return False
         if not self._build(buildable):
             return False
@@ -376,15 +375,7 @@ class MapBlock(inf.DatabaseObject):
     def getBuildablesJSON(self):
         """Construct a list of dictionary representations of buildables."""
         l = self.getBuildablesList()
-        return [{'x': b.pos.x,
-                 'y': b.pos.y,
-                 'd': b.pos.getJSONd(),
-                 't': b.classId,
-                 'c1': self._int2hexcolor(b.colors[0]),
-                 'c2': self._int2hexcolor(b.colors[1]),
-                 'n': b.nationName,
-                 'i': b.capitolNum}
-                for b in l]
+        return [b.getJSONDict() for b in l]
 
     def getToken(self):
         """Return the MapBlock token required for Buildables-only requests.
@@ -399,9 +390,6 @@ class MapBlock(inf.DatabaseObject):
     def checkToken(self, token):
         """Returns True if the token matches the MapBlock token."""
         return token == self._model.token
-
-    def _int2hexcolor(self, color):
-        return "%06x" % color
 
 
 def genKey(blockVect):
