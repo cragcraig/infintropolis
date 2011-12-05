@@ -371,7 +371,19 @@ class MapBlock(inf.DatabaseObject):
         if i < len(self._model.buildables):
             del self._model.buildables[i]
             self._model.count -= 1
-        self._buildableslist = None
+            self._buildableslist = None
+
+    def _updateBuildable(self, buildable):
+        """Replaces a buildable in the model with an updated version."""
+        i = 0
+        for b in self._model.buildables:
+            l = pickle.loads(b)
+            if Vect(l[1], l[2], l[3]) == buildable.pos:
+                break
+            i += 1
+        if i < len(self._model.buildables):
+            self._model.buildables[i] = db.Blob(buildable.serialize())
+            self._buildableslist = None
 
     def getBuildablesJSON(self):
         """Construct a list of dictionary representations of buildables."""

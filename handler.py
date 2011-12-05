@@ -199,6 +199,43 @@ class PostMove(request.Handler):
         self.writeJSON(response)
 
 
+class PostAttack(request.Handler):
+    """Handle attack requests."""
+
+    def post(self):
+        """Perform attack and return updated block data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Setup.
+        request = self.getJSONRequest()
+        response = {'isAttackResult': True}
+
+        # Check arguments.
+        if not self.inDict(request, 'abx', 'aby', 'ax', 'ay',
+                           'dbx', 'dby', 'dx', 'dy'):
+            self.writeJSON(response)
+            return
+
+        # Construct.
+        aPos = inf.WorldVect(Vect(request['abx'], request['aby']),
+                             Vect(request['ax'], request['ay'],
+                             buildable.BuildType.middle))
+        dPos = inf.WorldVect(Vect(request['dbx'], request['dby']),
+                             Vect(request['dx'], request['dy'],
+                             buildable.BuildType.middle))
+
+        # Do move.
+        worldshard = WorldShard()
+        worldshard.atomicAttack(aPos, dPos, self.getNation().getName())
+        
+        # Return updated block data.
+        response.update(worldshard.getJSONBuildablesDict())
+        self.writeJSON(response)
+
+
 class PostTrade(request.Handler):
     """Handle trade requests."""
 
@@ -342,8 +379,9 @@ app = webapp.WSGIApplication(
                              [('/', Session),
                               ('/get/debug.*', GetDebug),
                               ('/get/capitol.*', GetCapitol),
-                              ('/set/move.*', PostMove),
                               ('/get/map.*', GetBlock),
+                              ('/set/move.*', PostMove),
+                              ('/set/attack.*', PostAttack),
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
                               ('/set/trade.*', PostTrade),

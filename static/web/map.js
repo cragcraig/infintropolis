@@ -28,16 +28,18 @@ var screenWidth;
 var screenHeight;
 
 // state
-/* 0 = nothing,
+/* 0 = normal,
  * 1 = select tile,
  * 2 = select vertex,
  * 3 = select edge,
- * 4 = train select location,
+ * 4 = select location to train,
  * 5 = highlight tiles,
- * 6 = move mode
+ * 6 = movement mode,
+ * 7 = action mode
  */
 var globalState = 0;
 var globalHighlightFunct = null;
+var globalSelectFunct = null;
 var globalMinimapState = false;
 var globalBuildState = false;
 var globalPauseAutoUpdate = false;
@@ -52,14 +54,15 @@ var isOverlayShown = false;
 var OverlayShownId = "";
 var isTradeActive = false;
 var isBuildActive = false;
+var serverTime = 0;
 
 // nation
 var nation = null;
 var capitol = null;
 
 // map
-var mapX = 0;
-var mapY = 0;
+var mapX = null;
+var mapY = null;
 var mapSizes = 50;
 var tileMap = [];
 var tileLoader = [];
@@ -89,6 +92,18 @@ function MapBlock()
 function Vect(x, y)
 {
     return {"x": x, "y": y};
+}
+
+/* WorldVect object constructor. */
+function WorldVect(i, x, y)
+{
+    return {"x": x, "y": y, "i": i};
+}
+
+/* BlockVect object constructor. */
+function BlockVect(bx, by, x, y)
+{
+    return {"x": x, "y": y, "bx": bx, "by": by};
 }
 
 function initMap(w, h)
@@ -133,6 +148,12 @@ function getPosFromi(i, x, y)
                 y + (i == 0 || i == 1 ? 0 : mapSizes));
 }
 
+function vectToWorldVect(i, v)
+{
+    var vt = getPosFromi(i, v.x, v.y);
+    return WorldVect(getiFromPos(vt.x, vt.y), vt.x % mapSizes, vt.y % mapSizes);
+}
+
 function mapVectToScreen(v)
 {
     var d = getPosFromi(v.i, v.x, v.y);
@@ -147,14 +168,18 @@ function mapVectToScreen(v)
  *
  * json: A decoded object from the server.
  */
-function JSONCallback(json)
+function JSONCallback(jsonObj)
 {
     /* json error */
     var error = false;
-    if (json.error) {
+    if (jsonObj.error) {
         error = true;
-    } else {
-        /* parse capitol and nation data */
+    } else if (jsonObj.response) {
+        var json = jsonObj.response;
+        /* Update time. */
+        serverTime = jsonObj.time;
+
+        /* Parse capitol and nation data. */
         if (json['nation']) {
             parseNation(json['nation']);
         }
@@ -172,11 +197,6 @@ function JSONCallback(json)
                     tileMap[i].valid = false;
                 CapitolSwitch(nation.capitol_count - 1, false);
             }
-        }
-
-        /* Remove move path. */
-        if (json['isMoveResult'] && globalState != 6) {
-            selectedPath = null;
         }
 
         /* parse block data */
@@ -199,6 +219,20 @@ function JSONCallback(json)
                     tileMap[i].valid = true;
                     tileMap[i].invalidLOS = false;
                     mapUpdated = true;
+                }
+            }
+        }
+
+        /* Remove move path and try delayed actions. */
+        if (json['isMoveResult']) {
+            if (globalState != 6)
+                selectedPath = null;
+            /* Attempt to call delayed actions. */
+            if (ActionModeData.length > 0) {
+                var tmpActions = ActionModeData;
+                ActionModeData = new Array();
+                for (var i=0; i<tmpActions.length; i++) {
+                    ActionModeDo(tmpActions[i].a, tmpActions[i].d);
                 }
             }
         }
@@ -307,6 +341,10 @@ function parseBuildableBlock(i, list)
             tileMap[i].invalidLOS = true;
         }
     }
+
+    /* Update path if visible. */
+    if (globalState == 6)
+        MoveModeUpdateMap();
 }
 
 /* Constructs a hash of the buildables owned by this nation in tileMap[i]. */
@@ -630,6 +668,7 @@ function updateSelection()
         selectedTile = t;
         onTileChange();
     }
+
     // set current vertex
     var v = getVertex();
     if (!selectedVertex || (!v && selectedVertex) ||
@@ -918,6 +957,7 @@ function loading()
     // load tiles
     tileSprite = loadImg('/img/tiles.png');
     highlightedTile = loadImg('/img/high.png');
+    ImgAttackHighlight = loadImg('/img/high_attack.png');
     LogoLoading = loadImg('/img/logo.png');
     // load tokens
     for (i=0; i<11; i++) {
@@ -1190,7 +1230,7 @@ var DrawShapes = {
 }
 
 // render middle
-function drawMiddle(b)
+function drawMiddle(b, actualBuildable)
 {
     if (!b) return;
 
@@ -1206,6 +1246,16 @@ function drawMiddle(b)
     drawShape(ctx, px, py, DrawShapes[b.t], "#" + b.c1, "#" + b.c2, 2.5);
 
     ctx.globalAlpha = 1.0;
+
+    // draw health
+    if (actualBuildable && actualBuildable.hp) {
+        ctx.fillStyle = '#c90606';
+        ctx.fillRect(px - 25, py + 20, 50, 6);
+        ctx.fillStyle = '#144fbc';
+        ctx.fillRect(px - 25, py + 20,
+                     Math.floor(50 * actualBuildable.hp/actualBuildable.mhp),
+                     6);
+    }
 }
 
 // render vertex
@@ -1335,11 +1385,14 @@ function renderTiles()
 
     // draw tiles
     var highlight = false;
+    var select = false;
     for (i=-1; i<screenWidth+2; i++) {
         for (j=-2; j<screenHeight+2; j++) {
             if (globalHighlightFunct)
                 highlight = globalHighlightFunct(i+screenX, j+screenY);
-            drawTile(getTile(i+screenX, j+screenY), i, j, highlight);
+            if (globalSelectFunct)
+                select = globalSelectFunct(i+screenX, j+screenY);
+            drawTile(getTile(i+screenX, j+screenY), i, j, highlight, select);
         }
     }
 }
@@ -1361,13 +1414,13 @@ function renderBuildables()
             drawable.t = build.t;
             drawable.c1 = build.c1;
             drawable.c2 = build.c2;
-            drawBuildable(drawable);
+            drawBuildable(drawable, build);
         }
     }
 }
 
 // Draw a tile
-function drawTile(tile, x, y, highlight)
+function drawTile(tile, x, y, highlight, select)
 {
     if (tile == undefined) return;
 
@@ -1392,6 +1445,11 @@ function drawTile(tile, x, y, highlight)
         ctx.drawImage(specialTokens[0], dx - specialTokens[0].width/2,
                                         dy - specialTokens[0].height/2);
     }
+    /* select image */
+    if (select && tile.roll != -1) {
+        ctx.drawImage(ImgAttackHighlight, dx - ImgAttackHighlight.width/2,
+                                          dy - ImgAttackHighlight.height/2);
+    }
     /* draw debug text */
     if (globalDebug) {
         ctx.font = "16pt serif";
@@ -1404,7 +1462,7 @@ function drawTile(tile, x, y, highlight)
 }
 
 // Draw a buildable
-function drawBuildable(buildable)
+function drawBuildable(buildable, actualBuildable)
 {
     if (buildable == undefined || buildable.x < -1 || buildable.y < -2 ||
         buildable.x > screenWidth + 2 || buildable.y > screenWidth + 2) return;
@@ -1415,7 +1473,7 @@ function drawBuildable(buildable)
     } else if (buildable.d != 'm') {
         drawVertex(buildable);
     } else {
-        drawMiddle(buildable);
+        drawMiddle(buildable, actualBuildable);
     }
 }
 
@@ -1635,8 +1693,8 @@ function genRequestCallback(req, callback)
         if (req.readyState == 4) {
             globalPauseAutoUpdate = false;
             if (req.status == 200 && req.responseText != '') {
-                res = JSON.parse(req.responseText);
-                if (res.logout) {
+                var res = JSON.parse(req.responseText);
+                if (res.response && res.response.logout) {
                     logout();
                 } else {
                     callback(res);
@@ -2456,6 +2514,12 @@ function getSelectedBuildable()
     if (!tileMap[i].valid)
         return null;
 
+    return getBuildableAt(i, x, y, d);
+}
+
+function getBuildableAt(i, x, y, d)
+{
+    if (i < 0 || i >= tileMap.length) return null;
     /* Loop though all non-road buildables. */
     var b;
     for (var j=0; j<tileMap[i].buildables.length; j++) {
@@ -2475,7 +2539,7 @@ function MapClickCallback()
     if (!nation || !capitol)
         return;
 
-    /* Port build location select state. */
+    /* Highlight states. */
     if (globalHighlightFunct != null && selectedTile) {
         var t = Vect(selectedTile.x + screenX, selectedTile.y + screenY);
         if (globalHighlightFunct(t.x, t.y)) {
@@ -2498,6 +2562,38 @@ function MapClickCallback()
             render();
         }
     }
+
+    /* Action Mode. */
+    if (globalSelectFunct != null && selectedTile) {
+        t = Vect(selectedTile.x + screenX, selectedTile.y + screenY);
+        if (globalSelectFunct(t.x, t.y)) {
+            /* Do action. */
+            var di = getiFromPos(t.x, t.y);
+            var ai;
+            var ax, ay;
+            if (selectedPath) {
+                ai = selectedPath[0].i;
+                ax = selectedPath[0].x;
+                ay = selectedPath[0].y;
+            } else if (selectedBuilding) {
+                ai = selectedBuilding.mapi;
+                ax = selectedBuilding.x;
+                ay = selectedBuilding.y;
+            }
+            if (selectedPath || selectedBuilding) {
+                var abv = getWorldPos(ai);
+                var dbv = getWorldPos(di);
+                ActionModeDo(BlockVect(abv.x, abv.y, ax, ay),
+                             BlockVect(dbv.x, dbv.y,
+                                       t.x % mapSizes, t.y % mapSizes));
+            }
+        } else {
+            /* Un-select. */
+            globalSelectFunct = null;
+            render();
+        }
+    }
+
 
     if (globalState == 0) {
         /* Building is of a different nation. */
@@ -2686,12 +2782,19 @@ function MoveModeDo(x, y)
     /* Send request. */
     TrainModeData.pos = null;
     RequestJSON("POST", "/set/move", {path: mpath, maps: blocks});
+
+    /* Chain Action Mode. */
+    if (tileMap[selectedPath[0].i].movemap[selectedPath[0].x*mapSizes
+                                           + selectedPath[0].y] > 1)
+        ActionModeInit(selectedPath[0].i, selectedPath[0].x, selectedPath[0].y);
+    else
+        globalSelectFunct = null;
 }
 
 /* Calculate movement map. */
 function MoveModeUpdateMap()
 {
-    if (globalState !=6 || !selectedBuilding || selectedBuilding.d != 'm')
+    if (globalState != 6 || !selectedBuilding || selectedBuilding.d != 'm')
         return;
 
     /* Clear all movemaps. */
@@ -2701,15 +2804,25 @@ function MoveModeUpdateMap()
             tileMap[i].movemap[j] = 0;
     }
 
-    /* Recursively create map. */
     var block = selectedBuilding.mapBlockVect;
     var ib = getiFromWorldPos(block.x, block.y);
     if (ib < 0) return;
+
+    /* Get up to date buildable action count. */
+    var b = getBuildableAt(ib, selectedBuilding.x, selectedBuilding.y,
+                           selectedBuilding.d)
+    if (!b.act) return;
+    var actions = b.act;
+
+    /* Recursively create map. */
     tileMap[ib].movemap[selectedBuilding.x*mapSizes + selectedBuilding.y] = 999;
     var s = tilesSurroundingTile(selectedBuilding.x, selectedBuilding.y);
     for (var j=0; j<s.length; j++)
-        MoveModeRecurse(ib, s[j].x, s[j].y, 5);
+        MoveModeRecurse(ib, s[j].x, s[j].y, b.act);
     MoveModeUpdatePath();
+
+    /* Start Action Mode. */
+    ActionModeInit(ib, selectedBuilding.x, selectedBuilding.y);
 }
 
 function MoveModeRecurse(i, x, y, count)
@@ -2806,4 +2919,53 @@ function wrapMapVect(i, x, y)
     if (i < 0 || i > 3 || !tileMap[i].valid)
         return null;
     return {i: i, x: x, y: y};
+}
+
+/* Action select mode. */
+function ActionModeInit(i, x, y)
+{
+    if (!nation) return;
+
+    /* Find surrounding enemies. */
+    var attack = new Array();
+    var tiles = tilesSurroundingTile(x, y);
+    for (var j=0; j<tiles.length; j++) {
+        var vt = vectToWorldVect(i, tiles[j]);
+        var b = getBuildableAt(vt.i, vt.x, vt.y, 'm');
+        if (b && b.n != nation.name) {
+            attack.push(getPosFromi(vt.i, vt.x, vt.y));
+        }
+    }
+
+    /* Set highlighter. */
+    if (attack.length > 0) {
+        globalSelectFunct = TileListHighlighter(attack);
+    } else {
+        globalSelectFunct = null;
+    }
+}
+
+/* Action Mode data. */
+ActionModeData = new Array();
+
+/* Perform action mode. */
+function ActionModeDo(aBlockPos, dBlockPos)
+{
+    /* End mode. */
+    globalSelectFunct = null;
+    render();
+
+    /* Perform later if the movement has not happened yet. */
+    var ai = getiFromWorldPos(aBlockPos.bx, aBlockPos.by);
+    if (ai < 0) return;
+    if (!getBuildableAt(ai, aBlockPos.x, aBlockPos.y, 'm')) {
+        ActionModeData.push({a: aBlockPos, d: dBlockPos});
+        return;
+    }
+
+    /* Attack. */
+    RequestJSON("POST", "/set/attack", {dbx: dBlockPos.bx, dby: dBlockPos.by,
+                                        dx: dBlockPos.x, dy: dBlockPos.y,
+                                        abx: aBlockPos.bx, aby: aBlockPos.by,
+                                        ax: aBlockPos.x, ay: aBlockPos.y});
 }

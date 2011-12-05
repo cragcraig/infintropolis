@@ -1,5 +1,6 @@
 import copy
 import pickle
+import time
 
 import inf
 
@@ -9,7 +10,9 @@ import inf
 def unserialize(str, block):
     """Recreate a serialized buildable."""
     b = pickle.loads(str)
-    return new(b[0], inf.WorldVect(block, inf.Vect(b[1], b[2], b[3])), *b[4:])
+    o = new(b[0], inf.WorldVect(block, inf.Vect(b[1], b[2], b[3])))
+    o.unserialize(*b[4:])
+    return o
 
 
 def new(classId, *args, **kwargs):
@@ -36,13 +39,12 @@ class Buildable:
      b '\/
     """
 
-    def __init__(self, worldPos, nationName=None, capitolNum=None,
-                 colors=(0,0)):
+    def __init__(self, worldPos):
         self.pos = worldPos.pos.copy()
         self.block = worldPos.block.copy()
-        self.nationName = nationName
-        self.capitolNum = capitolNum
-        self.colors = colors
+        self.nationName = None
+        self.capitolNum = None
+        self.colors = (0, 0)
 
     def build(self, shard, nation, capitol):
         """Adds this buildable in all necessary database models."""
@@ -66,14 +68,14 @@ class Buildable:
 
     def getGather(self):
         """Returns the number of resources gathered in a single event."""
-        return 0
+        return self._attrGather
                
     def getCost(self):
         """Returns the cost of this buildable as a list."""
-        return [0, 0, 0, 0, 0, 0]
+        return self._attrCost
 
     def getVision(self):
-        return 1
+        return self._attrVision
 
     def checkBuild(self, shard):
         """Checks if this buildable can be built."""
@@ -221,7 +223,27 @@ class Buildable:
         """Return a serialized copy of this buildable."""
         l = [self.classId]
         l.extend(self.getList())
+        l.extend(self.getExtra())
         return pickle.dumps(l)
+
+    def unserialize(self, nationName, capitolNumber, colors, *args):
+        """Unserialize basic attributes and send extras on."""
+        self.nationName = nationName
+        self.capitolNum = capitolNumber
+        self.colors = colors
+        self.setExtra(*args)
+
+    def setExtra(self):
+        """Overload to implement object specific unserialization."""
+        pass
+
+    def getExtra(self):
+        """Return an iterable of object specific attributes to serialize."""
+        return ()
+
+    def getExtraJSON(self):
+        """Return object specific JSON attributes as a dict."""
+        return ()
 
     def isInCapitol(self, nation, capitolNumber):
         """Returns True if this buildable is in the given nation's capitol."""
@@ -229,11 +251,11 @@ class Buildable:
 
     def isMoveable(self):
         """Is this buildable moveable."""
-        return False
+        return self._attrMoveable
 
     def getJSONDict(self):
         """Get a JSON dict representation of this buildable."""
-        return {'x': self.pos.x,
+        json = {'x': self.pos.x,
                 'y': self.pos.y,
                 'd': self.pos.getJSONd(),
                 't': self.classId,
@@ -241,6 +263,8 @@ class Buildable:
                 'c2': "%06x" % self.colors[1],
                 'n': self.nationName,
                 'i': self.capitolNum}
+        json.update(self.getExtraJSON())
+        return json
 
 
 # Game Objects.
@@ -248,21 +272,13 @@ class Buildable:
 class Settlement(Buildable):
     """A buildable settlement."""
     classId = 's'
-
-    def getGather(self):
-        return 1
-               
-    def getCost(self):
-        return [-1, -1, -1, -1, 0, 0]
-
-    def getVision(self):
-        return 15
+    _attrGather = 1
+    _attrMoveable = False
+    _attrCost = [-1, -1, -1, -1, 0, 0]
+    _attrVision = 15
 
     def checkBuild(self, shard):
         return self._checkBuildVertex(shard)
-
-    def isMoveable(self):
-        return False
 
 
 class NewSettlement(Settlement):
@@ -270,9 +286,7 @@ class NewSettlement(Settlement):
     
     This buildable will serialize as a normal settlement.
     """
-
-    def getCost(self):
-        return [0, 0, 0, 0, 0, 0]
+    _attrCost = [0, 0, 0, 0, 0, 0]
 
     def checkBuild(self, shard):
         return self._checkBuildNewVertex(shard)
@@ -281,108 +295,122 @@ class NewSettlement(Settlement):
 class Port(Buildable):
     """A buildable port."""
     classId = 'p'
-
-    def getGather(self):
-        return 0
-               
-    def getCost(self):
-        return [-1, -1, 0, 0, -2, 0]
-
-    def getVision(self):
-        return 15
+    _attrGather = 0
+    _attrMoveable = False
+    _attrCost = [-1, -1, 0, 0, -2, 0]
+    _attrVision = 15
 
     def checkBuild(self, shard):
         return self._checkBuildVertex(shard, requireWater=True)
-
-    def isMoveable(self):
-        return False
 
 
 class City(Buildable):
     """A buildable city."""
     classId = 'c'
-
-    def getGather(self):
-        return 2
-               
-    def getCost(self):
-        return [0, 0, 0, -2, -3, 0]
-
-    def getVision(self):
-        return 18
+    _attrGather = 2
+    _attrMoveable = False
+    _attrCost = [0, 0, 0, -2, -3, 0]
+    _attrVision = 18
 
     def checkBuild(self, shard):
         return self._checkUpgradeSettlement(shard)
-
-    def isMoveable(self):
-        return False
 
 
 class Road(Buildable):
     """A buildable road."""
     classId = 'r'
-
-    def getGather(self):
-        return 0
-               
-    def getCost(self):
-        return [-1, 0, -1, 0, 0, 0]
-
-    def getVision(self):
-        return 8
+    _attrGather = 0
+    _attrMoveable = False
+    _attrCost = [-1, 0, -1, 0, 0, 0]
+    _attrVision = 8
 
     def checkBuild(self, shard):
         return self._checkBuildEdge(shard, Road, True, False)
-
-    def isMoveable(self):
-        return False
 
 
 # Ships.
 
 class Ship(Buildable):
     """A generic ship."""
+    _attrGather = 0
+    _attrMoveable = True
 
-    def getGather(self):
-        return 0
+    def __init__(self, *args):
+        Buildable.__init__(self, *args)
+        self.lastAction = 0
+        self.health = self._attrHealth
+
+    def setExtra(self, lastAction, health):
+        self.lastAction = lastAction
+        self.health = health
+ 
+    def getExtra(self):
+        return (self.lastAction, self.health)
+
+    def getExtraJSON(self):
+        return {'act': self.getFreeActions(),
+                'hp': self.health,
+                'mhp': self._attrHealth}
 
     def checkBuild(self, shard):
         return self._checkBuildShip(shard)
 
-    def isMoveable(self):
-        return True
+    def getFreeActions(self):
+        """Return the number of action points avaliable."""
+        if self._attrRecover <= 0:
+            return self._attrMaxActions
+        return min(int((time.time() - self.lastAction)/self._attrRecover),
+                   self._attrMaxActions)
 
-    def getMoveRange(self):
-        return self._shipRange()
+    def subtractFreeActions(self, n):
+        """Attempts to remove n action points.
+        
+        Returns True on success, False if n > current actions.
+        """
+        actions = self.getFreeActions()
+        if n > actions:
+            return False
+        else:
+            self.lastAction = time.time() - self._attrRecover * (actions - n)
+            return True
+
+    def clearFreeActions(self):
+        """Remove all action points."""
+        self.lastAction = time.time()
+
+    def getDamage(self):
+        """Get the current damage dealt by this ship."""
+        return min(int(2 * self.health * self._attrDamage / self._attrHealth),
+                   self._attrDamage)
+
+    def hurt(self, dmg):
+        """Damages the ship."""
+        self.health -= dmg
+        if self.health < 0:
+            self.health = 0
+
+    def isDead(self):
+        return self.health == 0
 
 
 class Sloop(Ship):
     """A buildable sloop."""
     classId = 'f'
+    _attrCost = [0, 0, 0, 0, 0, 0]
+    _attrVision = 7
+    _attrMaxActions = 5
+    _attrRecover = 0
+    _attrDamage = 6
+    _attrHealth = 10
 
-    def getCost(self):
-        return [0, 0, 0, 0, 0, 0]
-
-    def getVision(self):
-        return 7
-
-    def _shipRange(self):
-        return 5
-
-    def _shipRecover(self):
-        return 5*60
-
-
-# Defines buildable object positions.
 
 class BuildType:
-    """Defines buildable types."""
+    """Defines buildable object position."""
     topEdge, centerEdge, bottomEdge, topVertex, bottomVertex, middle = range(6)
     dToJSON = ['t', 'c', 'b', 't', 'b', 'm']
     JSONtod = ['t', 'c', 'b', 'tv', 'bv', 'm']
 
 
 # List of buildable objects.
-
 _objects = frozenset([Settlement, City, Port, Road, Sloop])
-_objects_dict = dict([(o.classId, o) for o in _objects])
+_objects_dict = dict((o.classId, o) for o in _objects)

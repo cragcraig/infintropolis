@@ -1,5 +1,6 @@
 import cgi
 import string
+import time
 #import json
 import simplejson as json
 
@@ -83,7 +84,8 @@ class Handler(webapp.RequestHandler):
     def writeJSON(self, obj):
         """Write a Python object out as a JSON string."""
         self.response.headers['Content-Type'] = 'text/plain'
-        j = json.JSONEncoder().encode(obj)
+        j = json.JSONEncoder().encode({'response': obj,
+                                       'time': int(time.time())})
         self.response.out.write(j)
 
     def getJSONRequest(self):

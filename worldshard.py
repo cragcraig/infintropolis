@@ -35,6 +35,10 @@ class WorldShard:
         self._toload.add(Vect(vect.x, vect.y))
         self._core.add(Vect(vect.x, vect.y))
 
+    def removeFromCore(self, vect):
+        """Remove a block from Core list. Does not unload the block data."""
+        self._core.discard(vect)
+
     def loadBlock(self, vect, isCore=True):
         """Adds a block to the shard, loading immediately."""
         v = Vect(vect.x, vect.y)
@@ -157,6 +161,59 @@ class WorldShard:
             if m.exists():
                 m.cache()
 
+    def atomicAttack(self, attackPos, defendPos, attackNationName):
+        """Buildable bAttack attacks the buildable bDefend."""
+        xg_on = db.create_transaction_options(xg=True)
+        if db.run_in_transaction_options(xg_on, WorldShard._atomicAttack,
+                                         self, attackPos, defendPos,
+                                         attackNationName):
+            self.cacheCore()
+            return True
+        else:
+            self.clear()
+            return False
+
+    def _atomicAttack(self, attackPos, defendPos, attackNationName):
+        """Intended only for internal use by atomicAttack."""
+        # Load blocks.
+        self.clear()
+        self.addSingleBlock(attackPos.block)
+        self.addSingleBlock(defendPos.block)
+        self.loadDependencies(generate=False, useCached=False)
+        aBlock = self.getBlockOnly(attackPos.block)
+        dBlock = self.getBlockOnly(defendPos.block)
+        if not aBlock or not dBlock:
+            return False
+
+        # Get buildables.
+        aBuild = aBlock.getBuildable(attackPos.pos, nation=attackNationName)
+        dBuild = dBlock.getBuildable(defendPos.pos)
+        if not aBuild or not dBuild or aBuild.nationName == dBuild.nationName\
+           or aBuild.getFreeActions() == 0:
+            return False
+
+        # Do attack.
+        dBuild.hurt(aBuild.getDamage())
+        if dBuild.isDead():
+            dBlock._delBuildable(dBuild.pos)
+        else:
+            dBlock._updateBuildable(dBuild)
+
+        # Do defend.
+        aBuild.hurt(dBuild.getDamage())
+        aBuild.clearFreeActions()
+        if aBuild.isDead():
+            aBlock._delBuildable(aBuild.pos)
+        else:
+            aBlock._updateBuildable(aBuild)
+
+        # Put results.
+        if aBuild.block == dBuild.block:
+            aBlock.put()
+        else:
+            db.put([aBlock._model, dBlock._model])
+        return True
+
     def atomicPathBuildable(self, nation, path):
         """Move a buildable along a path."""
         xg_on = db.create_transaction_options(xg=True)
@@ -170,7 +227,8 @@ class WorldShard:
 
     def _atomicPath(self, nation, path, enforceContinuous=True):
         """Intended only for internal use by atomicPathBuildable."""
-        # Load blocks and add to worldshard.
+        # Load blocks.
+        self.clear()
         for bv in path:
             self.addSingleBlock(bv.block)
         self.loadDependencies(generate=False, useCached=False)
@@ -198,7 +256,7 @@ class WorldShard:
 
         # Move buildable.
         b = oBlock.getBuildable(origin.pos, nation=nation.getName())
-        if not b or b.getMoveRange() < moveCost:
+        if not b or not b.subtractFreeActions(moveCost):
             return False
         b.pos = dest.pos
         oBlock._delBuildable(origin.pos)
