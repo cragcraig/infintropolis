@@ -354,6 +354,8 @@ class MapBlock(inf.DatabaseObject):
 
     def _addBuildable(self, buildable):
         """Adds a buildable to the internal list."""
+        if buildable.jsonId is None:
+            buildable.jsonId = random.randint(1, 4294967295)
         self._model.count += 1
         self._model.buildables.append(db.Blob(buildable.serialize()))
         if buildable.getGather() > 0:
@@ -375,6 +377,8 @@ class MapBlock(inf.DatabaseObject):
 
     def _updateBuildable(self, buildable):
         """Replaces a buildable in the model with an updated version."""
+        if buildable.jsonId is None:
+            buildable.jsonId = random.randint(1, 4294967295)
         i = 0
         for b in self._model.buildables:
             l = pickle.loads(b)

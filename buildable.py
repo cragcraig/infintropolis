@@ -45,6 +45,7 @@ class Buildable:
         self.nationName = None
         self.capitolNum = None
         self.colors = (0, 0)
+        self.jsonId = None
 
     def build(self, shard, nation, capitol):
         """Adds this buildable in all necessary database models."""
@@ -216,7 +217,7 @@ class Buildable:
     def getList(self):
         """Returns the buildable serialized in a list."""
         l = [self.pos.x, self.pos.y, self.pos.d, self.nationName,
-             self.capitolNum, self.colors]
+             self.capitolNum, self.colors, self.jsonId]
         return l
 
     def serialize(self):
@@ -226,11 +227,12 @@ class Buildable:
         l.extend(self.getExtra())
         return pickle.dumps(l)
 
-    def unserialize(self, nationName, capitolNumber, colors, *args):
+    def unserialize(self, nationName, capitolNumber, colors, jsonId, *args):
         """Unserialize basic attributes and send extras on."""
         self.nationName = nationName
         self.capitolNum = capitolNumber
         self.colors = colors
+        self.jsonId = jsonId
         self.setExtra(*args)
 
     def setExtra(self):
@@ -262,7 +264,8 @@ class Buildable:
                 'c1': "%06x" % self.colors[0],
                 'c2': "%06x" % self.colors[1],
                 'n': self.nationName,
-                'i': self.capitolNum}
+                'i': self.capitolNum,
+                'id': self.jsonId}
         json.update(self.getExtraJSON())
         return json
 
