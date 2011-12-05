@@ -31,7 +31,7 @@ h2 {
     box-shadow: 0px 0px 20px #000;
     border:1px solid #ddd;
     color:#fff;
-    background-color:#000;
+    background-color: rgba(0, 0, 0, 1.0);
     padding: 20px;
     vertical-align: middle;
 }
