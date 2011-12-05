@@ -182,7 +182,7 @@ class WorldShard:
         self.loadDependencies(generate=False, useCached=False)
         aBlock = self.getBlockOnly(attackPos.block)
         dBlock = self.getBlockOnly(defendPos.block)
-        if not aBlock or not dBlock:
+        if not aBlock or not dBlock or not attackPos.isAdjacent(defendPos):
             return False
 
         # Get buildables.

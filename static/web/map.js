@@ -148,6 +148,12 @@ function getPosFromi(i, x, y)
                 y + (i == 0 || i == 1 ? 0 : mapSizes));
 }
 
+function getScreenCoordFromPos(v)
+{
+    return Vect(outputx(v.x - screenX, v.y - screenY),
+                outputy(v.x - screenX, v.y - screenY));
+}
+
 function vectToWorldVect(i, v)
 {
     var vt = getPosFromi(i, v.x, v.y);
@@ -226,6 +232,7 @@ function JSONCallback(jsonObj)
 
         /* Remove move path and try delayed actions. */
         if (json['isMoveResult']) {
+            DrawPaths.shift();
             if (globalState != 6)
                 selectedPath = null;
             /* Attempt to call delayed actions. */
@@ -237,6 +244,11 @@ function JSONCallback(jsonObj)
                                  tmpActions[i].id);
                 }
             }
+        }
+
+        /* Remove smoke. */
+        if (json['isAttackResult']) {
+            SmokeData.shift();
         }
 
         /* Update LOS on an as-needed basis. */
@@ -867,6 +879,8 @@ var tileSprite;
 var ImgHighlight;
 var ImgAttackHighlight;
 var ImgMoveHighlight;
+var ImgSmoke;
+var ImgFire;
 var LogoLoading;
 var tokens = [];
 var specialTokens = [];
@@ -964,6 +978,8 @@ function loading()
     ImgHighlight = loadImg('/img/high.png');
     ImgAttackHighlight = loadImg('/img/high_attack.png');
     ImgMoveHighlight = loadImg('/img/high_move.png');
+    ImgSmoke = loadImg('/img/smoke.png');
+    ImgFire = loadImg('/img/fire.png');
     LogoLoading = loadImg('/img/logo.png');
     // load tokens
     for (i=0; i<11; i++) {
@@ -1093,6 +1109,7 @@ function render()
     renderSelectedHighlight();
     if (selectedPath)
         renderPath(selectedPath);
+    renderPaths();
     renderBuildables();
 
     switch (globalState) {
@@ -1121,6 +1138,7 @@ function render()
         break;
     }
 
+    DrawSmoke();
     UIRenderButtons(pureMouseX, pureMouseY);
     drawResources();
     if (globalMinimapState == true) {
@@ -2571,9 +2589,10 @@ function MapClickCallback()
                 TrainModeLaunch(t.x, t.y);
             /* MoveMode */
             } else if (globalState == 6) {
-                MoveModeDo(t.x, t.y);
-                globalState = 0;
-                globalHighlightFunct = null;
+                if (MoveModeDo(t.x, t.y)) {
+                    globalState = 0;
+                    globalHighlightFunct = null;
+                }
             }
             render();
             return;
@@ -2591,19 +2610,10 @@ function MapClickCallback()
         if (globalSelectFunct(t.x, t.y)) {
             /* Do action. */
             var di = getiFromPos(t.x, t.y);
-            var ai;
-            var ax, ay;
-            if (selectedPath) {
-                ai = selectedPath[0].i;
-                ax = selectedPath[0].x;
-                ay = selectedPath[0].y;
-            } else if (selectedBuilding) {
-                ai = selectedBuilding.mapi;
-                ax = selectedBuilding.x;
-                ay = selectedBuilding.y;
-            }
-            if (selectedPath || selectedBuilding) {
-                var abv = getWorldPos(ai);
+            if (ActionModeStart) {
+                var abv = Vect(ActionModeStart.bx, ActionModeStart.by);
+                var ax = ActionModeStart.x;
+                var ay = ActionModeStart.y;
                 var dbv = getWorldPos(di);
                 ActionModeDo(BlockVect(abv.x, abv.y, ax, ay),
                              BlockVect(dbv.x, dbv.y,
@@ -2613,6 +2623,7 @@ function MapClickCallback()
         } else {
             /* Un-select. */
             globalSelectFunct = null;
+            ActionModeStart = null;
             render();
         }
     }
@@ -2793,18 +2804,49 @@ function popAskConfirm(question, funct)
     return false;
 }
 
+/* Is position a start of a move path? */
+function isMovePathStart(bx, by, x, y)
+{
+    for (var i=0; i<DrawPaths.length; i++) {
+        var fp = DrawPaths[i][DrawPaths[i].length - 1];
+        if (fp.bx == bx && fp.by == by && fp.x == x && fp.y == y)
+            return true;
+    }
+    return false;
+}
+
 /* Enable MoveMode. */
 function MoveModeEnable()
 {
     if (!selectedBuilding) return;
-    /* Setup global state and highlighter. */
-    globalState = 6;
-    globalHighlightFunct = MoveModeHighlighter;
-    MoveModeUpdateMap();
+    if (isMovePathStart(selectedBuilding.mapBlockVect.x,
+                        selectedBuilding.mapBlockVect.y,
+                        selectedBuilding.x, selectedBuilding.y)) {
+        selectedBuilding = null;
+    } else {
+        /* Setup global state and highlighter. */
+        globalState = 6;
+        globalHighlightFunct = MoveModeHighlighter;
+        MoveModeUpdateMap();
+    }
     render();
 }
 
 var MoveModePath = null;
+var DrawPaths = new Array();
+
+/* Render all paths. */
+function renderPaths()
+{
+    for (var i=0; i<DrawPaths.length; i++) {
+        var path = DrawPaths[i];
+        for (var j=0; j<path.length; j++) {
+            path[j].i = getiFromWorldPos(path[j].bx, path[j].by);
+            if (path[j].i < 0) break;
+        }
+        renderPath(path);
+    }
+}
 
 /* Generate move mode highlighter function. */
 function MoveModeHighlighter(x, y)
@@ -2820,7 +2862,7 @@ function MoveModeDo(x, y)
 {
     if (!selectedBuilding || !selectedPath || selectedBuilding.d != 'm' ||
         selectedPath.length < 2)
-        return;
+        return (!selectedBuilding || selectedBuilding.d != 'm');
 
     /* Construct path. */
     var mpath = new Array();
@@ -2829,6 +2871,15 @@ function MoveModeDo(x, y)
         var v = {bx: b.x, by: b.y, x: selectedPath[j].x, y: selectedPath[j].y};
         mpath.push(v);
     }
+
+    /* Add path to draw list. */
+    var dpath = new Array();
+    for (var j=0; j<selectedPath.length; j++) {
+        var b = getWorldPos(selectedPath[j].i);
+        var v = {bx: b.x, by: b.y, x: selectedPath[j].x, y: selectedPath[j].y};
+        dpath.push(v);
+    }
+    DrawPaths.push(dpath);
 
     /* Update LOS. */
     var blocks = new Array();
@@ -2846,6 +2897,11 @@ function MoveModeDo(x, y)
         ActionModeInit(selectedPath[0].i, selectedPath[0].x, selectedPath[0].y);
     else
         globalSelectFunct = null;
+
+    selectedPath = null;
+    if (!ActionModeStart)
+        selectedBuilding = null;
+    return true;
 }
 
 /* Calculate movement map. */
@@ -2868,7 +2924,7 @@ function MoveModeUpdateMap()
     /* Get up to date buildable action count. */
     var b = getBuildableAt(ib, selectedBuilding.x, selectedBuilding.y,
                            selectedBuilding.d)
-    if (!b.act) return;
+    if (!b || !b.act) return;
     var actions = b.act;
 
     /* Recursively create map. */
@@ -2989,7 +3045,7 @@ function ActionModeInit(i, x, y)
     for (var j=0; j<tiles.length; j++) {
         var vt = vectToWorldVect(i, tiles[j]);
         var b = getBuildableAt(vt.i, vt.x, vt.y, 'm');
-        if (b && b.n && b.n != nation.name) {
+        if (b && b.n && b.n != nation.name && isBuildableVisable(vt.i, b)) {
             attack.push(getPosFromi(vt.i, vt.x, vt.y));
         }
     }
@@ -2997,13 +3053,18 @@ function ActionModeInit(i, x, y)
     /* Set highlighter. */
     if (attack.length > 0) {
         globalSelectFunct = TileListHighlighter(attack);
+        var bpos = getWorldPos(i);
+        ActionModeStart = {bx: bpos.x, by: bpos.y, x: x, y: y};
     } else {
         globalSelectFunct = null;
+        ActionModeStart = null;
     }
 }
 
 /* Action Mode data. */
 ActionModeData = new Array();
+ActionModeStart = null;
+SmokeData = new Array();
 
 /* Perform action mode. */
 function ActionModeDo(aBlockPos, dBlockPos, buildId)
@@ -3026,4 +3087,38 @@ function ActionModeDo(aBlockPos, dBlockPos, buildId)
                                         dx: dBlockPos.x, dy: dBlockPos.y,
                                         abx: aBlockPos.bx, aby: aBlockPos.by,
                                         ax: aBlockPos.x, ay: aBlockPos.y});
+    AddSmoke(aBlockPos, dBlockPos);
+}
+
+/* Add attacking smoke image. */
+function AddSmoke(aBlockPos, dBlockPos)
+{
+    SmokeData.push({a: aBlockPos, d: dBlockPos});
+}
+
+/* Draw smoke. */
+function DrawSmoke()
+{
+    for (var i=0; i<SmokeData.length; i++) {
+        var data = SmokeData[i];
+        var i1 = getiFromWorldPos(data.a.bx, data.a.by);
+        var i2 = getiFromWorldPos(data.d.bx, data.d.by);
+        if (i1 < 0 || i2 < 0) continue;
+        var pos1 = getScreenCoordFromPos(getPosFromi(i1, data.a.x, data.a.y));
+        var pos2 = getScreenCoordFromPos(getPosFromi(i2, data.d.x, data.d.y));
+
+        var d = Vect(Math.floor((pos1.x + pos2.x - ImgSmoke.width) / 2),
+                     Math.floor((pos1.y + pos2.y - ImgSmoke.height) / 2));
+
+        var xdist = pos2.x - pos1.x;
+        var ydist = pos2.y - pos1.y;
+        var d1 = Vect(Math.floor(pos1.x + xdist*0.2 - ImgFire.width/2),
+                      Math.floor(pos1.y + ydist*0.2 - ImgFire.height/2));
+        var d2 = Vect(Math.floor(pos1.x + xdist*0.8 - ImgFire.width/2),
+                      Math.floor(pos1.y + ydist*0.8 - ImgFire.height/2));
+
+        ctx.drawImage(ImgFire, d1.x, d1.y, ImgFire.width, ImgFire.height);
+        ctx.drawImage(ImgFire, d2.x, d2.y, ImgFire.width, ImgFire.height);
+        ctx.drawImage(ImgSmoke, d.x, d.y, ImgSmoke.width, ImgSmoke.height);
+    }
 }
