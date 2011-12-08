@@ -232,7 +232,6 @@ function JSONCallback(jsonObj)
 
         /* Remove move path and try delayed actions. */
         if (json['isMoveResult']) {
-            DrawPaths.shift();
             if (globalState != 6)
                 selectedPath = null;
             /* Attempt to call delayed actions. */
@@ -256,6 +255,7 @@ function JSONCallback(jsonObj)
 
         /* Update Minimap and move map. */
         if (mapUpdated) {
+            discardPaths();
             updateSelectedBuildable();
             if (globalMinimapState)
                 minimapRender();
@@ -2724,7 +2724,7 @@ function TrainModeEnable(type, level)
     var posVects = Array();
     for (var j=0; j<posTiles.length; j++) {
         var t = getTile(posTiles[j].x, posTiles[j].y);
-        if (isWater(t.type) && isOpenTile(posTiles[j].x, posTiles[j].y, false))
+        if (isWater(t.type))
             posVects.push(posTiles[j]);
     }
 
@@ -2747,7 +2747,18 @@ function TrainModeEnable(type, level)
 /* Launch TrainMode overlay. */
 function TrainModeLaunch(x, y) {
     TrainModeData.pos = Vect(x, y);
-    showOverlay('#train_overlay');
+
+    /* Launch specific build mode depending on circumstance. */
+    var pi = getiFromPos(x, y);
+    var build = getBuildableAt(pi, x % mapSizes, y % mapSizes, 'm');
+
+    if (!build) {
+        showOverlay('#train_overlay');
+    } else if (nation && build.n == nation.name) {
+        showOverlay('#cargo_overlay');
+    } else if (build.n) {
+        /* Enemy ship here. */
+    }
 }
 
 var TrainModeData = {
@@ -2766,7 +2777,7 @@ function TrainModeDo(type, level)
     var y = TrainModeData.pos.y % mapSizes;
     var block = getWorldPos(i);
     TrainModeData.pos = null;
-    var b = {x: x, y: y, d: 'm', t: type, c1: "000", c2: "fff"};
+    var b = {x: x, y: y, d: 'm', n: null, t: type, c1: "000", c2: "fff"};
     tileMap[i].buildables.push(b);
     RequestJSON("POST", "/set/build",
                 {bx: block.x, by: block.y, x: x, y: y,
@@ -2848,6 +2859,20 @@ function renderPaths()
     }
 }
 
+/* Discard unused paths. */
+function discardPaths()
+{
+    var newPaths = new Array();
+    for (var i=0; i<DrawPaths.length; i++) {
+        var pos = DrawPaths[i][DrawPaths[i].length - 1];
+        var pi = getiFromWorldPos(pos.bx, pos.by);
+        if (pi < 0) continue;
+        if (getBuildableAt(pi, pos.x, pos.y, 'm'))
+            newPaths.push(DrawPaths[i]);
+    }
+    DrawPaths = newPaths;
+}
+
 /* Generate move mode highlighter function. */
 function MoveModeHighlighter(x, y)
 {
@@ -2860,6 +2885,11 @@ function MoveModeHighlighter(x, y)
 /* Perform move. */
 function MoveModeDo(x, y)
 {
+    if (!selectedPath || selectedPath.length < 2) {
+        selectedBuilding = null;
+        globalSelectFunct = null;
+    }
+
     if (!selectedBuilding || !selectedPath || selectedBuilding.d != 'm' ||
         selectedPath.length < 2)
         return (!selectedBuilding || selectedBuilding.d != 'm');

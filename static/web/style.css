@@ -462,6 +462,68 @@ h2 {
     visibility: hidden;
 }
 
+#cargo_overlay {
+    padding: 10px;
+}
+
+#cargo_table {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.cargo_line {
+    clear: both;
+    vertical-align: middle;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.cargo_line img {
+    clear: none;
+    vertical-align: middle;
+}
+
+.cargo_line span {
+    font-family: infnumbers;
+    font-size: 24px;
+}
+
+.cargo_line a {
+    border: 1px solid #5f8fdb;
+    background-color: #2e4f8c;
+    display: inline-block;
+    color: #fff;
+    width: 32px;
+    text-decoration: none;
+    font-style: normal;
+    font-weight: normal;
+    font-family: infbasic;
+    vertical-align: middle;
+    text-align: center;
+    box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    text-shadow: 1px 0px rgba(0,0,0,0.5), -1px 0px rgba(0,0,0,0.5), 0px 1px rgba(0,0,0,0.5), 0px -1px rgba(0,0,0,0.5);
+}
+
+.cargo_line a:hover {
+    border-color: #6e9ce8;
+    background-color: #395b9a;
+}
+
+.cargo_line a:active {
+    background-color: #264072;
+}
+
+.cargo_resource {
+    text-align: center;
+}
+
+.cargo_column {
+    width: 150px;
+}
+
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;

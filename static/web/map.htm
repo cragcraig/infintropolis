@@ -289,12 +289,35 @@
 
 <!-- train overlay -->
 <div id="train_overlay" class="overlay">
-    <h2 id="train_title_text">Dockyard</h2>
+    <h2 id="train_title_text">Construct a Ship</h2>
     <div id="train_list" class="item_list">
         <a href="javascript:void(0);" class="village_noncurrent"
            onclick="TrainModeDo('f', 0)">
             <span>Sloop</span>
         </a>
+    </div>
+</div>
+
+<!-- cargo overlay -->
+<div id="cargo_overlay" class="overlay">
+    <h2>Transfer Cargo</h2>
+    <div>
+        <div class="cargo_column" style="float: left;">Ship</div>
+        <div class="cargo_column" style="float: right;">Village</div>
+    </div>
+
+    <div class="cargo_line">
+        <span class="cargo_resource cargo_column" style="float: left;">
+            <img src="/img/res/wood2.png" alt="lumber"/>
+            <span>5</span>
+        </span>
+        <a href="javascript:void(0);">&uarr;</a>
+        <a href="javascript:void(0);">&darr;</a>
+        <span style="width: 60px; display: inline-block;">&nbsp;</span>
+        <span class="cargo_resource cargo_column" style="float: right;">
+            <img src="/img/res/wood2.png" alt="lumber"/>
+            <span>24</span>
+        </span>
     </div>
 </div>
 
