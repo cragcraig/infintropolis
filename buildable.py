@@ -342,18 +342,22 @@ class Ship(Buildable):
         Buildable.__init__(self, *args)
         self.lastAction = 0
         self.health = self._attrHealth
+        self.cargo = None
 
-    def setExtra(self, lastAction, health):
+    def setExtra(self, lastAction, health, cargo=None):
+        #TODO(craig): get rid of the None default for cargo here.
         self.lastAction = lastAction
         self.health = health
+        self.cargo = cargo
  
     def getExtra(self):
-        return (self.lastAction, self.health)
+        return (self.lastAction, self.health, self.cargo)
 
     def getExtraJSON(self):
         return {'act': self.getFreeActions(),
                 'hp': self.health,
-                'mhp': self._attrHealth}
+                'mhp': self._attrHealth,
+                'res': self.getCargoList()}
 
     def checkBuild(self, shard):
         return self._checkBuildShip(shard)
@@ -393,7 +397,15 @@ class Ship(Buildable):
             self.health = 0
 
     def isDead(self):
+        """Return True if the ship's health is 0."""
         return self.health == 0
+
+    def getCargoList(self):
+        """Return the list of resources carried by this ship."""
+        if self.cargo is None:
+            return [0, 0, 0, 0, 0, 0]
+        else:
+            return self.cargo
 
 
 class Sloop(Ship):

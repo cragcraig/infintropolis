@@ -463,12 +463,13 @@ h2 {
 }
 
 #cargo_overlay {
-    padding: 10px;
+    padding: 25;
 }
 
-#cargo_table {
-    vertical-align: middle;
+.cargo_title {
+    font-size: 24px;
     text-align: center;
+    padding-bottom: 10px;
 }
 
 .cargo_line {
@@ -481,6 +482,7 @@ h2 {
 .cargo_line img {
     clear: none;
     vertical-align: middle;
+    margin-right: 5px;
 }
 
 .cargo_line span {
@@ -489,8 +491,8 @@ h2 {
 }
 
 .cargo_line a {
-    border: 1px solid #5f8fdb;
-    background-color: #2e4f8c;
+    border: 1px solid #666;
+    background-color: #303030;
     display: inline-block;
     color: #fff;
     width: 32px;
@@ -508,20 +510,27 @@ h2 {
 }
 
 .cargo_line a:hover {
-    border-color: #6e9ce8;
-    background-color: #395b9a;
+    border-color: #686868;
+    background-color: #383838;
 }
 
 .cargo_line a:active {
-    background-color: #264072;
+    background-color: #222222;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .cargo_resource {
-    text-align: center;
+    text-align: right;
+}
+
+.cargo_resource span {
+    display: inline-block;
+    width: 45px;
+    text-align: left;
 }
 
 .cargo_column {
-    width: 150px;
+    width: 100px;
 }
 
 ::-webkit-scrollbar {

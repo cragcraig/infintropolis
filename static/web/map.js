@@ -2755,6 +2755,7 @@ function TrainModeLaunch(x, y) {
     if (!build) {
         showOverlay('#train_overlay');
     } else if (nation && build.n == nation.name) {
+        CargoInit(build);
         showOverlay('#cargo_overlay');
     } else if (build.n) {
         /* Enemy ship here. */
@@ -3152,3 +3153,44 @@ function DrawSmoke()
         ctx.drawImage(ImgSmoke, d.x, d.y, ImgSmoke.width, ImgSmoke.height);
     }
 }
+
+/* Cargo overlay. */
+function CargoInit(buildable)
+{
+    CargoData = [0, 0, 0, 0, 0, 0];
+    CargoDataShip = buildable;
+    CargoUpdate(0, 0);
+}
+
+function CargoUpdate(res, amount)
+{
+    if (!capitol || !CargoDataShip.res) return;
+
+    if (capitol.resources[res] - CargoData[res] - amount >= 0
+        && CargoDataShip.res[res] + CargoData[res] + amount >= 0)
+        CargoData[res] += amount;
+
+    for (var i=0; i<6; i++) {
+        var s = document.getElementById('cargo_s' + i);
+        var v = document.getElementById('cargo_v' + i);
+        s.innerHTML = CargoData[i] + CargoDataShip.res[i];
+        v.innerHTML = capitol.resources[i] - CargoData[i];
+    }
+}
+
+function CargoDo()
+{
+    hideOverlays();
+    if (!capitol || !CargoDataShip) return;
+
+    var block = CargoDataShip.mapBlockVect;
+    RequestJSON("POST", "/set/cargo", {bx: block.x, by: block.y,
+                                        x: CargoDataShip.x, y: CargoDataShip.y,
+                                        cargo: CargoData});
+    globalState = 0;
+    globalHighlightFunct = null;
+    selectedBuilding = null;
+}
+
+CargoData = null;
+CargoDataShip = null;

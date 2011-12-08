@@ -300,8 +300,12 @@
 
 <!-- cargo overlay -->
 <div id="cargo_overlay" class="overlay">
-    <h2>Transfer Cargo</h2>
-    <div>
+    <div class="link1">
+        <a href="javascript:void(0);" style="width: 33%;" onclick="CargoDo();">
+            Transfer Cargo
+        </a>
+    </div>
+    <div class="cargo_title">
         <div class="cargo_column" style="float: left;">Ship</div>
         <div class="cargo_column" style="float: right;">Village</div>
     </div>
@@ -309,14 +313,78 @@
     <div class="cargo_line">
         <span class="cargo_resource cargo_column" style="float: left;">
             <img src="/img/res/wood2.png" alt="lumber"/>
-            <span>5</span>
+            <span id="cargo_s0">0</span>
         </span>
-        <a href="javascript:void(0);">&uarr;</a>
-        <a href="javascript:void(0);">&darr;</a>
-        <span style="width: 60px; display: inline-block;">&nbsp;</span>
+        <a href="javascript:void(0);" onclick="CargoUpdate(0, 1);">&larr;</a>
+        <a href="javascript:void(0);" onclick="CargoUpdate(0, -1);">&rarr;</a>
         <span class="cargo_resource cargo_column" style="float: right;">
             <img src="/img/res/wood2.png" alt="lumber"/>
-            <span>24</span>
+            <span id="cargo_v0">0</span>
+        </span>
+    </div>
+
+    <div class="cargo_line">
+        <span class="cargo_resource cargo_column" style="float: left;">
+            <img src="/img/res/wool_dark.png" alt="lumber"/>
+            <span id="cargo_s1">0</span>
+        </span>
+        <a href="javascript:void(0);" onclick="CargoUpdate(1, 1);">&larr;</a>
+        <a href="javascript:void(0);" onclick="CargoUpdate(1, -1);">&rarr;</a>
+        <span class="cargo_resource cargo_column" style="float: right;">
+            <img src="/img/res/wool_dark.png" alt="lumber"/>
+            <span id="cargo_v1">0</span>
+        </span>
+    </div>
+
+    <div class="cargo_line">
+        <span class="cargo_resource cargo_column" style="float: left;">
+            <img src="/img/res/brick2.png" alt="lumber"/>
+            <span id="cargo_s2">0</span>
+        </span>
+        <a href="javascript:void(0);" onclick="CargoUpdate(2, 1);">&larr;</a>
+        <a href="javascript:void(0);" onclick="CargoUpdate(2, -1);">&rarr;</a>
+        <span class="cargo_resource cargo_column" style="float: right;">
+            <img src="/img/res/brick2.png" alt="lumber"/>
+            <span id="cargo_v2">0</span>
+        </span>
+    </div>
+
+    <div class="cargo_line">
+        <span class="cargo_resource cargo_column" style="float: left;">
+            <img src="/img/res/wheat.png" alt="lumber"/>
+            <span id="cargo_s3">0</span>
+        </span>
+        <a href="javascript:void(0);" onclick="CargoUpdate(3, 1);">&larr;</a>
+        <a href="javascript:void(0);" onclick="CargoUpdate(3, -1);">&rarr;</a>
+        <span class="cargo_resource cargo_column" style="float: right;">
+            <img src="/img/res/wheat.png" alt="lumber"/>
+            <span id="cargo_v3">0</span>
+        </span>
+    </div>
+
+    <div class="cargo_line">
+        <span class="cargo_resource cargo_column" style="float: left;">
+            <img src="/img/res/ore.png" alt="lumber"/>
+            <span id="cargo_s4">0</span>
+        </span>
+        <a href="javascript:void(0);" onclick="CargoUpdate(4, 1);">&larr;</a>
+        <a href="javascript:void(0);" onclick="CargoUpdate(4, -1);">&rarr;</a>
+        <span class="cargo_resource cargo_column" style="float: right;">
+            <img src="/img/res/ore.png" alt="lumber"/>
+            <span id="cargo_v4">0</span>
+        </span>
+    </div>
+
+    <div class="cargo_line">
+        <span class="cargo_resource cargo_column" style="float: left;">
+            <img src="/img/res/gold.png" alt="lumber"/>
+            <span id="cargo_s5">0</span>
+        </span>
+        <a href="javascript:void(0);" onclick="CargoUpdate(5, 1);">&larr;</a>
+        <a href="javascript:void(0);" onclick="CargoUpdate(5, -1);">&rarr;</a>
+        <span class="cargo_resource cargo_column" style="float: right;">
+            <img src="/img/res/gold.png" alt="lumber"/>
+            <span id="cargo_v5">0</span>
         </span>
     </div>
 </div>
