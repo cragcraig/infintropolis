@@ -298,7 +298,7 @@ class NewSettlement(Settlement):
 class Port(Buildable):
     """A buildable port."""
     classId = 'p'
-    _attrGather = 0
+    _attrGather = 1
     _attrMoveable = False
     _attrCost = [-1, -1, 0, 0, -2, 0]
     _attrVision = 15
@@ -344,8 +344,7 @@ class Ship(Buildable):
         self.health = self._attrHealth
         self.cargo = None
 
-    def setExtra(self, lastAction, health, cargo=None):
-        #TODO(craig): get rid of the None default for cargo here.
+    def setExtra(self, lastAction, health, cargo):
         self.lastAction = lastAction
         self.health = health
         self.cargo = cargo
@@ -425,7 +424,7 @@ class Sloop(Ship):
     _attrCost = [0, 0, 0, 0, 0, 0]
     _attrVision = 7
     _attrMaxActions = 5
-    _attrRecover = 0
+    _attrRecover = 5*60
     _attrDamage = 6
     _attrHealth = 10
 
