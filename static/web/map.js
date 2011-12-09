@@ -877,6 +877,7 @@ var TileSine = [Math.sin(-Math.PI/6), Math.sin(-Math.PI/2), Math.sin(Math.PI/6)]
 var tileSpriteSize = 11;
 var tileSprite;
 var ImgHighlight;
+var ImgVertexHighlight;
 var ImgAttackHighlight;
 var ImgMoveHighlight;
 var ImgSmoke;
@@ -976,6 +977,7 @@ function loading()
     // load tiles
     tileSprite = loadImg('/img/tiles.png');
     ImgHighlight = loadImg('/img/high.png');
+    ImgVertexHighlight = loadImg('/img/high_vertex.png');
     ImgAttackHighlight = loadImg('/img/high_attack.png');
     ImgMoveHighlight = loadImg('/img/high_move.png');
     ImgSmoke = loadImg('/img/smoke.png');
@@ -1124,7 +1126,7 @@ function render()
 
         case 2:
             if (selectedVertex) {
-                drawVertex(selectedVertex);
+                drawVertex(selectedVertex, false);
             }
         break;
 
@@ -1293,7 +1295,7 @@ function renderSelectedHighlight()
 }
 
 // render vertex
-function drawVertex(v)
+function drawVertex(v, isSelected)
 {
     if (!v) return;
     
@@ -1306,6 +1308,15 @@ function drawVertex(v)
         py += TileEdge/2;
     } else {
         py -= TileEdge/2;
+    }
+
+    // draw selected
+    if (isSelected) {
+        ctx.drawImage(ImgVertexHighlight,
+                      px - ImgVertexHighlight.width/2,
+                      py - ImgVertexHighlight.height/2,
+                      ImgVertexHighlight.width,
+                      ImgVertexHighlight.height);
     }
 
     // set alpha
@@ -1507,11 +1518,16 @@ function drawBuildable(buildable, actualBuildable)
     if (buildable == undefined || buildable.x < -1 || buildable.y < -2 ||
         buildable.x > screenWidth + 2 || buildable.y > screenWidth + 2) return;
 
+    // Selected
+    var isSel = (selectedBuilding &&
+                 selectedBuilding.id == actualBuildable.id &&
+                 selectedBuilding.t == 'p');
+
     // Check buildable type.
     if (buildable.t == 'r') {
         drawEdge(buildable);
     } else if (buildable.d != 'm') {
-        drawVertex(buildable);
+        drawVertex(buildable, isSel);
     } else {
         drawMiddle(buildable, actualBuildable);
     }
@@ -2194,6 +2210,16 @@ function drawResources()
         return -1;
     }
 
+    /* Set resource source. */
+    var fill = "rgba(0,0,0,0.5)";
+    var stroke = "#000";
+    var res = capitol.resources;
+    if (selectedBuilding && selectedBuilding.res) {
+        fill = "rgba(0,0,0,0.5)";
+        stroke = "#fff";
+        res = selectedBuilding.res;
+    }
+
     /* Set font style. */
     ctx.font = "16pt infnumbers, serif";
     ctx.lineWidth = 1;
@@ -2210,7 +2236,7 @@ function drawResources()
     var totalWidth = 0;
     var totalHeight = 0;
     for (var i=0; i<resourceIcons.length; i++) {
-        txtWidth[i] = ctx.measureText(capitol.resources[i]).width;
+        txtWidth[i] = ctx.measureText(res[i]).width;
         totalWidth += resourceIcons[i].width + txtWidth[i] + padding +
                       2*wPadding;
         if (resourceIcons[i].height > totalHeight)
@@ -2220,8 +2246,8 @@ function drawResources()
 
     /* Draw resources. */
     var offset = canvas.width/2 - totalWidth/2;
-    ctx.fillStyle = "rgba(0, 0, 0, 1.0)";
-    ctx.strokeStyle = "#ddd";
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
     ctx.lineWidth = 1;
     ctx.fillRect(offset - wPadding*2, w - totalHeight/2 - wPadding,
                  totalWidth + wPadding*4, totalHeight + wPadding*2);
@@ -2231,8 +2257,7 @@ function drawResources()
     for (var i=0; i<resourceIcons.length; i++) {
         ctx.drawImage(resourceIcons[i], Math.round(offset),
                       Math.round(w - resourceIcons[i].height/2));
-        ctx.fillText(capitol.resources[i],
-                     offset + resourceIcons[i].width + wPadding*2, w);
+        ctx.fillText(res[i], offset + resourceIcons[i].width + wPadding*2, w);
         offset += resourceIcons[i].width + txtWidth[i] + wPadding + padding;
     }
 

@@ -283,6 +283,47 @@ class PostTrade(request.Handler):
         self.writeJSON(response)
 
 
+class PostCargo(request.Handler):
+    """Handle cargo requests."""
+
+    def post(self):
+        """Perform cargo update return updated Capitol and buildable data."""
+        # Check user.
+        if not self.loadNation():
+            self.writeLogoutJSON()
+            return
+
+        # Setup.
+        request = self.getJSONRequest()
+        response = {'isCargoResult': True}
+
+        # Check arguments.
+        if not self.inDict(request, 'bx', 'by', 'x', 'y', 'cargo')\
+           or len(request['cargo']) != 6:
+            self.writeJSON(response)
+            return
+
+        # Construct parameters.
+        pos = inf.WorldVect(Vect(request['bx'], request['by']),
+                            Vect(request['x'], request['y'],
+                            buildable.BuildType.middle))
+
+        # Load Capitol.
+        capitol = Capitol(self.getNation(), self.getCapitolNum())
+        if not capitol.exists():
+            self.writeJSON(response)
+            return
+
+        # Cargo.
+        shard = WorldShard()
+        shard.atomicCargo(pos, capitol, request['cargo'])
+
+        # Return updated Capitol.
+        response['capitol'] = capitol.getJSON()
+        response.update(shard.getJSONBuildablesDict())
+        self.writeJSON(response)
+
+
 class GetPostNation(request.Handler):
     """Handle nation requests."""
 
@@ -385,6 +426,7 @@ app = webapp.WSGIApplication(
                               ('/get/build.*', GetBuildableBlock),
                               ('/set/build.*', PostBuild),
                               ('/set/trade.*', PostTrade),
+                              ('/set/cargo.*', PostCargo),
                               ('/get/nation.*', GetPostNation),
                               ('/set/nation.*', GetPostNation),
                               ('/session.*', Session),

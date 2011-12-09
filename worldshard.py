@@ -196,16 +196,20 @@ class WorldShard:
         dBuild.hurt(aBuild.getDamage())
         if dBuild.isDead():
             dBlock._delBuildable(dBuild.pos)
-        else:
-            dBlock._updateBuildable(dBuild)
+            aBuild.addCargo(dBuild.getCargo())
 
         # Do defend.
         aBuild.hurt(dBuild.getDamage())
         aBuild.clearFreeActions()
         if aBuild.isDead():
             aBlock._delBuildable(aBuild.pos)
+            dBuild.addCargo(aBuild.getCargo())
         else:
             aBlock._updateBuildable(aBuild)
+
+        if not dBuild.isDead():
+            dBlock._updateBuildable(dBuild)
+            
 
         # Put results.
         if aBuild.block == dBuild.block:
@@ -267,6 +271,38 @@ class WorldShard:
             oBlock.put()
         else:
             db.put([oBlock._model, dBlock._model])
+        return True
+
+    def atomicCargo(self, pos, capitol, cargo):
+        """Transfer buildable cargo."""
+        xg_on = db.create_transaction_options(xg=True)
+        if db.run_in_transaction_options(xg_on, WorldShard._atomicCargo,
+                                         self, pos, capitol, cargo):
+            self.cacheCore()
+            capitol.cache()
+            return True
+        else:
+            self.clear()
+            return False
+
+    def _atomicCargo(self, pos, capitol, cargo):
+        """Intended only for internal use by atomicCargo."""
+        # Load blocks.
+        self.clear()
+        block = self.getBlock(pos.block)
+        if not block:
+            return False
+
+        build = block.getBuildable(pos.pos, nation=capitol.getNationName())
+        if not build:
+            self.clear()
+            return False
+        if not build.addCargo(cargo):
+            return False
+        if not capitol.addResources([-1*v for v in cargo]):
+            return False
+        block._updateBuildable(build)
+        block.put()
         return True
 
     def loadDependencies(self, generate=True, useCached=True):
