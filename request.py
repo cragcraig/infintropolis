@@ -1,25 +1,23 @@
 import cgi
 import string
 import time
-#import json
-import simplejson as json
+import json
 
-#import webapp2
-from google.appengine.ext import webapp
+import webapp2
 
 from nation import Nation
 
 
-#class Handler(webapp2.RequestHandler):
-class Handler(webapp.RequestHandler):
+class Handler(webapp2.RequestHandler):
     """Abstract request details.
-    
+
     Provides methods covering cookies and browser redirects.
     """
     _encodeMap = string.maketrans(' \'', '+*')
     _decodeMap = string.maketrans('+*', ' \'')
 
-    def __init__(self):
+    def __init__(self, request=None, response=None):
+        webapp2.RequestHandler.__init__(self, request, response)
         self._nation = None
         self._jsonReq = None
 

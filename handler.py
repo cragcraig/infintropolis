@@ -1,8 +1,8 @@
 import re
 
-#import webapp2
-from google.appengine.ext import webapp
-from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
+#from google.appengine.ext import webapp
+#from google.appengine.ext.utils import run_wsgi_app
 
 import request
 import inf
@@ -184,7 +184,7 @@ class PostMove(request.Handler):
         # Do move.
         worldshard = WorldShard()
         worldshard.atomicPathBuildable(self.getNation(), path)
-        
+
         # Update LOS.
         if self.inDict(request, 'maps'):
             for reqblock in request['maps']:
@@ -230,7 +230,7 @@ class PostAttack(request.Handler):
         # Do move.
         worldshard = WorldShard()
         worldshard.atomicAttack(aPos, dPos, self.getNation().getName())
-        
+
         # Return updated block data.
         response.update(worldshard.getJSONBuildablesDict())
         self.writeJSON(response)
@@ -416,8 +416,8 @@ class GetDebug(request.Handler):
                            + str(mapblock._pos.y))
 
 
-app = webapp.WSGIApplication(
-                             [('/', Session),
+app = webapp2.WSGIApplication(
+                             routes=[('/', Session),
                               ('/get/debug.*', GetDebug),
                               ('/get/capitol.*', GetCapitol),
                               ('/get/map.*', GetBlock),
@@ -433,9 +433,3 @@ app = webapp.WSGIApplication(
                               ('/gather.*', GetGather)],
                              debug=True)
 
-
-def main():
-  run_wsgi_app(app)
-
-if __name__ == "__main__":
-  main()

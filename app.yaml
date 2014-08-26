@@ -1,9 +1,8 @@
 application: infintropolis
 version: 1
-runtime: python
-#runtime: python27
+runtime: python27
 api_version: 1
-#threadsafe: true
+threadsafe: true
 
 handlers:
 # Images and fonts.
@@ -22,5 +21,4 @@ handlers:
 
 # Scripts.
 - url: /.*
-  script: handler.py
-#  script: handler.app
+  script: handler.app
